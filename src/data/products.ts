@@ -1,0 +1,1207 @@
+import { Product, ProductFaq, ProductReview } from "@/lib/types";
+
+const lampCare = [
+  "Dust with a soft, dry microfibre cloth — avoid abrasive cleaners.",
+  "Keep away from direct rain or prolonged sun exposure.",
+  "Use only with the included warm-white LED module (max 5W).",
+  "Do not immerse in water or use solvent-based cleaning agents.",
+];
+
+const idolCare = [
+  "Wipe gently with a dry, soft cloth to preserve the hand-finished surface.",
+  "Avoid direct, prolonged sunlight to prevent gradual colour fading.",
+  "Keep away from open flame and excessive heat sources.",
+  "Handle base firmly when relocating — lift, don't drag.",
+];
+
+const deskCare = [
+  "Wipe clean with a lightly damp cloth; dry immediately.",
+  "Avoid prolonged exposure to direct, high-intensity sunlight.",
+  "Rated for everyday indoor desk use at room temperature.",
+  "Silicone components can be cleaned with mild soap and water.",
+];
+
+const shippingStandard = [
+  "Dispatched within 2–4 business days — every piece is printed and finished to order.",
+  "Delivered in 4–7 business days across India via trusted courier partners.",
+  "Free shipping on all prepaid orders above ₹799.",
+  "Each order is packed in protective, recyclable packaging designed for zero-damage transit.",
+];
+
+const returnsStandard = [
+  "7-day easy returns from the date of delivery on unused, undamaged items.",
+  "Replacement guarantee if your piece arrives damaged — just share a photo within 48 hours.",
+  "Made-to-order and personalised pieces are final sale unless defective.",
+  "Refunds are processed to the original payment method within 5–7 business days.",
+];
+
+function faqs(extra: ProductFaq[] = []): ProductFaq[] {
+  return [
+    {
+      question: "Is this made to order?",
+      answer:
+        "Yes — every piece is 3D printed after you order, so slight variations in texture are part of its handmade character, not a flaw.",
+    },
+    {
+      question: "How long will delivery take?",
+      answer:
+        "Most orders are printed, finished and dispatched within 2–4 business days, arriving within 4–7 business days depending on your location.",
+    },
+    ...extra,
+  ];
+}
+
+function reviews(entries: Array<[string, string, number, string, string]>): ProductReview[] {
+  return entries.map(([author, location, rating, title, body], i) => ({
+    id: `rev-${i}-${slug(author)}`,
+    author,
+    location,
+    rating,
+    date: ["2 weeks ago", "1 month ago", "3 weeks ago", "2 months ago", "5 days ago"][i % 5],
+    title,
+    body,
+    verified: true,
+  }));
+}
+
+function slug(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+// ---------------------------------------------------------------------------
+// LAMPS
+// ---------------------------------------------------------------------------
+
+const lamps: Product[] = [
+  {
+    id: "lamp-dune",
+    slug: "dune-table-lamp",
+    category: "lamps",
+    name: "Dune Table Lamp",
+    tagline: "Soft curves, softer light",
+    description:
+      "Inspired by wind-carved sand, the Dune Table Lamp diffuses light through gently ribbed walls that pool warmth across a room rather than casting a single hard beam. It's the lamp we reach for on slow evenings.",
+    story:
+      "Dune began as a study in shadow — we wanted a lamp that looked as good switched off as it did glowing. The ribbing was refined across eleven prototypes until the light fell exactly right: soft at the base, warm at the crown.",
+    price: 1499,
+    compareAtPrice: 1799,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA shell", "Warm-white 2700K LED", "Weighted matte base"],
+    dimensions: "14 cm (D) × 22 cm (H)",
+    weight: "420 g",
+    colorway: "Warm Sand",
+    finishTime: "Hand-finished over 3 hours",
+    icon: "Lamp",
+    images: [
+      { id: "1", alt: "Dune Table Lamp lit on a walnut console", tone: "warm", icon: "Lamp" },
+      { id: "2", alt: "Dune Table Lamp ribbed texture detail", tone: "beige", icon: "Lamp" },
+      { id: "3", alt: "Dune Table Lamp switched off, daylight", tone: "cool", icon: "Lamp" },
+      { id: "4", alt: "Dune Table Lamp in a styled bedside scene", tone: "charcoal", icon: "Lamp" },
+    ],
+    rating: 4.8,
+    reviewCount: 132,
+    badges: ["bestseller"],
+    features: [
+      "Diffused, flicker-free warm-white glow",
+      "Hand-sanded ribbing for a soft-touch finish",
+      "Weighted base resists tipping",
+      "Compact footprint for nightstands & consoles",
+    ],
+    careInstructions: lampCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs([
+      {
+        question: "Does it come with a bulb?",
+        answer:
+          "Yes, every lamp ships with its warm-white 2700K LED module pre-fitted and a 2m fabric-braided cable with an inline switch.",
+      },
+    ]),
+    reviews: reviews([
+      ["Ananya R.", "Bengaluru", 5, "Better than the photos", "The light quality is gorgeous — warm without being yellow. Looks so much more expensive than it was."],
+      ["Karthik M.", "Chennai", 5, "Perfect bedside lamp", "Sturdy base, soft glow, no flicker. Exactly what I wanted for reading before bed."],
+      ["Priya S.", "Mumbai", 4, "Lovely texture", "The ribbing feels premium to touch. Only wish the cable was a touch longer."],
+    ]),
+    relatedSlugs: ["origami-pleat-lamp", "luna-orb-lamp"],
+    stock: "in-stock",
+  },
+  {
+    id: "lamp-origami",
+    slug: "origami-pleat-lamp",
+    category: "lamps",
+    name: "Origami Pleat Lamp",
+    tagline: "Faceted light, folded by design",
+    description:
+      "Sharp, rhythmic pleats wrap the Origami Lamp's shade, catching and scattering light into a hundred small facets. A confident, sculptural piece for a shelf or console that wants a focal point.",
+    story:
+      "We spent weeks folding paper prototypes before a single line of the print file was drawn. The final pleat angle — 27 degrees — was the one that let light escape without ever feeling harsh.",
+    price: 1599,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA shell", "Warm-white 2700K LED", "Brushed-finish base ring"],
+    dimensions: "16 cm (D) × 24 cm (H)",
+    weight: "460 g",
+    colorway: "Charcoal Fold",
+    finishTime: "Hand-finished over 4 hours",
+    icon: "Lamp",
+    images: [
+      { id: "1", alt: "Origami Pleat Lamp glowing on a shelf", tone: "warm", icon: "Lamp" },
+      { id: "2", alt: "Origami Pleat Lamp facet detail", tone: "charcoal", icon: "Lamp" },
+      { id: "3", alt: "Origami Pleat Lamp top-down view", tone: "beige", icon: "Lamp" },
+    ],
+    rating: 4.7,
+    reviewCount: 88,
+    badges: ["new"],
+    features: [
+      "27° pleated geometry scatters light evenly",
+      "Statement silhouette for shelves & consoles",
+      "Brushed base ring for a refined stance",
+      "Cool-to-touch shade even after hours of use",
+    ],
+    careInstructions: lampCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Devansh P.", "Pune", 5, "Conversation starter", "Everyone who visits asks about this lamp. The facets look incredible when lit at night."],
+      ["Meera K.", "Delhi", 4, "Great design, runs a little warm", "Beautiful piece. Gets slightly warm after a few hours but nothing concerning."],
+    ]),
+    relatedSlugs: ["dune-table-lamp", "monolith-lamp"],
+    stock: "in-stock",
+  },
+  {
+    id: "lamp-luna",
+    slug: "luna-orb-lamp",
+    category: "lamps",
+    name: "Luna Orb Lamp",
+    tagline: "A quiet moon for your room",
+    description:
+      "A perfectly round diffuser sits atop a slender stem, glowing like a captured moon. Luna is deliberately restrained — one shape, one warm light, endlessly calming.",
+    story:
+      "Luna is the lamp we designed for people who want less, not more. No pattern, no ornament — just the purest orb we could print, sanded until the light passing through it looked like moonlight.",
+    price: 1399,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA orb diffuser", "Warm-white 2700K LED", "Turned wood-tone stem"],
+    dimensions: "12 cm (D) × 28 cm (H)",
+    weight: "380 g",
+    colorway: "Soft White",
+    finishTime: "Hand-finished over 3 hours",
+    icon: "Lamp",
+    images: [
+      { id: "1", alt: "Luna Orb Lamp glowing beside a bed", tone: "warm", icon: "Lamp" },
+      { id: "2", alt: "Luna Orb Lamp stem detail", tone: "beige", icon: "Lamp" },
+      { id: "3", alt: "Luna Orb Lamp in daylight", tone: "cool", icon: "Lamp" },
+    ],
+    rating: 4.9,
+    reviewCount: 210,
+    badges: ["bestseller"],
+    features: [
+      "Perfectly spherical diffuser, hand-sanded to matte",
+      "Slim stem keeps footprint minimal",
+      "Warm, even glow ideal for wind-down routines",
+      "Pairs beautifully with our Dune Lamp for symmetry",
+    ],
+    careInstructions: lampCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Ritika J.", "Hyderabad", 5, "My favourite purchase this year", "So calming. It's become part of my nightly routine — dim, warm, beautiful."],
+      ["Faisal A.", "Kolkata", 5, "Simple and stunning", "Minimal design that fits any room. Feels like a designer piece."],
+      ["Sana W.", "Jaipur", 5, "Worth every rupee", "The finish is flawless — no visible print lines at all."],
+    ]),
+    relatedSlugs: ["dune-table-lamp", "weave-lattice-lamp"],
+    stock: "in-stock",
+  },
+  {
+    id: "lamp-terra",
+    slug: "terra-arc-lamp",
+    category: "lamps",
+    name: "Terra Arc Lamp",
+    tagline: "An arch of warmth",
+    description:
+      "A single architectural arc houses the light source, throwing a soft crescent glow upward and out. Terra brings a gallery-like presence to any surface.",
+    story:
+      "We looked to doorway arches in old courtyard homes for Terra's silhouette — a shape that feels both ancient and entirely modern when rendered in matte, monochrome PLA.",
+    price: 1699,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA arc body", "Warm-white 2700K LED", "Weighted stone-tone base"],
+    dimensions: "18 cm (D) × 20 cm (H)",
+    weight: "510 g",
+    colorway: "Terracotta Matte",
+    finishTime: "Hand-finished over 4 hours",
+    icon: "Lamp",
+    images: [
+      { id: "1", alt: "Terra Arc Lamp on a shelf, warm glow", tone: "warm", icon: "Lamp" },
+      { id: "2", alt: "Terra Arc Lamp side profile", tone: "charcoal", icon: "Lamp" },
+      { id: "3", alt: "Terra Arc Lamp styled with books", tone: "beige", icon: "Lamp" },
+    ],
+    rating: 4.6,
+    reviewCount: 54,
+    badges: [],
+    features: [
+      "Sculptural arc silhouette",
+      "Upward-cast ambient light",
+      "Weighted base for a grounded stance",
+      "Monochrome matte finish resists fingerprints",
+    ],
+    careInstructions: lampCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Yash T.", "Ahmedabad", 5, "Gallery-worthy", "Looks like something from a design museum. Beautifully made."],
+      ["Ishita B.", "Surat", 4, "Lovely arc", "Great as accent lighting, not for reading. Exactly as described though."],
+    ]),
+    relatedSlugs: ["monolith-lamp", "dune-table-lamp"],
+    stock: "low-stock",
+  },
+  {
+    id: "lamp-weave",
+    slug: "weave-lattice-lamp",
+    category: "lamps",
+    name: "Weave Lattice Lamp",
+    tagline: "Basket-woven, printed in one piece",
+    description:
+      "A lattice shell that mimics the rhythm of hand-woven basketry, printed as a single continuous structure. Light escapes through hundreds of tiny apertures, casting patterned shadows across the room.",
+    story:
+      "Weave pays tribute to traditional basket-weaving, reimagined through precision printing. What would take a craftsperson days to weave by hand, we print as one seamless lattice — without losing that handmade rhythm.",
+    price: 1299,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA lattice shell", "Warm-white 2700K LED", "Matte round base"],
+    dimensions: "15 cm (D) × 19 cm (H)",
+    weight: "360 g",
+    colorway: "Natural Weave",
+    finishTime: "Hand-finished over 3 hours",
+    icon: "Lamp",
+    images: [
+      { id: "1", alt: "Weave Lattice Lamp casting shadow patterns", tone: "warm", icon: "Lamp" },
+      { id: "2", alt: "Weave Lattice Lamp texture close-up", tone: "beige", icon: "Lamp" },
+      { id: "3", alt: "Weave Lattice Lamp on a work desk", tone: "cool", icon: "Lamp" },
+    ],
+    rating: 4.7,
+    reviewCount: 71,
+    badges: ["new"],
+    features: [
+      "Casts intricate shadow patterns when lit",
+      "Printed as one continuous lattice structure",
+      "Lightweight and easy to relocate",
+      "Most affordable lamp in the collection",
+    ],
+    careInstructions: lampCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Nikhil D.", "Indore", 5, "The shadows are magical", "At night the shadow pattern on my ceiling is stunning. Great value too."],
+      ["Ok Ok", "Pune", 4, "Solid build", "Lightweight but doesn't feel cheap. Happy with this one."],
+    ]),
+    relatedSlugs: ["luna-orb-lamp", "origami-pleat-lamp"],
+    stock: "in-stock",
+  },
+  {
+    id: "lamp-monolith",
+    slug: "monolith-lamp",
+    category: "lamps",
+    name: "Monolith Lamp",
+    tagline: "A column of quiet light",
+    description:
+      "Tall, architectural, and unapologetically minimal — Monolith stands like a small column in the room, glowing evenly along its full height. Our largest and most striking lamp.",
+    story:
+      "Monolith is the flagship of the lamp collection — a piece we designed to anchor a room rather than accent it. Every proportion was tuned so it reads as furniture, not just lighting.",
+    price: 1799,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA column shell", "Warm-white 2700K LED strip", "Heavyweight base"],
+    dimensions: "13 cm (D) × 34 cm (H)",
+    weight: "640 g",
+    colorway: "Charcoal Stone",
+    finishTime: "Hand-finished over 5 hours",
+    icon: "Lamp",
+    images: [
+      { id: "1", alt: "Monolith Lamp standing in a living room corner", tone: "charcoal", icon: "Lamp" },
+      { id: "2", alt: "Monolith Lamp base detail", tone: "beige", icon: "Lamp" },
+      { id: "3", alt: "Monolith Lamp glowing at dusk", tone: "warm", icon: "Lamp" },
+    ],
+    rating: 4.8,
+    reviewCount: 47,
+    badges: ["limited"],
+    features: [
+      "Our tallest, most architectural lamp",
+      "Full-height LED strip for even glow",
+      "Heavyweight base for stability",
+      "Designed to anchor a room, not just accent it",
+    ],
+    careInstructions: lampCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Arjun V.", "Gurugram", 5, "Statement piece", "This is furniture, not just a lamp. Incredible presence in our living room."],
+    ]),
+    relatedSlugs: ["terra-arc-lamp", "origami-pleat-lamp"],
+    stock: "made-to-order",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// DECORATIVE IDOLS
+// ---------------------------------------------------------------------------
+
+const idolFeatures = [
+  "8K resin printing captures fabric folds, jewellery and expression in fine detail",
+  "Hand-finished by studio artisans for a smooth, premium surface",
+  "Lightweight resin body — easy to place, gift, or travel with",
+  "Fade-resistant matte-satin finish",
+];
+
+const idols: Product[] = [
+  {
+    id: "idol-ganesha",
+    slug: "ekadanta-ganesha-idol",
+    category: "idols",
+    name: "Ekadanta Ganesha Idol",
+    tagline: "Detail you can feel with your eyes closed",
+    description:
+      "A serene, seated Ganesha rendered in ultra-high-detail 8K resin — every fold of fabric, every bead of jewellery, printed with a clarity that traditional moulding struggles to match.",
+    story:
+      "Ekadanta took twelve iterations to get right. We weren't satisfied until the trunk's curve, the crown's filigree, and the quiet expression all read as intentional — not just detailed for detail's sake.",
+    price: 1499,
+    compareAtPrice: 1699,
+    currency: "INR",
+    material: "8K Resin",
+    materials: ["Ultra-high-detail 8K resin", "Hand-applied matte-satin finish", "Weighted base"],
+    dimensions: "10 cm (W) × 12 cm (H)",
+    weight: "310 g",
+    colorway: "Ivory Gold",
+    finishTime: "Hand-finished over 2.5 hours",
+    icon: "Sparkles",
+    images: [
+      { id: "1", alt: "Ekadanta Ganesha Idol on a console table", tone: "warm", icon: "Sparkles" },
+      { id: "2", alt: "Ekadanta Ganesha Idol jewellery detail", tone: "beige", icon: "Sparkles" },
+      { id: "3", alt: "Ekadanta Ganesha Idol side profile", tone: "charcoal", icon: "Sparkles" },
+      { id: "4", alt: "Ekadanta Ganesha Idol styled for pooja", tone: "warm", icon: "Sparkles" },
+    ],
+    rating: 4.9,
+    reviewCount: 184,
+    badges: ["bestseller"],
+    features: idolFeatures,
+    careInstructions: idolCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs([
+      {
+        question: "Is this suitable for daily worship?",
+        answer:
+          "Yes, the resin body is durable and stable for daily home pooja use. We recommend keeping it away from direct flame contact and excess water.",
+      },
+    ]),
+    reviews: reviews([
+      ["Suman R.", "Nagpur", 5, "Exquisite detail", "The detailing on the crown and trunk is unbelievable for the price. Looks like a museum piece."],
+      ["Vikram S.", "Lucknow", 5, "Bought for Diwali gifting", "Ordered five as gifts — every single one was flawless. Packaging was excellent too."],
+      ["Anjali P.", "Chandigarh", 5, "Better in person", "Photos don't do it justice. The finish feels premium, not printed."],
+    ]),
+    relatedSlugs: ["venu-gopal-krishna-idol", "gaja-lakshmi-idol"],
+    stock: "in-stock",
+  },
+  {
+    id: "idol-krishna",
+    slug: "venu-gopal-krishna-idol",
+    category: "idols",
+    name: "Venu Gopal Krishna Idol",
+    tagline: "Melody, captured in resin",
+    description:
+      "Krishna stands in gentle tribhanga pose, flute raised — a form loved for its movement and grace. 8K resin printing renders every strand of the peacock feather in fine relief.",
+    story:
+      "The tribhanga stance is notoriously difficult to sculpt with balance and believability. Our design team spent weeks refining the weight distribution so the figure feels alive, not stiff.",
+    price: 1599,
+    currency: "INR",
+    material: "8K Resin",
+    materials: ["Ultra-high-detail 8K resin", "Hand-applied matte-satin finish", "Weighted base"],
+    dimensions: "9 cm (W) × 14 cm (H)",
+    weight: "290 g",
+    colorway: "Peacock Blue",
+    finishTime: "Hand-finished over 3 hours",
+    icon: "Sparkles",
+    images: [
+      { id: "1", alt: "Venu Gopal Krishna Idol on a wooden shelf", tone: "warm", icon: "Sparkles" },
+      { id: "2", alt: "Venu Gopal Krishna Idol feather detail", tone: "beige", icon: "Sparkles" },
+      { id: "3", alt: "Venu Gopal Krishna Idol full figure", tone: "charcoal", icon: "Sparkles" },
+    ],
+    rating: 4.8,
+    reviewCount: 96,
+    badges: ["bestseller"],
+    features: idolFeatures,
+    careInstructions: idolCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Radhika N.", "Varanasi", 5, "Graceful and detailed", "The pose is so elegant, and the peacock feather detail is stunning up close."],
+      ["Manoj K.", "Bhopal", 5, "Perfect gift", "Gifted this for a housewarming — the family loved it. Beautifully packed."],
+    ]),
+    relatedSlugs: ["ekadanta-ganesha-idol", "nataraja-shiva-idol"],
+    stock: "in-stock",
+  },
+  {
+    id: "idol-buddha",
+    slug: "serene-buddha-bust",
+    category: "idols",
+    name: "Serene Buddha Bust",
+    tagline: "Stillness, sculpted",
+    description:
+      "A minimal Buddha bust, eyes gently closed, designed for spaces that favour calm over ornament. The matte-satin finish catches light softly across every contour.",
+    story:
+      "We stripped this piece back further than any other in the collection — no crown, no elaborate drape, just the quiet geometry of a resting face. It's our most restrained, most requested idol.",
+    price: 1299,
+    currency: "INR",
+    material: "8K Resin",
+    materials: ["Ultra-high-detail 8K resin", "Hand-applied matte finish", "Flat stable base"],
+    dimensions: "9 cm (W) × 11 cm (H)",
+    weight: "260 g",
+    colorway: "Warm Stone",
+    finishTime: "Hand-finished over 2 hours",
+    icon: "Sparkles",
+    images: [
+      { id: "1", alt: "Serene Buddha Bust on a meditation shelf", tone: "beige", icon: "Sparkles" },
+      { id: "2", alt: "Serene Buddha Bust facial detail", tone: "warm", icon: "Sparkles" },
+      { id: "3", alt: "Serene Buddha Bust in soft daylight", tone: "cool", icon: "Sparkles" },
+    ],
+    rating: 4.9,
+    reviewCount: 143,
+    badges: ["bestseller"],
+    features: idolFeatures,
+    careInstructions: idolCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Sameer H.", "Goa", 5, "So calming", "This sits on my desk and genuinely changes the mood of the room. Beautiful finish."],
+      ["Leena F.", "Pune", 5, "Minimal perfection", "Exactly the understated piece I was looking for. No regrets."],
+      ["Tarun G.", "Delhi", 4, "Lovely, slightly smaller than expected", "Gorgeous piece, just double-check dimensions before ordering."],
+    ]),
+    relatedSlugs: ["nataraja-shiva-idol", "ekadanta-ganesha-idol"],
+    stock: "in-stock",
+  },
+  {
+    id: "idol-shiva",
+    slug: "nataraja-shiva-idol",
+    category: "idols",
+    name: "Nataraja Shiva Idol",
+    tagline: "The cosmic dance, in fine relief",
+    description:
+      "Our most ambitious idol — Shiva as Nataraja, ringed in a flame arc, captured mid-dance. 8K resin resolves the ring of fire and flowing details that make this form so demanding to reproduce.",
+    story:
+      "Nataraja is the most technically complex print in our catalogue — the flame ring alone required three redesigns to hold its structure through printing and finishing without a single lost detail.",
+    price: 1799,
+    currency: "INR",
+    material: "8K Resin",
+    materials: ["Ultra-high-detail 8K resin", "Hand-applied bronze-tone finish", "Weighted circular base"],
+    dimensions: "13 cm (W) × 15 cm (H)",
+    weight: "380 g",
+    colorway: "Antique Bronze",
+    finishTime: "Hand-finished over 4 hours",
+    icon: "Sparkles",
+    images: [
+      { id: "1", alt: "Nataraja Shiva Idol on a dark console", tone: "charcoal", icon: "Sparkles" },
+      { id: "2", alt: "Nataraja Shiva Idol flame ring detail", tone: "warm", icon: "Sparkles" },
+      { id: "3", alt: "Nataraja Shiva Idol full figure", tone: "beige", icon: "Sparkles" },
+    ],
+    rating: 4.9,
+    reviewCount: 61,
+    badges: ["limited"],
+    features: idolFeatures,
+    careInstructions: idolCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Harish B.", "Coimbatore", 5, "Breathtaking", "The flame ring detail is incredible — you can see every individual flame. Worth the price."],
+    ]),
+    relatedSlugs: ["venu-gopal-krishna-idol", "serene-buddha-bust"],
+    stock: "made-to-order",
+  },
+  {
+    id: "idol-lakshmi",
+    slug: "gaja-lakshmi-idol",
+    category: "idols",
+    name: "Gaja Lakshmi Idol",
+    tagline: "Abundance, finely rendered",
+    description:
+      "Goddess Lakshmi flanked by gentle elephant motifs, seated on a lotus base. A popular choice for entryways and pooja spaces, printed with fine detail across every petal and bangle.",
+    story:
+      "Gaja Lakshmi's lotus base was one of the hardest surfaces to finish smoothly by hand — its layered petals demanded a slower, more deliberate sanding process than any other piece we make.",
+    price: 1499,
+    currency: "INR",
+    material: "8K Resin",
+    materials: ["Ultra-high-detail 8K resin", "Hand-applied matte-satin finish", "Lotus base"],
+    dimensions: "11 cm (W) × 13 cm (H)",
+    weight: "320 g",
+    colorway: "Ivory Gold",
+    finishTime: "Hand-finished over 3 hours",
+    icon: "Sparkles",
+    images: [
+      { id: "1", alt: "Gaja Lakshmi Idol at an entryway console", tone: "warm", icon: "Sparkles" },
+      { id: "2", alt: "Gaja Lakshmi Idol lotus base detail", tone: "beige", icon: "Sparkles" },
+      { id: "3", alt: "Gaja Lakshmi Idol full figure", tone: "charcoal", icon: "Sparkles" },
+    ],
+    rating: 4.8,
+    reviewCount: 77,
+    badges: ["new"],
+    features: idolFeatures,
+    careInstructions: idolCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Pooja M.", "Ranchi", 5, "Elegant entryway piece", "Placed this at our entrance — the detail on the elephants is gorgeous."],
+      ["Rohit D.", "Patna", 4, "Beautiful", "Great quality, arrived well packaged with no damage."],
+    ]),
+    relatedSlugs: ["ekadanta-ganesha-idol", "venu-gopal-krishna-idol"],
+    stock: "in-stock",
+  },
+  {
+    id: "idol-owl",
+    slug: "guardian-owl-figurine",
+    category: "idols",
+    name: "Guardian Owl Figurine",
+    tagline: "A quiet keeper for your shelf",
+    description:
+      "A modern, non-traditional addition to the collection — a stylised owl figurine with layered feather detail, popular as a study-desk companion and a symbol of quiet wisdom.",
+    story:
+      "Not every idol in our collection is devotional. Guardian Owl was designed for customers who wanted the same 8K-resin craftsmanship applied to a purely decorative, modern form.",
+    price: 1199,
+    currency: "INR",
+    material: "8K Resin",
+    materials: ["Ultra-high-detail 8K resin", "Hand-applied matte finish", "Flat stable base"],
+    dimensions: "8 cm (W) × 10 cm (H)",
+    weight: "220 g",
+    colorway: "Charcoal Feather",
+    finishTime: "Hand-finished over 2 hours",
+    icon: "Sparkles",
+    images: [
+      { id: "1", alt: "Guardian Owl Figurine on a study desk", tone: "beige", icon: "Sparkles" },
+      { id: "2", alt: "Guardian Owl Figurine feather detail", tone: "charcoal", icon: "Sparkles" },
+      { id: "3", alt: "Guardian Owl Figurine on a bookshelf", tone: "warm", icon: "Sparkles" },
+    ],
+    rating: 4.7,
+    reviewCount: 39,
+    badges: ["new"],
+    features: idolFeatures,
+    careInstructions: idolCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Aditi V.", "Mumbai", 5, "Unexpectedly lovely", "Not what I usually buy but the detail sold me. Sits perfectly on my study desk."],
+    ]),
+    relatedSlugs: ["serene-buddha-bust", "gaja-lakshmi-idol"],
+    stock: "in-stock",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// DESK ORGANIZERS
+// ---------------------------------------------------------------------------
+
+const deskFeatures = [
+  "Precision-printed in premium PLA for a smooth, durable finish",
+  "Non-slip silicone base pads included",
+  "Modular footprint — mixes and matches with the full desk collection",
+  "Designed in India for real work-from-home and creator desks",
+];
+
+const deskOrganizers: Product[] = [
+  {
+    id: "desk-modular-organizer",
+    slug: "modular-desk-organizer",
+    category: "desk-organizers",
+    name: "Modular Desk Organizer",
+    tagline: "One tray, endless configurations",
+    description:
+      "A multi-compartment organizer that separates pens, cards, small tools and loose desk clutter into distinct, considered zones — without turning your desk into a plastic tray farm.",
+    story:
+      "We designed Modular after auditing our own messiest desks. Every compartment size was chosen from what actually accumulates on a work-from-home desk, not a generic office supply list.",
+    price: 899,
+    compareAtPrice: 999,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA body", "Silicone non-slip base pads"],
+    dimensions: "24 × 12 × 6 cm",
+    weight: "310 g",
+    colorway: "Warm Sand",
+    finishTime: "Precision printed, hand-inspected",
+    icon: "LayoutGrid",
+    images: [
+      { id: "1", alt: "Modular Desk Organizer styled on a minimal desk", tone: "beige", icon: "LayoutGrid" },
+      { id: "2", alt: "Modular Desk Organizer compartments detail", tone: "warm", icon: "LayoutGrid" },
+      { id: "3", alt: "Modular Desk Organizer with desk accessories", tone: "cool", icon: "LayoutGrid" },
+    ],
+    rating: 4.8,
+    reviewCount: 219,
+    badges: ["bestseller"],
+    features: deskFeatures,
+    careInstructions: deskCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Rahul N.", "Bengaluru", 5, "Finally, an organized desk", "This single tray replaced four random containers on my desk. Great build quality."],
+      ["Simran K.", "Chandigarh", 5, "Sturdy and clean-looking", "Doesn't look like a plastic office product — genuinely nice design."],
+      ["Farhan I.", "Hyderabad", 4, "Good but compact", "Great quality, just plan your pen count — compartments are snug."],
+    ]),
+    relatedSlugs: ["cable-clip-set", "catch-all-tray"],
+    stock: "in-stock",
+  },
+  {
+    id: "desk-pen-holder",
+    slug: "pen-and-pencil-holder",
+    category: "desk-organizers",
+    name: "Pen & Pencil Holder",
+    tagline: "Upright order for your desk tools",
+    description:
+      "A weighted, ring-partitioned holder that keeps pens, pencils and markers upright and easy to grab — designed with enough presence to sit on a desk without disappearing into the clutter.",
+    story:
+      "Simple objects are the hardest to design well. We iterated on wall thickness and ring diameter until the holder felt substantial in hand but never bulky on the desk.",
+    price: 449,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA body", "Weighted base insert"],
+    dimensions: "9 × 9 × 11 cm",
+    weight: "180 g",
+    colorway: "Charcoal Matte",
+    finishTime: "Precision printed, hand-inspected",
+    icon: "PenTool",
+    images: [
+      { id: "1", alt: "Pen and Pencil Holder on a desk with stationery", tone: "warm", icon: "PenTool" },
+      { id: "2", alt: "Pen and Pencil Holder ring detail", tone: "beige", icon: "PenTool" },
+    ],
+    rating: 4.7,
+    reviewCount: 156,
+    badges: ["bestseller"],
+    features: deskFeatures,
+    careInstructions: deskCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Neha T.", "Jaipur", 5, "Simple and sturdy", "Doesn't tip over even when full. Exactly what I needed."],
+      ["Amit J.", "Lucknow", 4, "Great value", "Solid little organizer for the price."],
+    ]),
+    relatedSlugs: ["modular-desk-organizer", "business-card-holder"],
+    stock: "in-stock",
+  },
+  {
+    id: "desk-phone-dock",
+    slug: "phone-dock",
+    category: "desk-organizers",
+    name: "Phone Dock",
+    tagline: "A dedicated spot for your phone",
+    description:
+      "An angled dock that props your phone at the ideal viewing angle for calls, video, or charging — with a routed channel to keep your charging cable tidy and accessible.",
+    story:
+      "We tested viewing angles across a dozen phone sizes before settling on Phone Dock's 62° incline — comfortable for face unlock and video calls alike.",
+    price: 599,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA body", "Silicone grip pads", "Routed cable channel"],
+    dimensions: "9 × 8 × 10 cm",
+    weight: "160 g",
+    colorway: "Warm Sand",
+    finishTime: "Precision printed, hand-inspected",
+    icon: "Smartphone",
+    images: [
+      { id: "1", alt: "Phone Dock holding a smartphone on a desk", tone: "beige", icon: "Smartphone" },
+      { id: "2", alt: "Phone Dock cable channel detail", tone: "warm", icon: "Smartphone" },
+    ],
+    rating: 4.6,
+    reviewCount: 98,
+    badges: [],
+    features: deskFeatures,
+    careInstructions: deskCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs([
+      {
+        question: "Does it fit phones with thick cases?",
+        answer:
+          "Yes, the cradle is sized to comfortably fit most phones up to 9mm thick, including popular protective cases.",
+      },
+    ]),
+    reviews: reviews([
+      ["Vivek R.", "Indore", 5, "Perfect angle for video calls", "Great for my WFH video calls — stable and looks clean on camera."],
+    ]),
+    relatedSlugs: ["headphone-stand", "docking-station-organizer"],
+    stock: "in-stock",
+  },
+  {
+    id: "desk-headphone-stand",
+    slug: "headphone-stand",
+    category: "desk-organizers",
+    name: "Headphone Stand",
+    tagline: "Give your headset a proper home",
+    description:
+      "A slim, weighted stand that lifts your headphones off the desk and keeps the headband from stretching over time — a small upgrade that changes how your whole desk feels.",
+    story:
+      "Headphone Stand grew out of pure frustration — tangled cables and headband creases on our own gaming and studio setups. The wide, weighted base was the fix.",
+    price: 799,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA body", "Weighted circular base", "Silicone base pad"],
+    dimensions: "12 × 12 × 22 cm",
+    weight: "340 g",
+    colorway: "Charcoal Matte",
+    finishTime: "Precision printed, hand-inspected",
+    icon: "Headphones",
+    images: [
+      { id: "1", alt: "Headphone Stand holding over-ear headphones", tone: "charcoal", icon: "Headphones" },
+      { id: "2", alt: "Headphone Stand base detail", tone: "beige", icon: "Headphones" },
+    ],
+    rating: 4.8,
+    reviewCount: 174,
+    badges: ["bestseller"],
+    features: deskFeatures,
+    careInstructions: deskCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Zoya M.", "Delhi", 5, "Great for gaming setup", "Matches my desk aesthetic perfectly. Very stable base."],
+      ["Kabir S.", "Mumbai", 5, "Sturdy and stylish", "No wobble at all even with heavier headphones."],
+    ]),
+    relatedSlugs: ["controller-stand", "laptop-stand"],
+    stock: "in-stock",
+  },
+  {
+    id: "desk-laptop-stand",
+    slug: "laptop-stand",
+    category: "desk-organizers",
+    name: "Laptop Stand",
+    tagline: "Better posture, cleaner desk",
+    description:
+      "An ergonomic riser that lifts your laptop screen to eye level and opens up airflow underneath — engineered with reinforced print geometry to comfortably support daily laptop use.",
+    story:
+      "Laptop Stand went through the most structural testing of any product we make — reinforced internal ribbing lets it support real laptop weight without any flex.",
+    price: 999,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Reinforced premium PLA", "Silicone grip strips"],
+    dimensions: "26 × 22 × 15 cm",
+    weight: "520 g",
+    colorway: "Warm Sand",
+    finishTime: "Precision printed, hand-inspected",
+    icon: "Laptop",
+    images: [
+      { id: "1", alt: "Laptop Stand elevating a laptop on a desk", tone: "beige", icon: "Laptop" },
+      { id: "2", alt: "Laptop Stand side profile showing airflow gap", tone: "warm", icon: "Laptop" },
+    ],
+    rating: 4.7,
+    reviewCount: 132,
+    badges: ["bestseller"],
+    features: deskFeatures,
+    careInstructions: deskCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs([
+      {
+        question: "What laptop sizes does this support?",
+        answer:
+          "Comfortably supports laptops from 12\" to 16\" and up to 2.5kg in weight, thanks to reinforced internal ribbing.",
+      },
+    ]),
+    reviews: reviews([
+      ["Aakash B.", "Pune", 5, "My neck thanks me", "Great height, very sturdy. My laptop runs cooler too."],
+      ["Divya R.", "Chennai", 4, "Solid stand", "Works well, slightly heavier than expected but that's a plus for stability."],
+    ]),
+    relatedSlugs: ["monitor-riser", "headphone-stand"],
+    stock: "in-stock",
+  },
+  {
+    id: "desk-cable-clips",
+    slug: "cable-clip-set",
+    category: "desk-organizers",
+    name: "Cable Clip Set",
+    tagline: "Every cable, exactly in place",
+    description:
+      "A set of six low-profile clips that route and anchor cables along the edge of your desk — the fastest, cheapest way to make any setup look considered.",
+    story:
+      "The smallest product in our lineup, and one of the most requested. We tuned the clip tension so cables click in securely without needing adhesive strong enough to damage your desk.",
+    price: 399,
+    currency: "INR",
+    material: "Premium PLA + Silicone",
+    materials: ["Premium PLA clip body", "Silicone cable grip", "Removable adhesive backing"],
+    dimensions: "Set of 6, 3 × 2 × 2 cm each",
+    weight: "60 g (set)",
+    colorway: "Charcoal Matte",
+    finishTime: "Precision printed, hand-inspected",
+    icon: "Cable",
+    images: [
+      { id: "1", alt: "Cable Clip Set routing cables along a desk edge", tone: "beige", icon: "Cable" },
+      { id: "2", alt: "Cable Clip Set individual clip detail", tone: "warm", icon: "Cable" },
+    ],
+    rating: 4.6,
+    reviewCount: 203,
+    badges: ["bestseller"],
+    features: deskFeatures,
+    careInstructions: deskCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Om P.", "Surat", 5, "Cheap fix, huge impact", "My desk looks so much cleaner now. Adhesive held up well too."],
+      ["Ritu S.", "Nagpur", 4, "Works great", "Simple and effective, exactly what was advertised."],
+    ]),
+    relatedSlugs: ["docking-station-organizer", "modular-desk-organizer"],
+    stock: "in-stock",
+  },
+  {
+    id: "desk-watch-wallet-stand",
+    slug: "watch-and-wallet-stand",
+    category: "desk-organizers",
+    name: "Watch & Wallet Stand",
+    tagline: "A daily landing spot for essentials",
+    description:
+      "A compact valet stand that holds your watch, wallet and rings in one considered spot — the first thing you set down at the end of the day, and the first thing you pick up in the morning.",
+    story:
+      "Inspired by the classic valet tray, redesigned as a single sculptural stand rather than a flat dish — because your watch deserves better than a pile.",
+    price: 699,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA body", "Felt-lined tray base"],
+    dimensions: "10 × 8 × 9 cm",
+    weight: "150 g",
+    colorway: "Warm Sand",
+    finishTime: "Precision printed, hand-inspected",
+    icon: "Watch",
+    images: [
+      { id: "1", alt: "Watch and Wallet Stand with a watch draped on it", tone: "warm", icon: "Watch" },
+      { id: "2", alt: "Watch and Wallet Stand felt tray detail", tone: "beige", icon: "Watch" },
+    ],
+    rating: 4.7,
+    reviewCount: 64,
+    badges: ["new"],
+    features: deskFeatures,
+    careInstructions: deskCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Nitin A.", "Delhi", 5, "Elegant daily ritual", "This has genuinely become part of my routine. Great gift idea too."],
+    ]),
+    relatedSlugs: ["key-holder-tray", "catch-all-tray"],
+    stock: "in-stock",
+  },
+  {
+    id: "desk-key-holder-tray",
+    slug: "key-holder-tray",
+    category: "desk-organizers",
+    name: "Key Holder Tray",
+    tagline: "Never lose your keys again",
+    description:
+      "A shallow, ridged tray designed specifically for keys — with raised dividers that keep multiple key sets from tangling into a knot in your bag or on your entryway table.",
+    story:
+      "We built Key Holder Tray after one too many mornings spent untangling three key rings. The ridges are spaced to keep sets separated without needing labels.",
+    price: 499,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA tray", "Non-slip silicone base"],
+    dimensions: "14 × 9 × 3 cm",
+    weight: "140 g",
+    colorway: "Charcoal Matte",
+    finishTime: "Precision printed, hand-inspected",
+    icon: "KeyRound",
+    images: [
+      { id: "1", alt: "Key Holder Tray with keys at an entryway", tone: "beige", icon: "KeyRound" },
+      { id: "2", alt: "Key Holder Tray ridge detail", tone: "warm", icon: "KeyRound" },
+    ],
+    rating: 4.6,
+    reviewCount: 87,
+    badges: [],
+    features: deskFeatures,
+    careInstructions: deskCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Preeti L.", "Bhopal", 5, "So useful", "Keeps our three key sets from tangling. Simple but well designed."],
+    ]),
+    relatedSlugs: ["watch-and-wallet-stand", "catch-all-tray"],
+    stock: "in-stock",
+  },
+  {
+    id: "desk-catch-all-tray",
+    slug: "catch-all-tray",
+    category: "desk-organizers",
+    name: "Catch-all Tray",
+    tagline: "For everything that has no home",
+    description:
+      "A gently curved tray for coins, receipts, chargers and the small things that otherwise pile up on your desk or console — designed to look intentional even half-full.",
+    story:
+      "Every home needs one flat surface that catches the day's small clutter. We just made sure ours looked good doing it.",
+    price: 449,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA body", "Matte finish"],
+    dimensions: "18 × 12 × 2.5 cm",
+    weight: "170 g",
+    colorway: "Warm Sand",
+    finishTime: "Precision printed, hand-inspected",
+    icon: "Layers",
+    images: [
+      { id: "1", alt: "Catch-all Tray with keys and coins", tone: "beige", icon: "Layers" },
+      { id: "2", alt: "Catch-all Tray curve detail", tone: "warm", icon: "Layers" },
+    ],
+    rating: 4.7,
+    reviewCount: 112,
+    badges: ["bestseller"],
+    features: deskFeatures,
+    careInstructions: deskCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Sunita G.", "Kanpur", 5, "Simple and lovely", "Perfect entryway tray, exactly the aesthetic I wanted."],
+      ["Rakesh V.", "Patna", 4, "Good size", "Fits nicely on a side table, sturdy build."],
+    ]),
+    relatedSlugs: ["key-holder-tray", "watch-and-wallet-stand"],
+    stock: "in-stock",
+  },
+  {
+    id: "desk-controller-stand",
+    slug: "controller-stand",
+    category: "desk-organizers",
+    name: "Controller Stand",
+    tagline: "Display-ready, always within reach",
+    description:
+      "A dual-angle stand that displays your game controller like a piece on a shelf, while keeping it within arm's reach of your setup — built for gamers who care about their space.",
+    story:
+      "Designed alongside our gaming-desk customers, Controller Stand balances a controller securely at an angle that shows it off rather than hiding it in a drawer.",
+    price: 649,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA body", "Silicone base pad"],
+    dimensions: "12 × 10 × 14 cm",
+    weight: "210 g",
+    colorway: "Charcoal Matte",
+    finishTime: "Precision printed, hand-inspected",
+    icon: "Gamepad2",
+    images: [
+      { id: "1", alt: "Controller Stand displaying a game controller", tone: "charcoal", icon: "Gamepad2" },
+      { id: "2", alt: "Controller Stand angle detail", tone: "beige", icon: "Gamepad2" },
+    ],
+    rating: 4.8,
+    reviewCount: 91,
+    badges: ["new"],
+    features: deskFeatures,
+    careInstructions: deskCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Aryan K.", "Mumbai", 5, "Great for my gaming setup", "Looks awesome next to my monitor. Very stable."],
+    ]),
+    relatedSlugs: ["headphone-stand", "monitor-riser"],
+    stock: "in-stock",
+  },
+  {
+    id: "desk-monitor-riser",
+    slug: "monitor-riser",
+    category: "desk-organizers",
+    name: "Monitor Riser",
+    tagline: "Eye-level focus, hidden storage",
+    description:
+      "Lifts your monitor to a comfortable eye level while opening a storage channel underneath for notebooks, cables or your keyboard when not in use.",
+    story:
+      "Monitor Riser was engineered with the same reinforced ribbing as our Laptop Stand, tested to comfortably support monitors up to 8kg without any visible flex.",
+    price: 999,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Reinforced premium PLA", "Silicone grip strips"],
+    dimensions: "40 × 22 × 9 cm",
+    weight: "780 g",
+    colorway: "Warm Sand",
+    finishTime: "Precision printed, hand-inspected",
+    icon: "MonitorUp",
+    images: [
+      { id: "1", alt: "Monitor Riser elevating a desktop monitor", tone: "beige", icon: "MonitorUp" },
+      { id: "2", alt: "Monitor Riser storage channel detail", tone: "warm", icon: "MonitorUp" },
+    ],
+    rating: 4.8,
+    reviewCount: 76,
+    badges: ["bestseller"],
+    features: deskFeatures,
+    careInstructions: deskCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs([
+      {
+        question: "What's the maximum monitor weight supported?",
+        answer: "Monitor Riser is tested to safely support monitors up to 8kg thanks to reinforced internal ribbing.",
+      },
+    ]),
+    reviews: reviews([
+      ["Sonal D.", "Ahmedabad", 5, "Huge upgrade", "My posture has genuinely improved. Also great hidden storage underneath."],
+    ]),
+    relatedSlugs: ["laptop-stand", "controller-stand"],
+    stock: "in-stock",
+  },
+  {
+    id: "desk-business-card-holder",
+    slug: "business-card-holder",
+    category: "desk-organizers",
+    name: "Business Card Holder",
+    tagline: "A small, sharp first impression",
+    description:
+      "A slim-profile holder that keeps a stack of business cards upright and presentable on a desk or reception counter, angled for easy reading and easy grabbing.",
+    story:
+      "We designed this to sit unobtrusively next to a keyboard or on a reception desk — small enough to disappear, sturdy enough to never tip.",
+    price: 399,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA body", "Weighted base"],
+    dimensions: "9 × 6 × 5 cm",
+    weight: "110 g",
+    colorway: "Charcoal Matte",
+    finishTime: "Precision printed, hand-inspected",
+    icon: "IdCard",
+    images: [
+      { id: "1", alt: "Business Card Holder on a reception desk", tone: "beige", icon: "IdCard" },
+      { id: "2", alt: "Business Card Holder angle detail", tone: "warm", icon: "IdCard" },
+    ],
+    rating: 4.5,
+    reviewCount: 48,
+    badges: [],
+    features: deskFeatures,
+    careInstructions: deskCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Manish O.", "Kolkata", 5, "Clean desk essential", "Sits perfectly at our reception desk, looks professional."],
+    ]),
+    relatedSlugs: ["pen-and-pencil-holder", "sd-and-usb-card-holder"],
+    stock: "in-stock",
+  },
+  {
+    id: "desk-sd-usb-holder",
+    slug: "sd-and-usb-card-holder",
+    category: "desk-organizers",
+    name: "SD & USB Card Holder",
+    tagline: "Never lose a card again",
+    description:
+      "A precision-slotted holder for SD cards, microSD cards and USB drives — built for creators who juggle multiple cards across shoots, edits and backups.",
+    story:
+      "Designed with working photographers and video editors, each slot is friction-fit so cards stay put even if the holder is tipped or dropped in a bag.",
+    price: 549,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA body", "Friction-fit slots"],
+    dimensions: "10 × 7 × 3 cm",
+    weight: "130 g",
+    colorway: "Charcoal Matte",
+    finishTime: "Precision printed, hand-inspected",
+    icon: "SdCard",
+    images: [
+      { id: "1", alt: "SD and USB Card Holder with memory cards", tone: "beige", icon: "SdCard" },
+      { id: "2", alt: "SD and USB Card Holder slot detail", tone: "warm", icon: "SdCard" },
+    ],
+    rating: 4.7,
+    reviewCount: 68,
+    badges: ["new"],
+    features: deskFeatures,
+    careInstructions: deskCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs(),
+    reviews: reviews([
+      ["Ishaan C.", "Bengaluru", 5, "Editor's essential", "Keeps all my SD cards organized during shoots. Great grip on each slot."],
+    ]),
+    relatedSlugs: ["cable-clip-set", "business-card-holder"],
+    stock: "in-stock",
+  },
+  {
+    id: "desk-name-plate",
+    slug: "personalized-desk-name-plate",
+    category: "desk-organizers",
+    name: "Personalized Desk Name Plate",
+    tagline: "Your name, precision printed",
+    description:
+      "A custom name plate with clean, modern typography — precision printed to order with the name or title of your choice. A small, thoughtful upgrade for any desk.",
+    story:
+      "Our only fully personalised product — every plate is printed fresh once you submit your custom text, checked by hand before it ships.",
+    price: 699,
+    currency: "INR",
+    material: "Premium PLA",
+    materials: ["Premium PLA body", "Weighted base"],
+    dimensions: "18 × 5 × 6 cm",
+    weight: "190 g",
+    colorway: "Warm Sand",
+    finishTime: "Precision printed to order",
+    icon: "Type",
+    images: [
+      { id: "1", alt: "Personalized Desk Name Plate on an office desk", tone: "beige", icon: "Type" },
+      { id: "2", alt: "Personalized Desk Name Plate typography detail", tone: "warm", icon: "Type" },
+    ],
+    rating: 4.8,
+    reviewCount: 103,
+    badges: ["new"],
+    features: [
+      "Fully personalised with your name or title",
+      "Clean, modern engraved-look typography",
+      "Precision-printed in premium PLA",
+      "A considered gift for colleagues and teammates",
+    ],
+    careInstructions: deskCare,
+    shippingInfo: [
+      "Personalised pieces are printed after order confirmation — please allow 3–5 business days before dispatch.",
+      "Delivered in 4–7 business days across India via trusted courier partners.",
+      "Free shipping on all prepaid orders above ₹799.",
+      "Each order is packed in protective, recyclable packaging.",
+    ],
+    returnPolicy: [
+      "As a personalised item, this product is final sale unless it arrives defective or misprinted.",
+      "Replacement guarantee if your name plate arrives with an error on our part — share a photo within 48 hours.",
+      "Refunds for defective items are processed within 5–7 business days.",
+    ],
+    faqs: faqs([
+      {
+        question: "How do I customise the text?",
+        answer:
+          "Add your desired name or title in the personalisation field on this page before adding to cart. We'll confirm the exact layout by email before printing.",
+      },
+    ]),
+    reviews: reviews([
+      ["Team Gift", "Remote", 5, "Great team gift", "Ordered a set for our whole team — everyone loved the personal touch."],
+    ]),
+    relatedSlugs: ["business-card-holder", "watch-and-wallet-stand"],
+    stock: "made-to-order",
+  },
+];
+
+export const products: Product[] = [...lamps, ...idols, ...deskOrganizers];
+
+export function getProductBySlug(slug: string) {
+  return products.find((p) => p.slug === slug);
+}
+
+export function getProductsByCategory(category: string) {
+  return products.filter((p) => p.category === category);
+}
+
+export function getBestSellers() {
+  return products.filter((p) => p.badges.includes("bestseller"));
+}
+
+export function getNewArrivals() {
+  return products.filter((p) => p.badges.includes("new"));
+}
+
+export function getRelatedProducts(product: Product) {
+  return product.relatedSlugs
+    .map((s) => getProductBySlug(s))
+    .filter((p): p is Product => Boolean(p));
+}
