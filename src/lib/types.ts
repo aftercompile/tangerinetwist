@@ -32,6 +32,7 @@ export interface ProductImage {
   alt: string;
   tone: "warm" | "cool" | "charcoal" | "beige";
   icon: string;
+  src?: string;
 }
 
 export interface Product {

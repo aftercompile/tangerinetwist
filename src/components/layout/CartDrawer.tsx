@@ -38,6 +38,7 @@ export function CartDrawer() {
                       <ProductImagePlaceholder
                         icon={line.image.icon}
                         tone={line.image.tone as "warm" | "cool" | "charcoal" | "beige"}
+                        src={line.image.src}
                         className="h-20 w-20 rounded-xl"
                       />
                     </Link>

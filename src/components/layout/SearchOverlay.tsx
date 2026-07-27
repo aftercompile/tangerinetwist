@@ -69,6 +69,8 @@ export function SearchOverlay({
                 <ProductImagePlaceholder
                   icon={product.icon}
                   tone={product.images[0]?.tone ?? "beige"}
+                  src={product.images[0]?.src}
+                  alt={product.images[0]?.alt}
                   className="h-14 w-14 rounded-lg"
                 />
                 <div className="flex-1">

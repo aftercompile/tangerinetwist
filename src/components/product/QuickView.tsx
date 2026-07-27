@@ -30,6 +30,8 @@ export function QuickView({
             <ProductImagePlaceholder
               icon={product.icon}
               tone={product.images[0]?.tone ?? "beige"}
+              src={product.images[0]?.src}
+              alt={product.images[0]?.alt}
               className="h-full w-full rounded-l-2xl md:rounded-l-2xl md:rounded-tr-none"
             />
           </div>

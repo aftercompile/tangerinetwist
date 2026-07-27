@@ -39,6 +39,7 @@ export default function CartPage() {
                 <ProductImagePlaceholder
                   icon={line.image.icon}
                   tone={line.image.tone as "warm" | "cool" | "charcoal" | "beige"}
+                  src={line.image.src}
                   className="h-28 w-28 rounded-2xl"
                 />
               </Link>

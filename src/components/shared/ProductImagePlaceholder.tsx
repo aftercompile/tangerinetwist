@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { getIcon } from "./icon-map";
 
@@ -27,16 +28,34 @@ const toneStyles: Record<string, { bg: string; iconBg: string; iconColor: string
 export function ProductImagePlaceholder({
   icon,
   tone = "beige",
+  src,
+  alt = "",
   className,
   iconClassName,
 }: {
   icon: string;
   tone?: "warm" | "cool" | "charcoal" | "beige";
+  src?: string;
+  alt?: string;
   className?: string;
   iconClassName?: string;
 }) {
   const Icon = getIcon(icon);
   const style = toneStyles[tone] ?? toneStyles.beige;
+
+  if (src) {
+    return (
+      <div className={cn("relative overflow-hidden", className)}>
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className="object-cover"
+        />
+      </div>
+    );
+  }
 
   return (
     <div

@@ -115,6 +115,7 @@ export default function CheckoutPage() {
                 <ProductImagePlaceholder
                   icon={line.image.icon}
                   tone={line.image.tone as "warm" | "cool" | "charcoal" | "beige"}
+                  src={line.image.src}
                   className="h-14 w-14 shrink-0 rounded-lg"
                 />
                 <div className="flex flex-1 justify-between text-sm">

@@ -8,7 +8,7 @@ export interface CartLine {
   slug: string;
   name: string;
   price: number;
-  image: { icon: string; tone: string };
+  image: { icon: string; tone: string; src?: string };
   material: string;
   quantity: number;
 }
@@ -61,7 +61,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           slug: product.slug,
           name: product.name,
           price: product.price,
-          image: { icon: product.icon, tone: product.images[0]?.tone ?? "beige" },
+          image: {
+            icon: product.icon,
+            tone: product.images[0]?.tone ?? "beige",
+            src: product.images[0]?.src,
+          },
           material: product.material,
           quantity,
         },

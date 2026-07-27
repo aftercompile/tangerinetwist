@@ -32,6 +32,8 @@ export function ProductGallery({ images, name }: { images: ProductImage[]; name:
         <ProductImagePlaceholder
           icon={image.icon}
           tone={image.tone}
+          src={image.src}
+          alt={image.alt}
           className={cn(
             "h-full w-full transition-transform duration-500 ease-out",
             zoomed && "scale-[1.6]"
@@ -47,22 +49,24 @@ export function ProductGallery({ images, name }: { images: ProductImage[]; name:
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-4 gap-3">
-        {images.map((img, i) => (
-          <button
-            key={img.id}
-            onClick={() => setActive(i)}
-            aria-label={`View image ${i + 1} of ${name}`}
-            aria-current={i === active}
-            className={cn(
-              "aspect-square overflow-hidden rounded-xl border-2 transition-colors",
-              i === active ? "border-tangerine-500" : "border-transparent"
-            )}
-          >
-            <ProductImagePlaceholder icon={img.icon} tone={img.tone} className="h-full w-full" />
-          </button>
-        ))}
-      </div>
+      {images.length > 1 && (
+        <div className="mt-4 grid grid-cols-4 gap-3">
+          {images.map((img, i) => (
+            <button
+              key={img.id}
+              onClick={() => setActive(i)}
+              aria-label={`View image ${i + 1} of ${name}`}
+              aria-current={i === active}
+              className={cn(
+                "aspect-square overflow-hidden rounded-xl border-2 transition-colors",
+                i === active ? "border-tangerine-500" : "border-transparent"
+              )}
+            >
+              <ProductImagePlaceholder icon={img.icon} tone={img.tone} src={img.src} alt={img.alt} className="h-full w-full" />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

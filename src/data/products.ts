@@ -622,10 +622,13 @@ const idols: Product[] = [
     finishTime: "Hand-finished over 3.5 hours",
     icon: "Sparkles",
     images: [
-      { id: "1", alt: "Ram Idol on a console table with a diya", tone: "charcoal", icon: "Sparkles" },
-      { id: "2", alt: "Ram Idol bow and gold detailing close-up", tone: "warm", icon: "Sparkles" },
-      { id: "3", alt: "Ram Idol halo and crown detail", tone: "beige", icon: "Sparkles" },
-      { id: "4", alt: "Ram Idol full figure on lotus base", tone: "charcoal", icon: "Sparkles" },
+      {
+        id: "1",
+        alt: "Ram Idol in matte-black resin with gold bow, crown and halo, displayed on a wooden pedestal with a lit diya",
+        tone: "charcoal",
+        icon: "Sparkles",
+        src: "/products/ram-idol.jpg",
+      },
     ],
     rating: 4.9,
     reviewCount: 42,
