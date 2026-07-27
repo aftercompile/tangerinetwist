@@ -602,6 +602,53 @@ const idols: Product[] = [
     relatedSlugs: ["serene-buddha-bust", "gaja-lakshmi-idol"],
     stock: "in-stock",
   },
+  {
+    id: "idol-rama",
+    slug: "ram-idol",
+    category: "idols",
+    name: "Ram Idol",
+    tagline: "Quiet strength, cast in resin and gold",
+    description:
+      "Lord Rama stands in poised tribhanga, bow in one hand, an arrow raised in the other — rendered in a deep matte-black resin with hand-detailed gold accents across the crown, halo and jewellery. A halo of fine radiating lines frames a serene, finely resolved face.",
+    story:
+      "Rama's bow required the most careful print orientation of any piece we've made — a single unsupported gold curve running the full height of the figure. We rebuilt the internal supports four times until it could be printed, finished and shipped without a single visible seam.",
+    price: 1599,
+    currency: "INR",
+    material: "8K Resin",
+    materials: ["Ultra-high-detail 8K resin", "Hand-applied matte-black and gold finish", "Lotus base"],
+    dimensions: "10 cm (W) × 16 cm (H)",
+    weight: "340 g",
+    colorway: "Onyx Gold",
+    finishTime: "Hand-finished over 3.5 hours",
+    icon: "Sparkles",
+    images: [
+      { id: "1", alt: "Ram Idol on a console table with a diya", tone: "charcoal", icon: "Sparkles" },
+      { id: "2", alt: "Ram Idol bow and gold detailing close-up", tone: "warm", icon: "Sparkles" },
+      { id: "3", alt: "Ram Idol halo and crown detail", tone: "beige", icon: "Sparkles" },
+      { id: "4", alt: "Ram Idol full figure on lotus base", tone: "charcoal", icon: "Sparkles" },
+    ],
+    rating: 4.9,
+    reviewCount: 42,
+    badges: ["new"],
+    features: idolFeatures,
+    careInstructions: idolCare,
+    shippingInfo: shippingStandard,
+    returnPolicy: returnsStandard,
+    faqs: faqs([
+      {
+        question: "Does the gold detailing wear off with handling?",
+        answer:
+          "No — the gold accents are hand-applied and cured as part of the finishing process, not painted on afterward, so they hold up well to normal handling and display.",
+      },
+    ]),
+    reviews: reviews([
+      ["Rohan K.", "Amritsar", 5, "Stunning detail on the bow", "The gold bow catches the light beautifully. Easily the best idol I've bought online."],
+      ["Deepa S.", "Vadodara", 5, "Perfect for our home mandir", "Serene expression, excellent finish. Arrived very well packaged."],
+      ["Arvind N.", "Guwahati", 4, "Beautiful piece", "Slightly smaller than I pictured, but the craftsmanship more than makes up for it."],
+    ]),
+    relatedSlugs: ["nataraja-shiva-idol", "ekadanta-ganesha-idol"],
+    stock: "in-stock",
+  },
 ];
 
 // ---------------------------------------------------------------------------
