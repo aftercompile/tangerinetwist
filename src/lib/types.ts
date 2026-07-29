@@ -1,4 +1,5 @@
-export type CategorySlug = "lamps" | "idols" | "desk-organizers";
+// Widened from a closed union now that categories are DB rows an admin can add to.
+export type CategorySlug = string;
 
 export interface CategoryMeta {
   slug: CategorySlug;
@@ -65,4 +66,6 @@ export interface Product {
   reviews: ProductReview[];
   relatedSlugs: string[];
   stock: "in-stock" | "made-to-order" | "low-stock";
+  // Optional: absent on the static seed fixture in src/data/products.ts, always set by the DB query layer.
+  isPersonalized?: boolean;
 }

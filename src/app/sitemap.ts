@@ -1,9 +1,13 @@
 import { MetadataRoute } from "next";
-import { products } from "@/data/products";
-import { categories } from "@/data/categories";
+import { getAllCategories, getAllProductsForSitemap } from "@/lib/db/queries";
 import { siteConfig } from "@/lib/seo";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const [categories, products] = await Promise.all([
+    getAllCategories(),
+    getAllProductsForSitemap(),
+  ]);
+
   const staticRoutes = ["", "/about", "/contact", "/cart", "/wishlist"].map((path) => ({
     url: `${siteConfig.url}${path}`,
     lastModified: new Date(),
@@ -16,7 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const productRoutes = products.map((p) => ({
     url: `${siteConfig.url}/product/${p.slug}`,
-    lastModified: new Date(),
+    lastModified: p.updatedAt,
   }));
 
   return [...staticRoutes, ...categoryRoutes, ...productRoutes];

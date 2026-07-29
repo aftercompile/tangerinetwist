@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { categories } from "@/data/categories";
+import { CategoryMeta } from "@/lib/types";
 import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 import { SectionHeading } from "@/components/shared/SectionHeading";
 import { AnimatedReveal } from "@/components/shared/AnimatedReveal";
@@ -11,7 +11,7 @@ const tones: Record<string, "warm" | "charcoal" | "cool"> = {
   "desk-organizers": "cool",
 };
 
-export function CollectionsSection() {
+export function CollectionsSection({ categories }: { categories: CategoryMeta[] }) {
   return (
     <section className="container-wide py-24">
       <SectionHeading

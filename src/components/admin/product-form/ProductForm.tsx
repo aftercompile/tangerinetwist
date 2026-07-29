@@ -1,0 +1,302 @@
+"use client";
+
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { FormProvider, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { Wand2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { iconMap } from "@/components/shared/icon-map";
+import { slugify } from "@/lib/utils";
+import { productFormSchema, type ProductFormValues } from "@/lib/validation/product";
+import type { AdminCategoryOption, AdminProductOption } from "@/lib/db/admin-queries";
+import { createProduct, updateProduct, deleteProduct } from "@/lib/actions/product-actions";
+import { StringListField } from "./StringListField";
+import { ImageListField } from "./ImageListField";
+import { FaqListField } from "./FaqListField";
+import { RelatedProductsField } from "./RelatedProductsField";
+import { toInternal, fromInternal, emptyProductFormValues, type ProductFormInternal } from "./form-types";
+
+const iconNames = Object.keys(iconMap);
+const badgeOptions = [
+  { value: "bestseller", label: "Best Seller" },
+  { value: "new", label: "New" },
+  { value: "limited", label: "Limited Batch" },
+] as const;
+
+export function ProductForm({
+  mode,
+  initialValues,
+  categories,
+  productOptions,
+}: {
+  mode: "create" | "edit";
+  initialValues?: ProductFormValues;
+  categories: AdminCategoryOption[];
+  productOptions: AdminProductOption[];
+}) {
+  const router = useRouter();
+  const [submitting, setSubmitting] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+
+  const methods = useForm<ProductFormInternal>({
+    defaultValues: toInternal(initialValues ?? emptyProductFormValues),
+  });
+  const { register, handleSubmit, watch, setValue, formState } = methods;
+
+  const slug = watch("slug");
+  const badges = watch("badges");
+  const isPersonalized = watch("isPersonalized");
+  const categoryId = watch("categoryId");
+  const stock = watch("stock");
+  const icon = watch("icon");
+
+  function regenerateSlug() {
+    const name = watch("name");
+    if (name) setValue("slug", slugify(name), { shouldValidate: true });
+  }
+
+  function toggleBadge(value: "bestseller" | "new" | "limited") {
+    const next = badges.includes(value) ? badges.filter((b) => b !== value) : [...badges, value];
+    setValue("badges", next);
+  }
+
+  async function onSubmit(internal: ProductFormInternal) {
+    const values: ProductFormValues = fromInternal(internal);
+    const parsed = productFormSchema.safeParse(values);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Please fix the errors and try again.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const result =
+        mode === "create"
+          ? await createProduct(parsed.data)
+          : await updateProduct({ ...parsed.data, id: initialValues?.id });
+
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(mode === "create" ? "Product created" : "Product updated");
+      router.push("/admin/products");
+      router.refresh();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function onDelete() {
+    if (!initialValues?.id) return;
+    if (!confirm(`Delete "${initialValues.name}"? This cannot be undone.`)) return;
+    setDeleting(true);
+    try {
+      const result = await deleteProduct(initialValues.id);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Product deleted");
+      router.push("/admin/products");
+      router.refresh();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <FormProvider {...methods}>
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+        <Tabs defaultValue="basics">
+          <TabsList>
+            <TabsTrigger value="basics">Basics</TabsTrigger>
+            <TabsTrigger value="pricing">Pricing &amp; Inventory</TabsTrigger>
+            <TabsTrigger value="specs">Specs</TabsTrigger>
+            <TabsTrigger value="media">Media</TabsTrigger>
+            <TabsTrigger value="copy">Copy</TabsTrigger>
+            <TabsTrigger value="related">Related</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="basics" className="flex flex-col gap-5">
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" {...register("name")} required />
+            </div>
+            <div>
+              <Label htmlFor="slug">Slug</Label>
+              <div className="flex gap-2">
+                <Input id="slug" {...register("slug")} required />
+                <Button type="button" variant="outline" size="icon" onClick={regenerateSlug} aria-label="Generate slug from name">
+                  <Wand2 className="h-4 w-4" />
+                </Button>
+              </div>
+              {slug && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) && (
+                <p className="mt-1 text-xs text-red-600">Use lowercase letters, numbers and hyphens only.</p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="categoryId">Category</Label>
+              <Select value={categoryId} onValueChange={(v) => setValue("categoryId", v, { shouldValidate: true })}>
+                <SelectTrigger id="categoryId">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="tagline">Tagline</Label>
+              <Input id="tagline" {...register("tagline")} required />
+            </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" rows={4} {...register("description")} required />
+            </div>
+            <div>
+              <Label htmlFor="story">Story</Label>
+              <Textarea id="story" rows={4} {...register("story")} required />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="pricing" className="flex flex-col gap-5">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="price">Price (₹)</Label>
+                <Input id="price" type="number" min={1} {...register("price")} required />
+              </div>
+              <div>
+                <Label htmlFor="compareAtPrice">Compare-at Price (₹)</Label>
+                <Input
+                  id="compareAtPrice"
+                  type="number"
+                  min={1}
+                  {...register("compareAtPrice", { setValueAs: (v) => (v === "" ? null : Number(v)) })}
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="stock">Stock Status</Label>
+              <Select value={stock} onValueChange={(v) => setValue("stock", v as ProductFormValues["stock"])}>
+                <SelectTrigger id="stock">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="in-stock">In Stock</SelectItem>
+                  <SelectItem value="made-to-order">Made to Order</SelectItem>
+                  <SelectItem value="low-stock">Low Stock</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Badges</Label>
+              <div className="flex flex-wrap gap-4">
+                {badgeOptions.map((opt) => (
+                  <label key={opt.value} className="flex cursor-pointer items-center gap-2 text-sm text-charcoal">
+                    <Checkbox
+                      checked={badges.includes(opt.value)}
+                      onCheckedChange={() => toggleBadge(opt.value)}
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <label className="flex items-center gap-3">
+              <Switch checked={isPersonalized} onCheckedChange={(v) => setValue("isPersonalized", v)} />
+              <span className="text-sm text-charcoal">Allow personalization text at checkout</span>
+            </label>
+          </TabsContent>
+
+          <TabsContent value="specs" className="flex flex-col gap-5">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="material">Primary Material</Label>
+                <Input id="material" {...register("material")} required />
+              </div>
+              <div>
+                <Label htmlFor="dimensions">Dimensions</Label>
+                <Input id="dimensions" {...register("dimensions")} required />
+              </div>
+              <div>
+                <Label htmlFor="weight">Weight</Label>
+                <Input id="weight" {...register("weight")} required />
+              </div>
+              <div>
+                <Label htmlFor="colorway">Colorway</Label>
+                <Input id="colorway" {...register("colorway")} required />
+              </div>
+              <div>
+                <Label htmlFor="finishTime">Finish Time</Label>
+                <Input id="finishTime" {...register("finishTime")} required />
+              </div>
+              <div>
+                <Label htmlFor="icon">Default Icon</Label>
+                <Select value={icon} onValueChange={(v) => setValue("icon", v)}>
+                  <SelectTrigger id="icon">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    {iconNames.map((name) => (
+                      <SelectItem key={name} value={name}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <StringListField name="materials" label="Materials" placeholder="e.g. Premium PLA shell" />
+            <StringListField name="features" label="Features" placeholder="e.g. Diffused, flicker-free warm-white glow" />
+          </TabsContent>
+
+          <TabsContent value="media">
+            <ImageListField />
+          </TabsContent>
+
+          <TabsContent value="copy" className="flex flex-col gap-6">
+            <StringListField name="careInstructions" label="Care Instructions" />
+            <StringListField name="shippingInfo" label="Shipping Info" />
+            <StringListField name="returnPolicy" label="Return Policy" />
+            <FaqListField />
+          </TabsContent>
+
+          <TabsContent value="related">
+            <RelatedProductsField options={productOptions} />
+          </TabsContent>
+        </Tabs>
+
+        <div className="flex items-center justify-between border-t border-border pt-6">
+          <div>
+            {mode === "edit" && (
+              <Button type="button" variant="outline" onClick={onDelete} disabled={deleting}>
+                {deleting ? "Deleting..." : "Delete Product"}
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-3">
+            <Button type="button" variant="ghost" onClick={() => router.push("/admin/products")}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="accent" disabled={submitting || formState.isSubmitting}>
+              {submitting ? "Saving..." : mode === "create" ? "Create Product" : "Save Changes"}
+            </Button>
+          </div>
+        </div>
+      </form>
+    </FormProvider>
+  );
+}

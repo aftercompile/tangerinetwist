@@ -9,93 +9,203 @@ npm install     # install dependencies
 npm run dev     # start dev server at http://localhost:3000
 npm run build   # production build (also runs type-checking + linting)
 npm run lint    # eslint only (next/core-web-vitals config)
+
+npm run db:generate   # generate a Drizzle migration from src/lib/db/schema.ts
+npm run db:migrate    # apply pending migrations (uses DIRECT_URL)
+npm run db:push       # push schema changes directly, skipping migration files (dev only)
+npm run db:studio     # open Drizzle Studio against the live DB
+npm run db:seed       # wipe-free seed: inserts the 27 fixture products + ~90 days of demo orders
+npm run admin:hash-password -- "your-password"   # print an ADMIN_PASSWORD_HASH value for .env.local
 ```
 
-There is no test suite configured in this project. There's no `next start` usage documented beyond the standard script — use `npm run build && npm start` to check a production build locally.
+There is no test suite configured in this project. Use `npm run build && npm start` to check a
+production build locally.
+
+## Setup (first run in a new environment)
+
+1. Create a free Supabase project. Copy `.env.example` to `.env.local` and fill in:
+   - `DATABASE_URL` — the **Transaction pooler** connection string (port 6543, `?pgbouncer=true`).
+   - `DIRECT_URL` — the **Session pooler** connection string (port 5432) — `drizzle-kit` needs this.
+   - `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — Project Settings → API.
+   - `ADMIN_PASSWORD_HASH` — run `npm run admin:hash-password -- "..."` and paste the output.
+   - `ADMIN_SESSION_SECRET` — any random 32+ byte string, e.g. `openssl rand -base64 32`.
+2. In Supabase Storage, create a **public** bucket named `product-images` (or let
+   `getSupabaseAdmin().storage.createBucket(...)` create it — see `src/lib/supabase-admin.ts`).
+3. `npm run db:migrate` then `npm run db:seed`.
+
+`.env.local` is gitignored. **Never put real credentials in `.env.example`** — it's the committed
+template and must only ever contain placeholders.
 
 ## Architecture
 
-Next.js 14 App Router + TypeScript site for **TangerineTwist**, a premium 3D-printed home décor
-D2C storefront (designer lamps, decorative idols, desk organizers). Everything is client-rendered
-commerce logic on top of statically-generated pages — there is no backend/API/database; all product
-data is a static in-repo catalog and cart/wishlist state lives in `localStorage`.
+Next.js 14 App Router + TypeScript site for **TangerineTwist**, a premium 3D-printed home décor D2C
+storefront (designer lamps, decorative idols, desk organizers) **plus an `/admin` back office** for
+managing the catalog, categories, and orders, and a metrics dashboard. The catalog, categories, and
+orders all live in **Postgres (Supabase) via Drizzle ORM** — there is no more static in-repo catalog
+driving the storefront. Cart/wishlist/recently-viewed state still lives in `localStorage` (unchanged).
 
-### Data-driven catalog (`src/data`)
+### Route groups: storefront vs. admin, both under one root layout
 
-`src/data/products.ts` is the single source of truth for the product catalog — a hand-written array
-of `Product` objects (typed in `src/lib/types.ts`) covering all three categories (`lamps`, `idols`,
-`desk-organizers`). Each product carries its own description, pricing, materials, care/shipping/return
-copy, FAQs, and reviews inline (no CMS). Helper functions in that file (`getProductBySlug`,
-`getProductsByCategory`, `getBestSellers`, `getNewArrivals`, `getRelatedProducts`) are the query layer
-every page uses instead of filtering the array directly. `src/data/categories.ts` holds per-category
-metadata (name, tagline, price range) and `src/data/content.ts` holds homepage-only content
-(testimonials, Instagram post captions, "Why TangerineTwist" copy, craftsmanship steps, materials).
-**To add or edit a product, category, or homepage copy block, edit these three files — not the
-components that render them.**
+`src/app/layout.tsx` is now minimal — `<html>/<body>`, fonts, Organization JSON-LD, `<Toaster/>` —
+and renders `{children}` directly with no storefront chrome. Two route groups hang off it:
 
-### No product photography — generated "studio" placeholder art
+- **`src/app/(storefront)/`** — every public page (`page.tsx`, `about/`, `cart/`, `checkout/`,
+  `contact/`, `desk-organizers/`, `idols/`, `lamps/`, `product/[slug]/`, `wishlist/`, plus its own
+  `loading.tsx`/`not-found.tsx`). Its `layout.tsx` fetches categories and renders `<Providers>` →
+  skip-link → `<Navbar categories={...}/>` → `<main>` → `<Footer/>` → `<CartDrawer/>`.
+- **`src/app/(admin)/admin/`** — split again into `login/page.tsx` (no chrome, so the login screen
+  isn't wrapped in the authenticated sidebar) and a nested **`(protected)/`** group whose
+  `layout.tsx` renders `<AdminSidebar/>` + `<AdminTopbar/>` around `{children}`. Adding a new admin
+  screen means adding it under `(admin)/admin/(protected)/`, not directly under `admin/`.
 
-There are no image assets. `src/components/shared/ProductImagePlaceholder.tsx` renders a
-CSS/SVG-gradient "studio backdrop" with a centered Lucide icon per product, keyed by an `icon` name
-(a Lucide component name, e.g. `"Lamp"`, `"Sparkles"`) and a `tone` (`warm | cool | charcoal | beige`)
-stored directly on each `Product`/`ProductImage` in the catalog. `src/components/shared/icon-map.tsx`
-is the allowlist mapping icon-name strings to actual Lucide components — **any new icon name used in
-`src/data/products.ts` must be added to `iconMap` there too, or it silently falls back to `Sparkles`.**
-This placeholder system stands in for real product photography (see README "Notes for production
-launch") and is used everywhere a product image would normally go: product cards, galleries, cart
-lines, quick view, collections, Instagram gallery.
+Route groups (parenthesized folders) never add URL segments, so none of this changed any public URL.
+A root, chrome-less `src/app/not-found.tsx` also exists as the catch-all 404 for paths outside both
+groups (e.g. a typo'd top-level path); `(storefront)/not-found.tsx` is the styled in-chrome one.
 
-### State: React Context + localStorage, no server round-trips
+### Data layer: Drizzle ORM over Postgres, two query modules
 
-`src/context/CartContext.tsx`, `WishlistContext.tsx`, and `RecentlyViewedContext.tsx` each manage
-their own slice of state, hydrate from `localStorage` on mount, and persist back on every change (see
-the `hydrated` guard pattern in each — don't write to `localStorage` before the initial read completes,
-or you'll clobber persisted state with the empty initial value). All three are composed in
-`src/context/Providers.tsx` and wrapped around the whole app in `src/app/layout.tsx`. `useCart()` /
-`useWishlist()` / `useRecentlyViewed()` throw if called outside their provider — every consumer is a
-client component (`"use client"`).
+- **`src/lib/db/schema.ts`** — `categories`, `products` (jsonb for pure copy blocks like `materials`,
+  `features`, `careInstructions`, `shippingInfo`, `returnPolicy`, `faqs`; a real `text[]` column for
+  `badges` since it's filtered on; `isPersonalized: boolean` replaces the old
+  `product.slug === "personalized-desk-name-plate"` hack), `productImages`, `productReviews`,
+  `productRelations` (replaces the old `relatedSlugs: string[]` with real FK rows — no more dangling
+  slugs), `orders`, `orderItems` (a denormalized snapshot of name/price/material/image at order time,
+  so editing or deleting a product never rewrites historical orders).
+- **`src/lib/db/index.ts`** — the `postgres-js` + Drizzle client. It's cached on `globalThis` outside
+  production. **This matters**: without that cache, every Next.js dev-mode Fast Refresh
+  re-evaluates this module and opens a fresh connection pool without closing the old one, which
+  exhausts Supabase's pooler connection limit within a few edits and crashes the whole dev-server
+  worker process with an opaque `Jest worker encountered N child process exceptions` error and no
+  stack trace. If you ever see that error, suspect a new un-cached DB/connection singleton first.
+- **`src/lib/db/queries.ts`** — the **storefront** read layer. Same five function names the old
+  static `src/data/products.ts` exposed (`getProductBySlug`, `getProductsByCategory`,
+  `getBestSellers`, `getNewArrivals`, `getRelatedProducts`), now async and each wrapped in
+  `unstable_cache` tagged `"products"` or `"categories"`. Also `getAllCategories`/`getCategory`
+  (category `priceRange` is now a computed `MIN(price)–MAX(price)` per category, not hand-written),
+  `getAllProductSlugs`/`getAllProductsForSitemap`, and `searchProducts`/`getProductsBySlugs` (used by
+  the two API routes below). `unstable_cache` requires the Next.js request runtime — it cannot be
+  exercised from a bare `tsx` script; test the underlying Drizzle calls directly instead.
+- **`src/lib/db/admin-queries.ts`** — the **admin** read layer: intentionally *uncached* (admin
+  screens must always show live data), returns richer/flatter row shapes for tables
+  (`getAdminProductRows`, `getAdminCategoryRows` with `productCount`, `getAdminOrderRows`,
+  `getAdminProductById`/`getAdminOrderById` for detail/edit pages).
+- **`src/lib/db/metrics-queries.ts`** — dashboard aggregations (`getKpis` with period-over-period
+  deltas, `getRevenueOverTime` gap-filled per day via `date-fns`, `getRevenueByCategory`,
+  `getOrderStatusBreakdown`, `getTopProducts`, `getLowStockProducts`, `getRecentOrders`).
 
-Cart drawer visibility is also owned by `CartContext` (`isOpen`/`setOpen`), not local component state —
-`addItem` auto-opens the drawer, so any code that adds to cart gets the drawer for free.
+`src/data/products.ts` and `src/data/categories.ts` **still exist** but are now only the seed
+fixture consumed by `src/lib/db/seed.ts` — nothing under `src/app` or `src/components` imports them
+anymore. If you're tempted to import `@/data/products` in a new page, don't — use
+`@/lib/db/queries` (storefront) or `@/lib/db/admin-queries` (admin) instead.
+
+### Client components that need product data go through an API route, not a DB import
+
+Six client components used to import the static catalog directly; they can't `await` a DB call, so
+they now fetch instead:
+
+- `SearchOverlay.tsx` — debounced `fetch("/api/search?q=...")` (this also means the whole catalog is
+  no longer bundled into client JS, which the static version did).
+- `wishlist/page.tsx` and `RecentlyViewedSection.tsx` — both resolve arbitrary `localStorage` slugs
+  via `POST /api/products/by-slugs`.
+- `FeaturedProducts.tsx` and `CollectionsSection.tsx` — no longer fetch anything themselves; they
+  take `bestSellers`/`newArrivals`/`favorites`/`categories` as props, fetched once by the (server)
+  `(storefront)/page.tsx`.
+- `Navbar.tsx` — takes `categories` as a prop, fetched by `(storefront)/layout.tsx`.
+
+If you add a new client component that needs product/category data, follow one of these two
+patterns — don't reach for `@/lib/db/*` from a `"use client"` file.
+
+### Auth: single admin password, signed cookie, middleware gate
+
+`src/middleware.ts` (⚠️ **must live in `src/`, not the project root** — this project uses the `src/`
+convention and Next.js silently ignores a root-level `middleware.ts` in that setup) guards
+`/admin/:path*` except `/admin/login`, verifying a JWT in the `tt_admin` cookie via
+`src/lib/auth/session.ts` (`jose`, Edge-safe). The password itself is checked in
+`src/lib/auth/password.ts` using Node's `scrypt` (Node-runtime only — never import this from
+middleware). **Middleware is routing convenience, not the security boundary** — every mutating
+server action independently calls `requireAdminSession()` from `src/lib/auth/guard.ts`, since
+server actions are directly invocable POST endpoints regardless of what middleware guards.
+
+### Server actions and revalidation
+
+`src/lib/actions/{product,category,order}-actions.ts` are the only way data is mutated. Product and
+category mutations call `revalidateTag("products")`/`revalidateTag("categories")` +
+`revalidatePath("/")` so the (statically-cached) storefront picks up admin edits within a second
+without a rebuild. When checking a Postgres error's code (e.g. unique-violation `23505`,
+foreign-key-violation `23503`), remember **Drizzle wraps the raw `postgres.js` error** — the code is
+at `err.cause.code`, not `err.code`.
+
+### Checkout is real now
+
+`placeOrder` (`src/lib/actions/order-actions.ts`) **re-reads every line's current price from the DB
+by slug** — the input schema doesn't even have a price field, so a tampered `localStorage` cart
+total is structurally impossible to submit. `src/lib/orders.ts` holds the one
+`calculateTotals()` (₹79 flat shipping, free ≥ ₹799) shared by cart page, checkout page, the server
+action, and the seed script — don't reintroduce the duplicated inline math that used to live in both
+pages.
+
+### Product images: real upload + placeholder fallback, unchanged rendering contract
+
+`src/components/shared/ProductImagePlaceholder.tsx` is unchanged: renders `next/image` when `src` is
+set, else the CSS-gradient studio backdrop keyed by `tone` + a Lucide icon from
+`src/components/shared/icon-map.tsx` (unknown names silently fall back to `Sparkles` — the admin
+product form's icon picker is constrained to `Object.keys(iconMap)` specifically to prevent this).
+Admin-uploaded images go through `POST /api/admin/upload` (session-gated, mime/size-checked) to the
+Supabase Storage `product-images` bucket; `next.config.mjs` allows that host via
+`images.remotePatterns`.
 
 ### UI primitives are hand-rolled, not the shadcn CLI
 
 `src/components/ui/*` looks like shadcn/ui but was written by hand on top of Radix primitives + CVA —
-there is no `components.json` and the shadcn CLI has never been run against this repo. Follow the
-existing pattern (Radix primitive + `cva` variants + `cn()` from `src/lib/utils.ts`) rather than
-introducing a differently-structured component when extending this folder.
+there is no `components.json` and the shadcn CLI has never been run against this repo. This now also
+includes admin-only primitives added the same way: `table`, `card`, `dropdown-menu`, `switch`,
+`separator`, `popover`, `tooltip`, `radio-group`, `pagination`. Follow the existing pattern (Radix
+primitive + `cva` variants + `cn()` from `src/lib/utils.ts`) rather than introducing a
+differently-structured component when extending this folder. Admin-specific composite components
+(not generic enough for `ui/`) live in `src/components/admin/`.
 
-### Category pages share one client component
+### The product admin form
 
-`/lamps`, `/idols`, `/desk-organizers` are near-identical thin server components (metadata +
-`getProductsByCategory` + `<CategoryBanner>` + `<CategoryExplorer>`). All filtering/sorting logic
-(material checkboxes, sort dropdown, mobile filter drawer, skeleton loading) lives once in
-`src/components/category/CategoryExplorer.tsx`. Add a fourth category by adding a `CategoryMeta` to
-`src/data/categories.ts`, products with that `category` slug to `src/data/products.ts`, and a new
-`src/app/<slug>/page.tsx` following the existing three — no changes needed to `CategoryExplorer`.
+`src/components/admin/product-form/ProductForm.tsx` uses `react-hook-form` with **no `zodResolver`**
+— the internal form shape (`ProductFormInternal`, in `form-types.ts`) wraps the five plain
+`string[]` fields (`materials`, `features`, `careInstructions`, `shippingInfo`, `returnPolicy`) as
+`{value: string}[]` so `useFieldArray` can key them, then `fromInternal()` flattens back to
+`ProductFormValues` and `productFormSchema.safeParse()` validates on submit (errors surface via
+`sonner` toast, matching every other form in this repo — `ContactForm`, `Newsletter`). The same
+`productFormSchema` (`src/lib/validation/product.ts`) is re-validated server-side in
+`product-actions.ts`, since client validation is only a UX nicety.
+
+### Category pages, still one shared client component, now DB-backed
+
+`/lamps`, `/idols`, `/desk-organizers` are still near-identical thin **async** server components
+(metadata + `await getProductsByCategory(...)` + `<CategoryBanner>` + `<CategoryExplorer>`), and all
+filtering/sorting logic still lives once in `src/components/category/CategoryExplorer.tsx` — that
+component still takes `Product[]` as a prop and knows nothing about the DB. Adding a fourth category
+now means adding a row via `/admin/categories` (or the seed script) instead of editing
+`src/data/categories.ts`, plus a new `src/app/(storefront)/<slug>/page.tsx`.
 
 ### Product detail page
 
-`src/app/product/[slug]/page.tsx` uses `generateStaticParams` to prerender every product from the
-catalog and `generateMetadata` per-product, and emits inline `Product` JSON-LD. It composes
-`ProductGallery` (hover-zoom), `ProductInfo` (quantity/cart/wishlist/buy-now), `ProductTabs`
-(description/specs/care/shipping/FAQ), `Reviews`, `RelatedProducts` (from `relatedSlugs` on the
-product), and `RecentlyViewedSection` — the latter reads from `RecentlyViewedContext`, which
-`RecordRecentlyViewed` (a client-only effect, rendered invisibly on the page) writes to on mount.
+`src/app/(storefront)/product/[slug]/page.tsx` is async: `generateStaticParams` now calls
+`getAllProductSlugs()` and `dynamicParams = true` is set explicitly so an admin-created product
+renders on first request without a rebuild. Otherwise unchanged — `generateMetadata` per-product,
+inline `Product` JSON-LD, composes `ProductGallery`/`ProductInfo`/`ProductTabs`/`Reviews`/
+`RelatedProducts`/`RecentlyViewedSection`.
 
 ### Design tokens
 
 The palette (`cream`, `warm-white`, `beige`, `charcoal`, `tangerine` scale) and type scale (Manrope via
 `--font-manrope` for display/headings, Plus Jakarta Sans via `--font-jakarta` for body) are defined in
-`tailwind.config.ts` and wired up as fonts in `src/app/layout.tsx`. Prefer the semantic color names
-(`text-charcoal`, `bg-beige`, `text-tangerine-600`, etc.) over raw Tailwind grays/oranges when adding
-UI — the whole site is built to a warm cream/beige/charcoal/tangerine constraint intentionally (see
-README design intent).
+`tailwind.config.ts`. Prefer the semantic color names (`text-charcoal`, `bg-beige`,
+`text-tangerine-600`, etc.) over raw Tailwind grays/oranges when adding UI — the whole site (admin
+included) is built to a warm cream/beige/charcoal/tangerine constraint intentionally. The admin
+sidebar/topbar are the one place that intentionally goes full charcoal-on-cream rather than
+warm/beige, to visually separate "back office" from "storefront."
 
 ### SEO
 
-`src/lib/seo.ts` exports `buildMetadata()` (used by every route's `generateMetadata`/`metadata` export)
-and `siteConfig` (canonical domain + default keyword list). `src/app/sitemap.ts` and `src/app/robots.ts`
-are generated from the same product/category data rather than hand-maintained.
+`src/lib/seo.ts` exports `buildMetadata()` and `siteConfig`, unchanged. `src/app/sitemap.ts` is now
+async, reading `getAllCategories()`/`getAllProductsForSitemap()` instead of the static arrays;
+`src/app/robots.ts` is unchanged.
 
 Commit & Push after every update automatically.

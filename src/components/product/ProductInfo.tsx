@@ -21,7 +21,7 @@ export function ProductInfo({ product }: { product: Product }) {
   const { toggle, has } = useWishlist();
   const router = useRouter();
   const wished = has(product.slug);
-  const isPersonalized = product.slug === "personalized-desk-name-plate";
+  const isPersonalized = product.isPersonalized ?? false;
 
   function handleBuyNow() {
     addItem(product, quantity);

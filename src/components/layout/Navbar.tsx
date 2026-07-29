@@ -7,7 +7,7 @@ import { Menu, Search, Heart, ShoppingBag, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
-import { categories } from "@/data/categories";
+import { CategoryMeta } from "@/lib/types";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SearchOverlay } from "./SearchOverlay";
 
@@ -20,7 +20,7 @@ const navLinks = [
   { href: "/contact", label: "Contact" },
 ];
 
-export function Navbar() {
+export function Navbar({ categories }: { categories: CategoryMeta[] }) {
   const [scrolled, setScrolled] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);

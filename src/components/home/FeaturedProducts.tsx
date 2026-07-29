@@ -3,14 +3,17 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ProductCard } from "@/components/product/ProductCard";
 import { SectionHeading } from "@/components/shared/SectionHeading";
-import { products, getBestSellers, getNewArrivals } from "@/data/products";
+import { Product } from "@/lib/types";
 
-const favorites = [...products].sort((a, b) => b.rating - a.rating).slice(0, 8);
-
-export function FeaturedProducts() {
-  const bestSellers = getBestSellers().slice(0, 8);
-  const newArrivals = getNewArrivals().slice(0, 8);
-
+export function FeaturedProducts({
+  bestSellers,
+  newArrivals,
+  favorites,
+}: {
+  bestSellers: Product[];
+  newArrivals: Product[];
+  favorites: Product[];
+}) {
   return (
     <section className="container-wide py-24">
       <SectionHeading
@@ -41,7 +44,7 @@ export function FeaturedProducts() {
   );
 }
 
-function ProductRow({ items }: { items: typeof products }) {
+function ProductRow({ items }: { items: Product[] }) {
   return (
     <div className="grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
       {items.map((product) => (

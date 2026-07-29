@@ -13,6 +13,13 @@ export function formatINR(amount: number) {
   }).format(amount);
 }
 
+export function formatINRCompact(amount: number) {
+  if (amount >= 10_000_000) return `₹${(amount / 10_000_000).toFixed(amount % 10_000_000 === 0 ? 0 : 1)}Cr`;
+  if (amount >= 100_000) return `₹${(amount / 100_000).toFixed(amount % 100_000 === 0 ? 0 : 1)}L`;
+  if (amount >= 1_000) return `₹${(amount / 1_000).toFixed(amount % 1_000 === 0 ? 0 : 1)}k`;
+  return formatINR(amount);
+}
+
 export function slugify(input: string) {
   return input
     .toLowerCase()

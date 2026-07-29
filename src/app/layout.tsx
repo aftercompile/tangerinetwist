@@ -1,10 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import { Providers } from "@/context/Providers";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { CartDrawer } from "@/components/layout/CartDrawer";
 import { Toaster } from "@/components/ui/toaster";
 import { siteConfig } from "@/lib/seo";
 
@@ -65,21 +61,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }),
           }}
         />
-        <Providers>
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-charcoal focus:px-4 focus:py-2 focus:text-sm focus:text-cream"
-          >
-            Skip to content
-          </a>
-          <Navbar />
-          <main id="main-content" className="flex-1">
-            {children}
-          </main>
-          <Footer />
-          <CartDrawer />
-          <Toaster />
-        </Providers>
+        {children}
+        <Toaster />
       </body>
     </html>
   );

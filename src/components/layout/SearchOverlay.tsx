@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Search, X } from "lucide-react";
-import { products } from "@/data/products";
+import { Product } from "@/lib/types";
 import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 import { Price } from "@/components/shared/Price";
 import { Input } from "@/components/ui/input";
@@ -17,19 +17,26 @@ export function SearchOverlay({
   onOpenChange: (open: boolean) => void;
 }) {
   const [query, setQuery] = React.useState("");
+  const [results, setResults] = React.useState<Product[]>([]);
 
-  const results = React.useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
-    return products
-      .filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.tagline.toLowerCase().includes(q) ||
-          p.material.toLowerCase().includes(q) ||
-          p.category.includes(q)
-      )
-      .slice(0, 6);
+  React.useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      return;
+    }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal: controller.signal })
+        .then((res) => res.json())
+        .then((data) => setResults(data.products ?? []))
+        .catch((err) => {
+          if (err.name !== "AbortError") setResults([]);
+        });
+    }, 200);
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, [query]);
 
   React.useEffect(() => {
