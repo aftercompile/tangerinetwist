@@ -19,6 +19,23 @@
   :focus-visible {
     @apply outline-none ring-2 ring-tangerine-400 ring-offset-2 ring-offset-cream;
   }
+
+  /* Framer Motion's useReducedMotion covers JS-driven animation, but Tailwind
+     transition utilities and smooth scrolling are pure CSS and need their own
+     guard. Kept near-zero rather than 0 so transitionend listeners still fire. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer components {

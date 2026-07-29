@@ -22,16 +22,22 @@ export function ProductCard({ product, className }: { product: Product; classNam
   return (
     <>
       <div className={cn("group relative flex flex-col", className)}>
-        <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-beige">
+        <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-beige shadow-[0_0_0_0_rgba(27,24,21,0)] transition-shadow duration-500 ease-premium group-hover:shadow-card">
           <Link href={`/product/${product.slug}`} className="block h-full w-full">
             <ProductImagePlaceholder
               icon={product.icon}
               tone={product.images[0]?.tone ?? "beige"}
               src={product.images[0]?.src}
               alt={product.images[0]?.alt}
-              className="h-full w-full transition-transform duration-700 ease-premium group-hover:scale-[1.04]"
+              className="h-full w-full transition-transform duration-900 ease-premium group-hover:scale-[1.06]"
             />
           </Link>
+          {/* Warm scrim behind the action row so the buttons stay legible on
+              light product art without dimming the image at rest. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-charcoal/25 to-transparent opacity-0 transition-opacity duration-300 ease-premium group-hover:opacity-100"
+          />
 
           <div className="absolute left-3 top-3 flex flex-col gap-1.5">
             {product.badges.includes("bestseller") && <Badge variant="bestseller">Best Seller</Badge>}

@@ -192,6 +192,40 @@ renders on first request without a rebuild. Otherwise unchanged — `generateMet
 inline `Product` JSON-LD, composes `ProductGallery`/`ProductInfo`/`ProductTabs`/`Reviews`/
 `RelatedProducts`/`RecentlyViewedSection`.
 
+### Motion system
+
+`src/lib/motion.ts` is the single source of truth for animation **timing** — easing
+curves (`EASE_PREMIUM` mirrors `ease-premium` in tailwind.config.ts), a duration scale, shared
+`transitions`, and helpers (`revealVariants`, `staggerParent`, `staggerDelay`, `VIEWPORT`).
+Import from there rather than inlining `cubic-bezier(...)` or magic durations — a section that
+invents its own curve reads as "off" even when nobody can say why.
+
+Shared motion primitives in `src/components/shared/`:
+
+| Component | Use for | Constraint |
+|---|---|---|
+| `AnimatedReveal` | Standard scroll-in reveal (has `direction` + `blur` props) | The default for almost everything |
+| `TextReveal` | Headline word-by-word mask reveal | Short headlines only — never body copy |
+| `Parallax` | Depth on decorative image layers | Never wrap text or interactive controls |
+| `TiltCard` | Cursor-tracked 3D tilt on product art | Mouse only; clamped low |
+| `Magnetic` | Cursor pull on a focal CTA | **At most 1–2 per screen** or the page turns noisy |
+| `CountUp` | Stat numbers animating into view | Renders the final value in SSR HTML |
+
+**Every one of these is hydration-safe by construction, and that constraint is load-bearing.**
+`useReducedMotion()` returns `false` during SSR but can return `true` on the client's first
+render, so branching on it to return *different JSX* produces a hydration mismatch for exactly
+the users who asked for less motion. Each primitive therefore renders **identical DOM either
+way** and neutralizes the motion instead — zeroing a range (`Parallax`, `TiltCard`), swapping
+variants (`TextReveal`), dropping only the `animate` prop (ambient washes), or guarding inside
+the event handler (`Magnetic`). `CountUp` renders the final value on the server and resets to
+zero in an effect after mount, so the real number is always in the HTML for crawlers and no-JS
+visitors. If you add a motion component, follow the same rule: never `if (reduced) return
+<differentJSX/>`.
+
+`globals.css` also carries a `prefers-reduced-motion` block that flattens CSS transitions and
+`scroll-behavior` — Framer Motion's hook only covers JS-driven animation, so Tailwind's
+`transition-*` utilities need their own guard.
+
 ### Design tokens
 
 The palette (`cream`, `warm-white`, `beige`, `charcoal`, `tangerine` scale) and type scale (Manrope via

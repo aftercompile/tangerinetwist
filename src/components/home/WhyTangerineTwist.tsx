@@ -2,6 +2,7 @@ import { whyTangerineTwist } from "@/data/content";
 import { SectionHeading } from "@/components/shared/SectionHeading";
 import { AnimatedReveal } from "@/components/shared/AnimatedReveal";
 import { getIcon } from "@/components/shared/icon-map";
+import { staggerDelay } from "@/lib/motion";
 
 export function WhyTangerineTwist() {
   return (
@@ -16,10 +17,15 @@ export function WhyTangerineTwist() {
           {whyTangerineTwist.map((item, i) => {
             const Icon = getIcon(item.icon);
             return (
-              <AnimatedReveal key={item.title} delay={i * 0.08}>
-                <div className="h-full rounded-2xl bg-warm-white p-7 shadow-card">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-tangerine-50">
-                    <Icon className="h-5 w-5 text-tangerine-600" strokeWidth={1.5} />
+              <AnimatedReveal key={item.title} delay={staggerDelay(i)}>
+                {/* Card lifts on hover; the icon well warms to tangerine so the
+                    whole tile responds as one object, not two separate parts. */}
+                <div className="group h-full rounded-2xl bg-warm-white p-7 shadow-card transition-all duration-500 ease-premium hover:-translate-y-1.5 hover:shadow-lift">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-tangerine-50 transition-colors duration-500 ease-premium group-hover:bg-tangerine-500">
+                    <Icon
+                      className="h-5 w-5 text-tangerine-600 transition-colors duration-500 ease-premium group-hover:text-white"
+                      strokeWidth={1.5}
+                    />
                   </div>
                   <h3 className="mt-5 text-base font-medium text-charcoal">{item.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted">{item.body}</p>

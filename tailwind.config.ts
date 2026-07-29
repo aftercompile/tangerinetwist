@@ -81,6 +81,10 @@ const config: Config = {
       transitionTimingFunction: {
         premium: "cubic-bezier(0.16, 1, 0.3, 1)",
       },
+      transitionDuration: {
+        // Slow, cinematic reveal for product art scaling on hover.
+        "900": "900ms",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],
