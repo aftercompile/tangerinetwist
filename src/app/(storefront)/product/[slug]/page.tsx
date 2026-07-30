@@ -67,7 +67,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
   };
 
   return (
-    <div className="container-wide py-10">
+    <div className="container-wide py-10 pb-28 lg:pb-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -82,7 +82,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
         ]}
       />
 
-      <div className="mt-6 grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
+      <div className="mt-6 grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-start lg:gap-16">
         <ProductGallery images={product.images} name={product.name} />
         <ProductInfo product={product} />
       </div>

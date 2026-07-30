@@ -1,8 +1,14 @@
+"use client";
+
+import { motion, useReducedMotion } from "framer-motion";
 import { BadgeCheck } from "lucide-react";
 import { Product } from "@/lib/types";
 import { RatingStars } from "@/components/shared/RatingStars";
+import { AnimatedReveal } from "@/components/shared/AnimatedReveal";
+import { DURATION, EASE_PREMIUM, VIEWPORT, staggerDelay } from "@/lib/motion";
 
 export function Reviews({ product }: { product: Product }) {
+  const reduced = useReducedMotion();
   const distribution = [5, 4, 3, 2, 1].map((star) => {
     const count = product.reviews.filter((r) => Math.round(r.rating) === star).length;
     const pct = product.reviews.length ? (count / product.reviews.length) * 100 : 0;
@@ -14,27 +20,33 @@ export function Reviews({ product }: { product: Product }) {
       <h2 className="h-display text-2xl md:text-3xl">Customer Reviews</h2>
 
       <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[280px_1fr]">
-        <div className="flex flex-col gap-4">
+        <AnimatedReveal direction="right" className="flex flex-col gap-4">
           <div>
             <p className="h-display text-5xl">{product.rating.toFixed(1)}</p>
             <RatingStars rating={product.rating} size="md" className="mt-2" />
             <p className="mt-1 text-xs text-muted">Based on {product.reviewCount} reviews</p>
           </div>
           <div className="flex flex-col gap-1.5">
-            {distribution.map((d) => (
+            {distribution.map((d, i) => (
               <div key={d.star} className="flex items-center gap-2 text-xs text-muted">
                 <span className="w-8">{d.star} star</span>
                 <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-beige">
-                  <div className="h-full rounded-full bg-tangerine-500" style={{ width: `${d.pct}%` }} />
+                  <motion.div
+                    className="h-full rounded-full bg-tangerine-500"
+                    initial={{ width: reduced ? `${d.pct}%` : 0 }}
+                    whileInView={{ width: `${d.pct}%` }}
+                    viewport={VIEWPORT}
+                    transition={{ duration: DURATION.slow, delay: staggerDelay(i, 0.08), ease: EASE_PREMIUM }}
+                  />
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </AnimatedReveal>
 
         <ul className="flex flex-col divide-y divide-border">
-          {product.reviews.map((review) => (
-            <li key={review.id} className="py-6 first:pt-0">
+          {product.reviews.map((review, i) => (
+            <AnimatedReveal key={review.id} as="li" delay={staggerDelay(i, 0.06, 0.3)} className="py-6 first:pt-0">
               <div className="flex items-center justify-between">
                 <RatingStars rating={review.rating} />
                 <span className="text-xs text-muted">{review.date}</span>
@@ -46,7 +58,7 @@ export function Reviews({ product }: { product: Product }) {
                 <span className="font-medium text-charcoal">{review.author}</span>
                 <span>· {review.location}</span>
               </div>
-            </li>
+            </AnimatedReveal>
           ))}
         </ul>
       </div>
