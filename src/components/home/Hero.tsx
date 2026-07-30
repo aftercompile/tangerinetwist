@@ -116,6 +116,8 @@ function ProductStack({ reduced }: { reduced: boolean }) {
           <ProductImagePlaceholder
             icon="Lamp"
             tone="warm"
+            src="/images/hero/hero-lamp.jpg"
+            alt="A designer table lamp glowing warmly on a bedside surface"
             className="aspect-[16/10] w-full rounded-3xl shadow-lift"
           />
         </TiltCard>
@@ -126,6 +128,8 @@ function ProductStack({ reduced }: { reduced: boolean }) {
           <ProductImagePlaceholder
             icon="Sparkles"
             tone="charcoal"
+            src="/images/hero/hero-idol.jpg"
+            alt="A finely detailed sculptural bust lit dramatically against a dark background"
             className="aspect-square w-full rounded-3xl shadow-lift"
           />
         </TiltCard>
@@ -136,6 +140,8 @@ function ProductStack({ reduced }: { reduced: boolean }) {
           <ProductImagePlaceholder
             icon="LayoutGrid"
             tone="cool"
+            src="/images/hero/hero-desk.jpg"
+            alt="A minimalist desk organizer tray with a notebook and pen"
             className="aspect-square w-full rounded-3xl shadow-lift"
           />
         </TiltCard>
