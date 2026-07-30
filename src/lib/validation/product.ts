@@ -47,12 +47,17 @@ export const productFormSchema = z.object({
   description: z.string().trim().min(1, "Description is required"),
   story: z.string().trim().min(1, "Story is required"),
   price: priceSchema("Price must be greater than 0"),
-  // Coerced independently of whatever the form sends for "no compare-at price" — an
-  // empty string reaches Number("") as 0, which then fails the positive check with a
-  // confusing error, so "" is normalized to "not set" here rather than relying on the
-  // form's setValueAs to always do it first.
+  // Coerced independently of whatever the form sends for "no compare-at price". Three
+  // sentinels all mean "not set": "" and null (defensive), and critically 0 —
+  // react-hook-form does NOT run a number input's setValueAs transform on an
+  // untouched/empty field at submit time; it applies its own type="number" coercion
+  // first, which reads an empty input as 0 (confirmed empirically with a real
+  // react-hook-form + jsdom submission: an untouched field with defaultValue null
+  // submits as the number 0, never reaching setValueAs at all). 0 is never a
+  // meaningful compare-at price regardless — positive() already rejects it as a real
+  // value — so treating it as "not set" costs nothing and fixes this at the root.
   compareAtPrice: z.preprocess(
-    (v) => (v === "" || v === undefined ? null : v),
+    (v) => (v === "" || v === undefined || v === 0 ? null : v),
     priceSchema("Compare-at price must be greater than 0").nullable()
   ),
   material: z.string().trim().min(1, "Material is required"),
