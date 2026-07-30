@@ -4,7 +4,10 @@ import { requireAdminSession } from "@/lib/auth/guard";
 import { getSupabaseAdmin, PRODUCT_IMAGES_BUCKET } from "@/lib/supabase-admin";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
-const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+// Kept below Vercel's ~4.5MB serverless request body limit — a body over that gets a
+// platform-level plain-text 413 before this route ever runs, so this check needs
+// headroom to actually fire and return a friendly JSON error instead.
+const MAX_SIZE_BYTES = 4 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +26,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unsupported file type. Use JPEG, PNG, WEBP or AVIF." }, { status: 400 });
   }
   if (file.size > MAX_SIZE_BYTES) {
-    return NextResponse.json({ error: "File too large. Max 5MB." }, { status: 400 });
+    return NextResponse.json({ error: "File too large. Max 4MB." }, { status: 400 });
   }
 
   const extension = file.type.split("/")[1];

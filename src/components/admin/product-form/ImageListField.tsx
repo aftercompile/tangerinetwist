@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { iconMap } from "@/components/shared/icon-map";
+import { compressImageFile } from "@/lib/image-compress";
 import type { ProductFormInternal } from "./form-types";
 
 const iconNames = Object.keys(iconMap);
@@ -23,11 +24,24 @@ export function ImageListField() {
   async function handleUpload(index: number, file: File) {
     setUploadingIndex(index);
     try {
+      const compressed = await compressImageFile(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressed);
       const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+
+      // A body that's still too large can be rejected by the hosting platform itself
+      // (e.g. Vercel's ~4.5MB request limit) with a plain-text error before this route's
+      // own code ever runs, so the response isn't guaranteed to be JSON — never assume it is.
+      let data: { url?: string; error?: string };
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(
+          res.ok ? "Upload succeeded but the response was unreadable." : `Upload failed (server said: ${res.status}).`
+        );
+      }
+
+      if (!res.ok || !data.url) throw new Error(data.error ?? "Upload failed");
       setValue(`images.${index}.src`, data.url, { shouldValidate: true });
       toast.success("Image uploaded");
     } catch (err) {
