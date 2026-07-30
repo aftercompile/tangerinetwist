@@ -17,6 +17,10 @@ function isUniqueViolation(err: unknown): boolean {
 function revalidateStorefront() {
   revalidateTag("products");
   revalidatePath("/");
+  // /admin/products is force-dynamic (always reruns its query server-side), but the
+  // client's Router Cache can still serve an already-visited list from before this
+  // change — revalidatePath busts that too so the admin list updates immediately.
+  revalidatePath("/admin/products");
 }
 
 export async function createProduct(

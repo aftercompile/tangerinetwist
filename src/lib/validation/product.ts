@@ -2,16 +2,20 @@ import { z } from "zod";
 import { iconMap } from "@/components/shared/icon-map";
 
 const iconNames = Object.keys(iconMap) as [string, ...string[]];
-const toneEnum = z.enum(["warm", "cool", "charcoal", "beige"]);
+const toneEnum = z.enum(["warm", "cool", "charcoal", "beige"], "Choose a tone");
 
 const nonEmptyStringList = z.array(z.string().trim().min(1)).default([]);
 
 export const productImageSchema = z.object({
   id: z.string().optional(),
-  src: z.string().min(1, "Upload an image or remove this slot"),
+  // Intentionally optional: an empty src is a real, common state — it means "use the
+  // generated placeholder art" (see ProductImagePlaceholder), not a missing upload.
+  // Requiring every image slot to have a real photo would block editing any product
+  // that hasn't had professional photography shot for it yet.
+  src: z.string().default(""),
   alt: z.string().default(""),
   tone: toneEnum,
-  icon: z.enum(iconNames),
+  icon: z.enum(iconNames, "Choose an icon"),
 });
 
 export const productFaqSchema = z.object({
@@ -31,23 +35,25 @@ export const productFormSchema = z.object({
   tagline: z.string().trim().min(1, "Tagline is required"),
   description: z.string().trim().min(1, "Description is required"),
   story: z.string().trim().min(1, "Story is required"),
-  price: z.coerce.number().int().positive("Price must be greater than 0"),
-  compareAtPrice: z.coerce.number().int().positive().optional().nullable(),
+  price: z.coerce.number("Enter a valid price").int().positive("Price must be greater than 0"),
+  compareAtPrice: z.coerce.number("Enter a valid price").int().positive().optional().nullable(),
   material: z.string().trim().min(1, "Material is required"),
   materials: nonEmptyStringList,
   dimensions: z.string().trim().min(1, "Dimensions are required"),
   weight: z.string().trim().min(1, "Weight is required"),
   colorway: z.string().trim().min(1, "Colorway is required"),
   finishTime: z.string().trim().min(1, "Finish time is required"),
-  icon: z.enum(iconNames),
-  badges: z.array(z.enum(["bestseller", "new", "limited"])).default([]),
+  icon: z.enum(iconNames, "Choose an icon"),
+  badges: z.array(z.enum(["bestseller", "new", "limited"], "Invalid badge")).default([]),
   features: nonEmptyStringList,
   careInstructions: nonEmptyStringList,
   shippingInfo: nonEmptyStringList,
   returnPolicy: nonEmptyStringList,
   faqs: z.array(productFaqSchema).default([]),
-  stock: z.enum(["in-stock", "made-to-order", "low-stock"]),
+  stock: z.enum(["in-stock", "made-to-order", "low-stock"], "Choose a stock status"),
   isPersonalized: z.boolean().default(false),
+  // At least one image slot must exist — ProductGallery indexes images[0] directly and
+  // would crash on an empty array — but each slot's src may be empty (placeholder art).
   images: z.array(productImageSchema).min(1, "Add at least one image"),
   relatedProductIds: z.array(z.string()).default([]),
 });

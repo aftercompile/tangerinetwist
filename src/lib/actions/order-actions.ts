@@ -1,6 +1,7 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
+import { revalidatePath } from "next/cache";
 import { eq, inArray } from "drizzle-orm";
 import { requireAdminSession } from "@/lib/auth/guard";
 import { db } from "@/lib/db/index";
@@ -82,6 +83,12 @@ export async function placeOrder(
     return order.id;
   });
 
+  // /admin/orders and /admin are marked force-dynamic so the server always reruns
+  // the query, but the client's Router Cache can still serve an already-visited
+  // page from before this order existed — revalidatePath busts that too.
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin");
+
   return { orderNumber: orderId ? orderNumber : undefined };
 }
 
@@ -91,5 +98,10 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
     return { error: "Invalid status" };
   }
   await db.update(orders).set({ status }).where(eq(orders.id, orderId));
+
+  revalidatePath("/admin/orders");
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/admin");
+
   return {};
 }

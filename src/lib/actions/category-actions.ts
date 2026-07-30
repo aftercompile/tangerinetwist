@@ -23,6 +23,11 @@ function revalidateStorefront() {
   revalidateTag("categories");
   revalidateTag("products");
   revalidatePath("/");
+  // Admin list/detail views read live (uncached) data server-side, but the client's
+  // Router Cache can still serve an already-visited page — bust it explicitly too.
+  revalidatePath("/admin/categories");
+  revalidatePath("/admin/products");
+  revalidatePath("/admin/products/new");
 }
 
 export async function createCategory(values: CategoryFormValues): Promise<{ error?: string; id?: string }> {

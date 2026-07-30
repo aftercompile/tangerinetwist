@@ -31,6 +31,39 @@ const badgeOptions = [
   { value: "limited", label: "Limited Batch" },
 ] as const;
 
+const TABS = ["basics", "pricing", "specs", "media", "copy", "related"] as const;
+
+// Maps a zod issue's top-level field name to the tab it's edited on, so a failed
+// submit can jump the user straight to the problem instead of leaving them to hunt
+// across six tabs for whichever field the first error happened to land on.
+const FIELD_TAB: Record<string, (typeof TABS)[number]> = {
+  slug: "basics",
+  categoryId: "basics",
+  name: "basics",
+  tagline: "basics",
+  description: "basics",
+  story: "basics",
+  price: "pricing",
+  compareAtPrice: "pricing",
+  stock: "pricing",
+  badges: "pricing",
+  isPersonalized: "pricing",
+  material: "specs",
+  materials: "specs",
+  dimensions: "specs",
+  weight: "specs",
+  colorway: "specs",
+  finishTime: "specs",
+  icon: "specs",
+  features: "specs",
+  images: "media",
+  careInstructions: "copy",
+  shippingInfo: "copy",
+  returnPolicy: "copy",
+  faqs: "copy",
+  relatedProductIds: "related",
+};
+
 export function ProductForm({
   mode,
   initialValues,
@@ -45,6 +78,7 @@ export function ProductForm({
   const router = useRouter();
   const [submitting, setSubmitting] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<(typeof TABS)[number]>("basics");
 
   const methods = useForm<ProductFormInternal>({
     defaultValues: toInternal(initialValues ?? emptyProductFormValues),
@@ -72,7 +106,17 @@ export function ProductForm({
     const values: ProductFormValues = fromInternal(internal);
     const parsed = productFormSchema.safeParse(values);
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Please fix the errors and try again.");
+      const issues = parsed.error.issues;
+      const firstField = String(issues[0]?.path[0] ?? "");
+      const tab = FIELD_TAB[firstField];
+      if (tab) setActiveTab(tab);
+
+      // Surface every distinct problem at once — with six tabs' worth of fields,
+      // showing only the first error meant fixing one just revealed the next.
+      const messages = Array.from(new Set(issues.map((i) => i.message)));
+      const preview = messages.slice(0, 4).join("\n");
+      const suffix = messages.length > 4 ? `\n+${messages.length - 4} more` : "";
+      toast.error(preview + suffix || "Please fix the errors and try again.");
       return;
     }
 
@@ -116,7 +160,7 @@ export function ProductForm({
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-        <Tabs defaultValue="basics">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as (typeof TABS)[number])}>
           <TabsList>
             <TabsTrigger value="basics">Basics</TabsTrigger>
             <TabsTrigger value="pricing">Pricing &amp; Inventory</TabsTrigger>
