@@ -47,7 +47,14 @@ export const productFormSchema = z.object({
   description: z.string().trim().min(1, "Description is required"),
   story: z.string().trim().min(1, "Story is required"),
   price: priceSchema("Price must be greater than 0"),
-  compareAtPrice: priceSchema("Compare-at price must be greater than 0").optional().nullable(),
+  // Coerced independently of whatever the form sends for "no compare-at price" — an
+  // empty string reaches Number("") as 0, which then fails the positive check with a
+  // confusing error, so "" is normalized to "not set" here rather than relying on the
+  // form's setValueAs to always do it first.
+  compareAtPrice: z.preprocess(
+    (v) => (v === "" || v === undefined ? null : v),
+    priceSchema("Compare-at price must be greater than 0").nullable()
+  ),
   material: z.string().trim().min(1, "Material is required"),
   materials: nonEmptyStringList,
   dimensions: z.string().trim().min(1, "Dimensions are required"),
