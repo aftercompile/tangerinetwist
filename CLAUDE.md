@@ -26,12 +26,16 @@ production build locally.
 1. Create a free Supabase project. Copy `.env.example` to `.env.local` and fill in:
    - `DATABASE_URL` — the **Transaction pooler** connection string (port 6543, `?pgbouncer=true`).
    - `DIRECT_URL` — the **Session pooler** connection string (port 5432) — `drizzle-kit` needs this.
-   - `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — Project Settings → API.
+   - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` —
+     Project Settings → API. The anon key is what powers customer accounts (see below); the service
+     role key is server-only, for Storage/admin.
    - `ADMIN_PASSWORD_HASH` — run `npm run admin:hash-password -- "..."` and paste the output.
    - `ADMIN_SESSION_SECRET` — any random 32+ byte string, e.g. `openssl rand -base64 32`.
 2. In Supabase Storage, create a **public** bucket named `product-images` (or let
    `getSupabaseAdmin().storage.createBucket(...)` create it — see `src/lib/supabase-admin.ts`).
-3. `npm run db:migrate` then `npm run db:seed`.
+3. In Supabase Auth settings (Authentication → Providers → Email), turn **off** "Confirm email" so
+   customer sign-up is instant — this repo assumes that setting.
+4. `npm run db:migrate` then `npm run db:seed`.
 
 `.env.local` is gitignored. **Never put real credentials in `.env.example`** — it's the committed
 template and must only ever contain placeholders.
@@ -50,9 +54,10 @@ driving the storefront. Cart/wishlist/recently-viewed state still lives in `loca
 and renders `{children}` directly with no storefront chrome. Two route groups hang off it:
 
 - **`src/app/(storefront)/`** — every public page (`page.tsx`, `about/`, `cart/`, `checkout/`,
-  `contact/`, `desk-organizers/`, `idols/`, `lamps/`, `product/[slug]/`, `wishlist/`, plus its own
-  `loading.tsx`/`not-found.tsx`). Its `layout.tsx` fetches categories and renders `<Providers>` →
-  skip-link → `<Navbar categories={...}/>` → `<main>` → `<Footer/>` → `<CartDrawer/>`.
+  `contact/`, `desk-organizers/`, `idols/`, `lamps/`, `product/[slug]/`, `wishlist/`, `account/`,
+  plus its own `loading.tsx`/`not-found.tsx`). Its `layout.tsx` fetches categories **and the
+  signed-in customer (if any)** and renders `<Providers>` → skip-link →
+  `<Navbar categories={...} customer={...}/>` → `<main>` → `<Footer/>` → `<CartDrawer/>`.
 - **`src/app/(admin)/admin/`** — split again into `login/page.tsx` (no chrome, so the login screen
   isn't wrapped in the authenticated sidebar) and a nested **`(protected)/`** group whose
   `layout.tsx` renders `<AdminSidebar/>` + `<AdminTopbar/>` around `{children}`. Adding a new admin
@@ -125,6 +130,36 @@ convention and Next.js silently ignores a root-level `middleware.ts` in that set
 middleware). **Middleware is routing convenience, not the security boundary** — every mutating
 server action independently calls `requireAdminSession()` from `src/lib/auth/guard.ts`, since
 server actions are directly invocable POST endpoints regardless of what middleware guards.
+
+### Customer accounts: Supabase Auth, optional on top of guest checkout
+
+Sign In/Sign Up is a **separate identity system from the admin password** above — it's real
+Supabase Auth (email/password, email confirmation turned off) via `@supabase/ssr`, not a
+hand-rolled `jose`/`scrypt` scheme. `src/lib/supabase/server.ts` (`createSupabaseServerClient()`,
+cookie-bound, used in Server Components/Actions/Route Handlers) and
+`src/lib/supabase/middleware.ts` (`updateSession()`, refreshes the access token on every
+`/account/*` request) are the two entry points; never construct a Supabase Auth client any other
+way. `src/middleware.ts` now has **two independent branches in one function** (Next 14 allows only
+one `middleware.ts`) — the existing `/admin/*` branch is untouched, and a new `/account/*` branch
+calls `updateSession()` and redirects to `/account/login` unless the path is in
+`PUBLIC_ACCOUNT_PATHS` (login/signup/reset-password) or a session exists.
+
+`src/lib/auth/customer-guard.ts` mirrors `src/lib/auth/guard.ts`'s shape: `getCurrentCustomer()`
+(used everywhere, including the storefront layout — **must never throw**, since a misconfigured or
+unreachable Supabase Auth setup would otherwise break every single storefront page; it catches and
+returns `null` instead) and `requireCustomerSession()` (throws, used at the top of every
+account-scoped action in `src/lib/actions/customer-actions.ts`). `customers` is a `public` schema
+table in `src/lib/db/schema.ts` whose `id` is a real FK into Supabase's own `auth.users` (declared
+via an unmanaged `pgSchema("auth")` reference stub — drizzle-kit never tries to create that table,
+only the FK constraint). `orders.customerId` is nullable and only ever set server-side inside
+`placeOrder` from the verified session (`getCurrentCustomer()`), the same "never trust the client"
+principle already used there for prices — a guest order is simply one with `customerId: null`.
+
+Password reset needs its own hop: Supabase's email links to `/auth/confirm` (a Route Handler, not
+a page — only Route Handlers/Server Actions can write cookies) which exchanges the PKCE `code` for
+a real session via `exchangeCodeForSession`, then redirects to `/account/update-password`. That
+page doubles as a general "change password" screen for already-signed-in users, since both cases
+just need a live session.
 
 ### Server actions and revalidation
 

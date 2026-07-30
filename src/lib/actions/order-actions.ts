@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { eq, inArray } from "drizzle-orm";
 import { requireAdminSession } from "@/lib/auth/guard";
+import { getCurrentCustomer } from "@/lib/auth/customer-guard";
 import { db } from "@/lib/db/index";
 import { orderItems, orders, products } from "@/lib/db/schema";
 import { calculateTotals } from "@/lib/orders";
@@ -59,12 +60,18 @@ export async function placeOrder(
   const { shipping: shippingCost, total } = calculateTotals(subtotal);
   const orderNumber = `TT-${new Date().toISOString().slice(2, 7).replace("-", "")}-${randomUUID().split("-")[0].toUpperCase()}`;
 
+  // Derived from the verified session, never from client input — mirrors how prices
+  // above are re-read from the DB rather than trusted from the request. Guests (no
+  // session) simply get customerId: null, identical to today's behavior.
+  const customer = await getCurrentCustomer();
+
   const orderId = await db.transaction(async (tx) => {
     const [order] = await tx
       .insert(orders)
       .values({
         orderNumber,
         status: "pending",
+        customerId: customer?.id ?? null,
         customerName: shipping.fullName,
         customerEmail: shipping.email,
         customerPhone: shipping.phone,

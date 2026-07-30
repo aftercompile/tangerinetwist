@@ -3,11 +3,12 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Search, Heart, ShoppingBag, X } from "lucide-react";
+import { Menu, Search, Heart, ShoppingBag, User, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { CategoryMeta } from "@/lib/types";
+import type { CurrentCustomer } from "@/lib/auth/customer-guard";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SearchOverlay } from "./SearchOverlay";
 
@@ -20,7 +21,7 @@ const navLinks = [
   { href: "/contact", label: "Contact" },
 ];
 
-export function Navbar({ categories }: { categories: CategoryMeta[] }) {
+export function Navbar({ categories, customer }: { categories: CategoryMeta[]; customer: CurrentCustomer | null }) {
   const [scrolled, setScrolled] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -84,6 +85,13 @@ export function Navbar({ categories }: { categories: CategoryMeta[] }) {
                 {slugs.length}
               </span>
             )}
+          </Link>
+          <Link
+            href={customer ? "/account" : "/account/login"}
+            aria-label={customer ? `Account, signed in as ${customer.fullName}` : "Sign in"}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-charcoal transition hover:bg-beige"
+          >
+            <User className="h-[18px] w-[18px]" />
           </Link>
           <button
             onClick={() => setCartOpen(true)}

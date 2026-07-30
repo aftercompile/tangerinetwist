@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, FolderTree, ShoppingCart, Menu, ExternalLink, LogOut } from "lucide-react";
+import { LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Menu, ExternalLink, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/lib/actions/auth-actions";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -14,6 +14,7 @@ const navLinks = [
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/categories", label: "Categories", icon: FolderTree },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
+  { href: "/admin/customers", label: "Customers", icon: Users },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -21,6 +22,7 @@ const pageTitles: Record<string, string> = {
   "/admin/products": "Products",
   "/admin/categories": "Categories",
   "/admin/orders": "Orders",
+  "/admin/customers": "Customers",
 };
 
 export function AdminTopbar() {

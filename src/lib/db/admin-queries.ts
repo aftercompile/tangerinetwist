@@ -2,6 +2,7 @@ import { desc, eq, sql } from "drizzle-orm";
 import { db } from "./index";
 import {
   categories as categoriesTable,
+  customers as customersTable,
   orderItems as orderItemsTable,
   orders as ordersTable,
   productRelations as productRelationsTable,
@@ -196,6 +197,7 @@ export interface AdminOrderRow {
   id: string;
   orderNumber: string;
   status: "pending" | "confirmed" | "in_production" | "shipped" | "delivered" | "cancelled";
+  customerId: string | null;
   customerName: string;
   customerEmail: string;
   itemCount: number;
@@ -209,6 +211,7 @@ export async function getAdminOrderRows(): Promise<AdminOrderRow[]> {
       id: ordersTable.id,
       orderNumber: ordersTable.orderNumber,
       status: ordersTable.status,
+      customerId: ordersTable.customerId,
       customerName: ordersTable.customerName,
       customerEmail: ordersTable.customerEmail,
       total: ordersTable.total,
@@ -227,6 +230,7 @@ export interface AdminOrderDetail {
   id: string;
   orderNumber: string;
   status: "pending" | "confirmed" | "in_production" | "shipped" | "delivered" | "cancelled";
+  customerId: string | null;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -262,6 +266,7 @@ export async function getAdminOrderById(id: string): Promise<AdminOrderDetail | 
     id: order.id,
     orderNumber: order.orderNumber,
     status: order.status,
+    customerId: order.customerId,
     customerName: order.customerName,
     customerEmail: order.customerEmail,
     customerPhone: order.customerPhone,
@@ -286,4 +291,33 @@ export async function getAdminOrderById(id: string): Promise<AdminOrderDetail | 
       quantity: i.quantity,
     })),
   };
+}
+
+export interface AdminCustomerRow {
+  id: string;
+  email: string;
+  fullName: string;
+  phone: string | null;
+  createdAt: Date;
+  orderCount: number;
+  lifetimeValue: number;
+}
+
+export async function getAdminCustomerRows(): Promise<AdminCustomerRow[]> {
+  const rows = await db
+    .select({
+      id: customersTable.id,
+      email: customersTable.email,
+      fullName: customersTable.fullName,
+      phone: customersTable.phone,
+      createdAt: customersTable.createdAt,
+      orderCount: sql<number>`count(${ordersTable.id})`,
+      lifetimeValue: sql<number>`coalesce(sum(${ordersTable.total}), 0)`,
+    })
+    .from(customersTable)
+    .leftJoin(ordersTable, eq(ordersTable.customerId, customersTable.id))
+    .groupBy(customersTable.id)
+    .orderBy(desc(customersTable.createdAt));
+
+  return rows.map((r) => ({ ...r, orderCount: Number(r.orderCount), lifetimeValue: Number(r.lifetimeValue) }));
 }

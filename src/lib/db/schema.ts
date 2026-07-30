@@ -5,11 +5,19 @@ import {
   jsonb,
   numeric,
   pgEnum,
+  pgSchema,
   pgTable,
   text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+
+// Unmanaged reference to Supabase Auth's own users table — never migrated/created by us
+// (Supabase owns it), declared only so customers.id can carry a real FK constraint into it.
+const authSchema = pgSchema("auth");
+const authUsers = authSchema.table("users", {
+  id: uuid("id").primaryKey(),
+});
 
 export const stockStatusEnum = pgEnum("stock_status", [
   "in-stock",
@@ -118,10 +126,39 @@ export const productRelations = pgTable("product_relations", {
   position: integer("position").notNull().default(0),
 });
 
+// One row per Supabase Auth user — id matches auth.users.id exactly (no separate identity).
+// Rows are created lazily on first sign-in/sign-up via the customer-auth server actions.
+export const customers = pgTable("customers", {
+  id: uuid("id")
+    .primaryKey()
+    .references(() => authUsers.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  fullName: text("full_name").notNull(),
+  phone: text("phone"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const customerAddresses = pgTable("customer_addresses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  customerId: uuid("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "cascade" }),
+  label: text("label").notNull().default("Home"),
+  fullName: text("full_name").notNull(),
+  phone: text("phone").notNull(),
+  addressLine: text("address_line").notNull(),
+  city: text("city").notNull(),
+  pin: text("pin").notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const orders = pgTable("orders", {
   id: uuid("id").defaultRandom().primaryKey(),
   orderNumber: text("order_number").notNull().unique(),
   status: orderStatusEnum("status").notNull().default("pending"),
+  // Null for guest checkout — never required, never client-supplied (see placeOrder).
+  customerId: uuid("customer_id").references(() => customers.id, { onDelete: "set null" }),
   customerName: text("customer_name").notNull(),
   customerEmail: text("customer_email").notNull(),
   customerPhone: text("customer_phone").notNull(),
@@ -194,8 +231,12 @@ export const productRelationsRelations = relations(productRelations, ({ one }) =
   }),
 }));
 
-export const ordersRelations = relations(orders, ({ many }) => ({
+export const ordersRelations = relations(orders, ({ one, many }) => ({
   items: many(orderItems),
+  customer: one(customers, {
+    fields: [orders.customerId],
+    references: [customers.id],
+  }),
 }));
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({
@@ -206,5 +247,17 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
   product: one(products, {
     fields: [orderItems.productId],
     references: [products.id],
+  }),
+}));
+
+export const customersRelations = relations(customers, ({ many }) => ({
+  orders: many(orders),
+  addresses: many(customerAddresses),
+}));
+
+export const customerAddressesRelations = relations(customerAddresses, ({ one }) => ({
+  customer: one(customers, {
+    fields: [customerAddresses.customerId],
+    references: [customers.id],
   }),
 }));

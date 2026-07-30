@@ -3,9 +3,10 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/layout/CartDrawer";
 import { getAllCategories } from "@/lib/db/queries";
+import { getCurrentCustomer } from "@/lib/auth/customer-guard";
 
 export default async function StorefrontLayout({ children }: { children: React.ReactNode }) {
-  const categories = await getAllCategories();
+  const [categories, customer] = await Promise.all([getAllCategories(), getCurrentCustomer()]);
 
   return (
     <Providers>
@@ -15,7 +16,7 @@ export default async function StorefrontLayout({ children }: { children: React.R
       >
         Skip to content
       </a>
-      <Navbar categories={categories} />
+      <Navbar categories={categories} customer={customer} />
       <main id="main-content" className="flex-1">
         {children}
       </main>

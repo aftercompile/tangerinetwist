@@ -77,7 +77,19 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
         <Card className="h-fit">
           <CardContent className="flex flex-col gap-5 p-6">
             <div>
-              <h3 className="font-display text-lg text-charcoal">Customer</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-display text-lg text-charcoal">Customer</h3>
+                {order.customerId ? (
+                  <Link
+                    href="/admin/customers"
+                    className="rounded-full bg-tangerine-50 px-2.5 py-0.5 text-xs font-medium text-tangerine-700 hover:underline"
+                  >
+                    Registered
+                  </Link>
+                ) : (
+                  <span className="rounded-full bg-beige px-2.5 py-0.5 text-xs font-medium text-muted">Guest checkout</span>
+                )}
+              </div>
               <p className="mt-2 text-sm text-charcoal">{order.customerName}</p>
               <p className="text-sm text-muted">{order.customerEmail}</p>
               <p className="text-sm text-muted">{order.customerPhone}</p>
