@@ -42,6 +42,7 @@ export const addressSchema = z.object({
   phone: z.string().trim().min(6, "Enter a valid phone number"),
   addressLine: z.string().trim().min(1, "Address is required"),
   city: z.string().trim().min(1, "City is required"),
+  state: z.string().trim().min(1, "State is required"),
   pin: z.string().trim().min(4, "Enter a valid PIN code"),
   isDefault: z.boolean().default(false),
 });

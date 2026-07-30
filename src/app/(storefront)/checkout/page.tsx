@@ -18,6 +18,7 @@ export default async function CheckoutPage() {
         email: customer.email,
         address: defaultAddress.addressLine,
         city: defaultAddress.city,
+        state: defaultAddress.state ?? "",
         pin: defaultAddress.pin,
       }
     : { fullName: customer.fullName, email: customer.email };

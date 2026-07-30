@@ -9,6 +9,7 @@ import { db } from "@/lib/db/index";
 import { orderItems, orders, products } from "@/lib/db/schema";
 import { calculateTotals } from "@/lib/orders";
 import { placeOrderInputSchema, type PlaceOrderInput } from "@/lib/validation/order";
+import { cancelShiprocketShipment } from "@/lib/actions/shiprocket-actions";
 
 const ORDER_STATUSES = ["pending", "confirmed", "in_production", "shipped", "delivered", "cancelled"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
@@ -77,6 +78,7 @@ export async function placeOrder(
         customerPhone: shipping.phone,
         addressLine: shipping.address,
         city: shipping.city,
+        state: shipping.state,
         pin: shipping.pin,
         paymentMethod: shipping.paymentMethod,
         subtotal,
@@ -104,6 +106,20 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
   if (!ORDER_STATUSES.includes(status)) {
     return { error: "Invalid status" };
   }
+
+  // Keep Shiprocket in sync rather than letting the two systems silently diverge — a
+  // courier shipment left active after we've marked the order cancelled would still
+  // get picked up. If the Shiprocket cancel call fails, the status change is blocked
+  // too, so the admin retries rather than ending up with a cancelled order and a
+  // live shipment.
+  const [existing] = await db.select().from(orders).where(eq(orders.id, orderId));
+  if (status === "cancelled" && existing?.shiprocketOrderId) {
+    const result = await cancelShiprocketShipment(existing.shiprocketOrderId);
+    if (result.error) {
+      return { error: `Order status not changed — Shiprocket cancellation failed: ${result.error}` };
+    }
+  }
+
   await db.update(orders).set({ status }).where(eq(orders.id, orderId));
 
   revalidatePath("/admin/orders");

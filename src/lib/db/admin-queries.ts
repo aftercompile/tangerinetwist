@@ -236,12 +236,19 @@ export interface AdminOrderDetail {
   customerPhone: string;
   addressLine: string;
   city: string;
+  state: string | null;
   pin: string;
   paymentMethod: "card" | "upi" | "cod";
   subtotal: number;
   shipping: number;
   total: number;
   createdAt: Date;
+  shiprocketOrderId: string | null;
+  shiprocketShipmentId: string | null;
+  awbCode: string | null;
+  courierName: string | null;
+  trackingUrl: string | null;
+  shiprocketStatus: string | null;
   items: {
     id: string;
     productId: string | null;
@@ -272,12 +279,19 @@ export async function getAdminOrderById(id: string): Promise<AdminOrderDetail | 
     customerPhone: order.customerPhone,
     addressLine: order.addressLine,
     city: order.city,
+    state: order.state,
     pin: order.pin,
     paymentMethod: order.paymentMethod,
     subtotal: order.subtotal,
     shipping: order.shipping,
     total: order.total,
     createdAt: order.createdAt,
+    shiprocketOrderId: order.shiprocketOrderId,
+    shiprocketShipmentId: order.shiprocketShipmentId,
+    awbCode: order.awbCode,
+    courierName: order.courierName,
+    trackingUrl: order.trackingUrl,
+    shiprocketStatus: order.shiprocketStatus,
     items: items.map((i) => ({
       id: i.id,
       productId: i.productId,

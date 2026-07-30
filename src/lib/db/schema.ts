@@ -148,6 +148,8 @@ export const customerAddresses = pgTable("customer_addresses", {
   phone: text("phone").notNull(),
   addressLine: text("address_line").notNull(),
   city: text("city").notNull(),
+  // Nullable: rows saved before the Shiprocket integration added this field won't have it.
+  state: text("state"),
   pin: text("pin").notNull(),
   isDefault: boolean("is_default").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -164,12 +166,23 @@ export const orders = pgTable("orders", {
   customerPhone: text("customer_phone").notNull(),
   addressLine: text("address_line").notNull(),
   city: text("city").notNull(),
+  // Nullable: orders placed before the Shiprocket integration won't have it. Required by
+  // Shiprocket's order-create API (billing_state), so enforced going forward in
+  // shippingDetailsSchema instead of at the column level.
+  state: text("state"),
   pin: text("pin").notNull(),
   paymentMethod: paymentMethodEnum("payment_method").notNull(),
   subtotal: integer("subtotal").notNull(),
   shipping: integer("shipping").notNull(),
   total: integer("total").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  // All null until an admin pushes the order to Shiprocket via ShiprocketPanel.
+  shiprocketOrderId: text("shiprocket_order_id"),
+  shiprocketShipmentId: text("shiprocket_shipment_id"),
+  awbCode: text("awb_code"),
+  courierName: text("courier_name"),
+  trackingUrl: text("tracking_url"),
+  shiprocketStatus: text("shiprocket_status"),
 });
 
 export const orderItems = pgTable("order_items", {

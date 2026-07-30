@@ -10,7 +10,9 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { INDIAN_STATES } from "@/lib/data/indian-states";
 
 export function AddressDialog({
   open,
@@ -24,11 +26,16 @@ export function AddressDialog({
   const router = useRouter();
   const [saving, setSaving] = React.useState(false);
   const [isDefault, setIsDefault] = React.useState(address?.isDefault ?? false);
+  const [state, setState] = React.useState(address?.state ?? "");
 
-  // Reset the default-checkbox local state whenever a different address (or "add new")
-  // is opened, since Dialog content isn't remounted between opens.
+  // Reset local state (Select/Checkbox aren't part of native FormData) whenever a
+  // different address (or "add new") is opened, since Dialog content isn't remounted
+  // between opens.
   React.useEffect(() => {
-    if (open) setIsDefault(address?.isDefault ?? false);
+    if (open) {
+      setIsDefault(address?.isDefault ?? false);
+      setState(address?.state ?? "");
+    }
   }, [open, address]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -41,6 +48,7 @@ export function AddressDialog({
       phone: String(formData.get("phone") ?? ""),
       addressLine: String(formData.get("addressLine") ?? ""),
       city: String(formData.get("city") ?? ""),
+      state,
       pin: String(formData.get("pin") ?? ""),
       isDefault,
     });
@@ -96,6 +104,21 @@ export function AddressDialog({
               <Label htmlFor="pin">PIN code</Label>
               <Input id="pin" name="pin" defaultValue={address?.pin} required />
             </div>
+          </div>
+          <div>
+            <Label htmlFor="state">State</Label>
+            <Select value={state} onValueChange={setState}>
+              <SelectTrigger id="state">
+                <SelectValue placeholder="Select state" />
+              </SelectTrigger>
+              <SelectContent className="max-h-64">
+                {INDIAN_STATES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <label className="flex items-center gap-2.5 text-sm text-charcoal">
             <Checkbox checked={isDefault} onCheckedChange={(c) => setIsDefault(c === true)} />

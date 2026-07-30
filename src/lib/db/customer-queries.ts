@@ -40,6 +40,7 @@ export interface CustomerAddressRow {
   phone: string;
   addressLine: string;
   city: string;
+  state: string | null;
   pin: string;
   isDefault: boolean;
 }
@@ -53,6 +54,7 @@ export async function getCustomerAddresses(customerId: string): Promise<Customer
       phone: customerAddresses.phone,
       addressLine: customerAddresses.addressLine,
       city: customerAddresses.city,
+      state: customerAddresses.state,
       pin: customerAddresses.pin,
       isDefault: customerAddresses.isDefault,
     })

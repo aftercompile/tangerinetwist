@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { getAdminOrderById } from "@/lib/db/admin-queries";
 import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 import { OrderStatusSelect } from "@/components/admin/OrderStatusSelect";
+import { ShiprocketPanel } from "@/components/admin/ShiprocketPanel";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatINR } from "@/lib/utils";
 
@@ -74,39 +75,44 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
           </CardContent>
         </Card>
 
-        <Card className="h-fit">
-          <CardContent className="flex flex-col gap-5 p-6">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-display text-lg text-charcoal">Customer</h3>
-                {order.customerId ? (
-                  <Link
-                    href="/admin/customers"
-                    className="rounded-full bg-tangerine-50 px-2.5 py-0.5 text-xs font-medium text-tangerine-700 hover:underline"
-                  >
-                    Registered
-                  </Link>
-                ) : (
-                  <span className="rounded-full bg-beige px-2.5 py-0.5 text-xs font-medium text-muted">Guest checkout</span>
-                )}
+        <div className="flex flex-col gap-6">
+          <Card className="h-fit">
+            <CardContent className="flex flex-col gap-5 p-6">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display text-lg text-charcoal">Customer</h3>
+                  {order.customerId ? (
+                    <Link
+                      href="/admin/customers"
+                      className="rounded-full bg-tangerine-50 px-2.5 py-0.5 text-xs font-medium text-tangerine-700 hover:underline"
+                    >
+                      Registered
+                    </Link>
+                  ) : (
+                    <span className="rounded-full bg-beige px-2.5 py-0.5 text-xs font-medium text-muted">Guest checkout</span>
+                  )}
+                </div>
+                <p className="mt-2 text-sm text-charcoal">{order.customerName}</p>
+                <p className="text-sm text-muted">{order.customerEmail}</p>
+                <p className="text-sm text-muted">{order.customerPhone}</p>
               </div>
-              <p className="mt-2 text-sm text-charcoal">{order.customerName}</p>
-              <p className="text-sm text-muted">{order.customerEmail}</p>
-              <p className="text-sm text-muted">{order.customerPhone}</p>
-            </div>
-            <div>
-              <h3 className="font-display text-lg text-charcoal">Shipping Address</h3>
-              <p className="mt-2 text-sm text-charcoal">{order.addressLine}</p>
-              <p className="text-sm text-charcoal">
-                {order.city}, {order.pin}
-              </p>
-            </div>
-            <div>
-              <h3 className="font-display text-lg text-charcoal">Payment</h3>
-              <p className="mt-2 text-sm capitalize text-charcoal">{order.paymentMethod}</p>
-            </div>
-          </CardContent>
-        </Card>
+              <div>
+                <h3 className="font-display text-lg text-charcoal">Shipping Address</h3>
+                <p className="mt-2 text-sm text-charcoal">{order.addressLine}</p>
+                <p className="text-sm text-charcoal">
+                  {order.city}
+                  {order.state ? `, ${order.state}` : ""} {order.pin}
+                </p>
+              </div>
+              <div>
+                <h3 className="font-display text-lg text-charcoal">Payment</h3>
+                <p className="mt-2 text-sm capitalize text-charcoal">{order.paymentMethod}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <ShiprocketPanel order={order} />
+        </div>
       </div>
     </div>
   );

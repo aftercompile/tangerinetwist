@@ -36,6 +36,9 @@ production build locally.
 3. In Supabase Auth settings (Authentication → Providers → Email), turn **off** "Confirm email" so
    customer sign-up is instant — this repo assumes that setting.
 4. `npm run db:migrate` then `npm run db:seed`.
+5. (Optional, for shipping) Fill in `SHIPROCKET_EMAIL` / `SHIPROCKET_PASSWORD` /
+   `SHIPROCKET_PICKUP_LOCATION` — the pickup location must already be registered under
+   Settings → Pickup Addresses in your Shiprocket dashboard; this app never creates one.
 
 `.env.local` is gitignored. **Never put real credentials in `.env.example`** — it's the committed
 template and must only ever contain placeholders.
@@ -160,6 +163,37 @@ a page — only Route Handlers/Server Actions can write cookies) which exchanges
 a real session via `exchangeCodeForSession`, then redirects to `/account/update-password`. That
 page doubles as a general "change password" screen for already-signed-in users, since both cases
 just need a live session.
+
+### Shiprocket: order fulfillment from the admin order detail page
+
+`src/lib/shiprocket/client.ts` is the only place that talks to Shiprocket's API
+(`apiv2.shiprocket.in`) — `shiprocketFetch()` attaches the bearer token and normalizes errors,
+and the token itself (from `POST /auth/login`, valid ~10 days) is cached on `globalThis` the same
+way the Postgres client is in `src/lib/db/index.ts`, just without the dev-hot-reload caveat (it's
+a string + expiry, not a connection to leak). `src/lib/actions/shiprocket-actions.ts` holds the
+mutations (`shipOrderViaShiprocket`, `refreshShiprocketTracking`, `getShiprocketLabelUrl`,
+`getShiprocketInvoiceUrl`, `cancelShiprocketShipment`), each starting with
+`requireAdminSession()` like every other admin action.
+
+**"Ship via Shiprocket" is one action, not two.** `shipOrderViaShiprocket` calls
+`orders/create/adhoc` and then immediately `courier/assign/awb` with no `courier_id` — Shiprocket
+auto-picks the cheapest/recommended courier, so there's no separate rate-shopping screen. Package
+weight/dimensions are entered in `ShiprocketPanel.tsx`'s dialog at ship time (defaulted to a
+sensible 0.5kg/20×15×10cm), **not** stored per-product — Shiprocket's adhoc order API takes one
+order-level package size, so `products.weight`/`dimensions` (free-text display copy) didn't need
+to become structured data for this.
+
+Tracking sync is a **manual "Refresh tracking" button** (`refreshShiprocketTracking`), not a
+webhook — simpler to ship, no webhook URL/secret to register in the Shiprocket dashboard. `orders`
+carries the result: `shiprocketOrderId`, `shiprocketShipmentId`, `awbCode`, `courierName`,
+`trackingUrl`, `shiprocketStatus`, all nullable until an admin ships the order.
+
+**`billing_state` is mandatory for Shiprocket and this app didn't collect it before this
+integration** — `orders.state`/`customerAddresses.state` are new nullable columns (nullable only
+because historical rows predate the field; `shippingDetailsSchema`/`addressSchema` require it
+going forward). `updateOrderStatus` (`order-actions.ts`) calls `cancelShiprocketShipment` and
+**blocks the status change if that fails** whenever an order with a live shipment is marked
+`cancelled`, so the order status and the real courier shipment can't silently diverge.
 
 ### Server actions and revalidation
 

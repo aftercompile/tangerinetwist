@@ -6,6 +6,10 @@ export const shippingDetailsSchema = z.object({
   email: z.string().trim().email("Enter a valid email"),
   address: z.string().trim().min(1, "Address is required"),
   city: z.string().trim().min(1, "City is required"),
+  // Required for Shiprocket's order-create API (billing_state) — orders placed before
+  // this field existed have it as null, which is fine since it's only enforced here,
+  // not at the DB column level.
+  state: z.string().trim().min(1, "State is required"),
   pin: z.string().trim().min(4, "Enter a valid PIN code"),
   paymentMethod: z.enum(["card", "upi", "cod"]),
 });
