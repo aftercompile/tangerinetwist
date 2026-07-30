@@ -6,6 +6,17 @@ const toneEnum = z.enum(["warm", "cool", "charcoal", "beige"], "Choose a tone");
 
 const nonEmptyStringList = z.array(z.string().trim().min(1)).default([]);
 
+// Rounds before checking positivity rather than requiring an exact integer: a native
+// <input type="number"> has no built-in guard against a stray decimal (browser scroll
+// deltas, paste, etc.), and a fractional rupee is never actually meaningful here — it
+// should just be treated as the nearest whole number, not rejected outright.
+function priceSchema(message: string) {
+  return z.coerce
+    .number("Enter a valid price")
+    .transform((n) => Math.round(n))
+    .pipe(z.number().positive(message));
+}
+
 export const productImageSchema = z.object({
   id: z.string().optional(),
   // Intentionally optional: an empty src is a real, common state — it means "use the
@@ -35,8 +46,8 @@ export const productFormSchema = z.object({
   tagline: z.string().trim().min(1, "Tagline is required"),
   description: z.string().trim().min(1, "Description is required"),
   story: z.string().trim().min(1, "Story is required"),
-  price: z.coerce.number("Enter a valid price").int().positive("Price must be greater than 0"),
-  compareAtPrice: z.coerce.number("Enter a valid price").int().positive().optional().nullable(),
+  price: priceSchema("Price must be greater than 0"),
+  compareAtPrice: priceSchema("Compare-at price must be greater than 0").optional().nullable(),
   material: z.string().trim().min(1, "Material is required"),
   materials: nonEmptyStringList,
   dimensions: z.string().trim().min(1, "Dimensions are required"),
