@@ -195,8 +195,11 @@ this.
 
 Tracking is **live via webhook**, with the manual "Refresh tracking" button
 (`refreshShiprocketTracking`) kept as a fallback for whenever the webhook hasn't fired yet or
-needs to be forced. `POST /api/webhooks/shiprocket` (`src/app/api/webhooks/shiprocket/route.ts`)
-receives Shiprocket's push notifications on shipment status change. Unlike Razorpay's webhook,
+needs to be forced. `POST /api/webhooks/courier-tracking`
+(`src/app/api/webhooks/courier-tracking/route.ts`) receives Shiprocket's push notifications on
+shipment status change — the route deliberately avoids the word "shiprocket" (and "kartrocket"/
+"sr"/"kr") in its own URL, since Shiprocket's own webhook form rejects registering a URL that
+contains those keywords ("Address is not allowed" error). Unlike Razorpay's webhook,
 Shiprocket has no official SDK and doesn't sign the body with a verifiable HMAC — its "Configure
 Webhook" dashboard screen (Settings > API > Webhooks) instead has you pick a single HTTP header
 (the "Auth Token Type" dropdown) that carries a shared secret (`SHIPROCKET_WEBHOOK_SECRET`); this

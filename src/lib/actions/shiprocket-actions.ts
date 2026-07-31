@@ -19,7 +19,7 @@ function isDeliveredStatus(status: string): boolean {
   return /delivered/i.test(status);
 }
 
-// Shared by the manual "Refresh tracking" button and the /api/webhooks/shiprocket
+// Shared by the manual "Refresh tracking" button and the /api/webhooks/courier-tracking
 // route, so both paths apply identical replace-all-events + status-sync logic and
 // can't drift apart. Shiprocket's response is treated as the complete current history
 // for the shipment, not a delta — existing events for this order are wiped and
