@@ -12,15 +12,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 import { formatINR } from "@/lib/utils";
 import { calculateTotals } from "@/lib/orders";
-import { placeOrder } from "@/lib/actions/order-actions";
+import { placeOrder, createOrderForPayment, verifyRazorpayPayment } from "@/lib/actions/order-actions";
 import { INDIAN_STATES } from "@/lib/data/indian-states";
 import { cn } from "@/lib/utils";
 
 const paymentOptions = [
-  { id: "card", label: "Credit / Debit Card" },
-  { id: "upi", label: "UPI" },
+  { id: "online", label: "Pay Online (Card / UPI / Netbanking)" },
   { id: "cod", label: "Cash on Delivery" },
 ] as const;
+
+// Razorpay Checkout is a hosted script, not an npm package — load it once and reuse.
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false);
+    if ((window as unknown as { Razorpay?: unknown }).Razorpay) return resolve(true);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 interface ShippingForm {
   fullName: string;
@@ -44,7 +56,7 @@ const emptyShipping: ShippingForm = {
 
 export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<ShippingForm> }) {
   const { lines, subtotal, clear } = useCart();
-  const [payment, setPayment] = React.useState<"card" | "upi" | "cod">("upi");
+  const [payment, setPayment] = React.useState<"online" | "cod">("online");
   const [shipping, setShipping] = React.useState<ShippingForm>({ ...emptyShipping, ...initialShipping });
   const [submitting, setSubmitting] = React.useState(false);
   const [placedOrderNumber, setPlacedOrderNumber] = React.useState<string | null>(null);
@@ -57,22 +69,77 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
   async function handlePlaceOrder(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    try {
-      const result = await placeOrder({
-        shipping: { ...shipping, paymentMethod: payment },
-        items: lines.map((l) => ({ slug: l.slug, quantity: l.quantity })),
-      });
+    const items = lines.map((l) => ({ slug: l.slug, quantity: l.quantity }));
 
+    if (payment === "cod") {
+      const result = await placeOrder({ shipping: { ...shipping, paymentMethod: "cod" }, items });
+      setSubmitting(false);
       if (result.error || !result.orderNumber) {
         toast.error(result.error ?? "Something went wrong placing your order.");
         return;
       }
-
       setPlacedOrderNumber(result.orderNumber);
       clear();
-    } finally {
-      setSubmitting(false);
+      return;
     }
+
+    // Online payment: create the Razorpay order first, then open the hosted checkout —
+    // never trust the client's own claim that payment succeeded, so the success handler
+    // hands the result to verifyRazorpayPayment for server-side signature verification
+    // rather than treating Razorpay's callback as fact.
+    const created = await createOrderForPayment({ shipping: { ...shipping, paymentMethod: "online" }, items });
+    if (created.error || !created.orderId || !created.razorpayOrderId || !created.keyId) {
+      setSubmitting(false);
+      toast.error(created.error ?? "Could not start payment.");
+      return;
+    }
+
+    const loaded = await loadRazorpayScript();
+    if (!loaded) {
+      setSubmitting(false);
+      toast.error("Could not load the payment window. Check your connection and try again.");
+      return;
+    }
+
+    const orderId = created.orderId;
+    const RazorpayCtor = (
+      window as unknown as { Razorpay: new (options: Record<string, unknown>) => { open: () => void } }
+    ).Razorpay;
+
+    const rzp = new RazorpayCtor({
+      key: created.keyId,
+      amount: created.amountPaise,
+      currency: "INR",
+      name: "TangerineTwist",
+      order_id: created.razorpayOrderId,
+      prefill: { name: shipping.fullName, email: shipping.email, contact: shipping.phone },
+      theme: { color: "#E86A2C" },
+      handler: async (response: {
+        razorpay_payment_id: string;
+        razorpay_order_id: string;
+        razorpay_signature: string;
+      }) => {
+        const verified = await verifyRazorpayPayment({
+          orderId,
+          razorpayOrderId: response.razorpay_order_id,
+          razorpayPaymentId: response.razorpay_payment_id,
+          razorpaySignature: response.razorpay_signature,
+        });
+        setSubmitting(false);
+        if (verified.error || !verified.orderNumber) {
+          toast.error(verified.error ?? "We couldn't confirm your payment — contact us with your order details.");
+          return;
+        }
+        setPlacedOrderNumber(verified.orderNumber);
+        clear();
+      },
+      modal: {
+        // User closed the modal without paying — the order row stays pending; they can
+        // just click Pay again, which starts a fresh Razorpay order.
+        ondismiss: () => setSubmitting(false),
+      },
+    });
+    rzp.open();
   }
 
   if (placedOrderNumber) {
@@ -203,11 +270,17 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
 
           <Step icon={ClipboardCheck} step="03" title="Review & Place Order">
             <p className="text-sm text-muted">
-              By placing this order you agree to our shipping and return policies. This is a
-              demonstration checkout — no payment will be processed.
+              By placing this order you agree to our shipping and return policies.
+              {payment === "online"
+                ? " You'll complete payment in a secure Razorpay window next."
+                : " Pay in cash when your order arrives."}
             </p>
             <Button type="submit" variant="accent" size="lg" className="mt-5 w-full sm:w-auto" disabled={submitting}>
-              {submitting ? "Placing Order..." : `Place Order — ${formatINR(total)}`}
+              {submitting
+                ? "Please wait..."
+                : payment === "online"
+                  ? `Pay — ${formatINR(total)}`
+                  : `Place Order — ${formatINR(total)}`}
             </Button>
           </Step>
         </div>

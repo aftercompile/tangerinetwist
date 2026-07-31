@@ -11,7 +11,10 @@ export const shippingDetailsSchema = z.object({
   // not at the DB column level.
   state: z.string().trim().min(1, "State is required"),
   pin: z.string().trim().min(4, "Enter a valid PIN code"),
-  paymentMethod: z.enum(["card", "upi", "cod"]),
+  // This is the checkout-time choice, not the granular method eventually stored on the
+  // order row — Razorpay's own checkout modal picks between card/UPI/netbanking/wallet,
+  // so "online" just routes to createOrderForPayment; "cod" routes to placeOrder.
+  paymentMethod: z.enum(["online", "cod"]),
 });
 
 export type ShippingDetails = z.infer<typeof shippingDetailsSchema>;

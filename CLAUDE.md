@@ -39,6 +39,10 @@ production build locally.
 5. (Optional, for shipping) Fill in `SHIPROCKET_EMAIL` / `SHIPROCKET_PASSWORD` /
    `SHIPROCKET_PICKUP_LOCATION` — the pickup location must already be registered under
    Settings → Pickup Addresses in your Shiprocket dashboard; this app never creates one.
+6. (Optional, for online payment) Fill in `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` — test-mode
+   keys work immediately, no KYC needed to start testing. After deploying, add a webhook under
+   Settings → Webhooks pointing at `/api/webhooks/razorpay` and paste its secret into
+   `RAZORPAY_WEBHOOK_SECRET`.
 
 `.env.local` is gitignored. **Never put real credentials in `.env.example`** — it's the committed
 template and must only ever contain placeholders.
@@ -194,6 +198,34 @@ because historical rows predate the field; `shippingDetailsSchema`/`addressSchem
 going forward). `updateOrderStatus` (`order-actions.ts`) calls `cancelShiprocketShipment` and
 **blocks the status change if that fails** whenever an order with a live shipment is marked
 `cancelled`, so the order status and the real courier shipment can't silently diverge.
+
+### Payments: Razorpay, online payment alongside unchanged COD
+
+Checkout offers two choices — **Pay Online** (Razorpay) or **Cash on Delivery** — replacing the
+old card/upi/cod radio, since Razorpay's own hosted checkout already lets the customer pick
+card/UPI/netbanking/wallet at payment time; a second picker in our own UI would just be redundant.
+`orders.paymentStatus` (`pending | paid | failed | cod`) is a **separate concept from
+`orders.status`** (the fulfillment stage) — an online order is inserted the moment Razorpay
+checkout opens, not after, so there's always a row to reconcile against; `orders.paymentMethod`
+stays nullable until Razorpay reports which method was actually used.
+
+**Never trust the client that a payment succeeded** — same "never trust the client" principle
+already applied to cart prices and `customerId` elsewhere in this repo, just applied to payment.
+`src/lib/razorpay/client.ts`'s `verifyPaymentSignature()` recomputes the HMAC-SHA256 signature
+server-side (`order_id|payment_id` signed with `RAZORPAY_KEY_SECRET`) before
+`verifyRazorpayPayment` (`order-actions.ts`) ever marks an order paid — Razorpay's own
+`razorpay_signature` callback value is only ever a claim to verify, never fact.
+
+**Two independent confirmation paths, not one.** `verifyRazorpayPayment` is the client-side path
+(called from Razorpay Checkout's success handler in `CheckoutForm.tsx`), but a customer whose
+browser drops the connection right after paying would never trigger it — so
+`POST /api/webhooks/razorpay` is the authoritative fallback, verifying its *own* signature (a
+different secret, `RAZORPAY_WEBHOOK_SECRET`) and applying the same paid/confirmed transition
+idempotently. Both paths can fire for the same order safely; the second one is a no-op.
+
+`createOrderForPayment` and `placeOrder` (COD) share `resolveOrderItems()` for the
+re-read-prices-from-DB logic rather than duplicating it — `placeOrder` stays the COD-only path,
+essentially unchanged from before this integration.
 
 ### Server actions and revalidation
 

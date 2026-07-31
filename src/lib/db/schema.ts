@@ -36,7 +36,16 @@ export const orderStatusEnum = pgEnum("order_status", [
   "cancelled",
 ]);
 
-export const paymentMethodEnum = pgEnum("payment_method", ["card", "upi", "cod"]);
+// "card"/"upi" were once customer-chosen radio options; now Razorpay's own checkout
+// modal picks between them (plus netbanking/wallet), and we just store whichever it
+// reports after payment. Values are additive only — never remove one, existing rows use them.
+export const paymentMethodEnum = pgEnum("payment_method", ["card", "upi", "cod", "netbanking", "wallet"]);
+
+// Independent from orderStatusEnum (which tracks fulfillment) — this tracks whether money
+// has actually moved. "cod" orders start and stay here until delivery/collection; online
+// orders start "pending" the moment Razorpay checkout opens and only become "paid" once a
+// signature-verified confirmation (client callback or webhook) arrives.
+export const paymentStatusEnum = pgEnum("payment_status", ["pending", "paid", "failed", "cod"]);
 
 export const categories = pgTable("categories", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -171,7 +180,14 @@ export const orders = pgTable("orders", {
   // shippingDetailsSchema instead of at the column level.
   state: text("state"),
   pin: text("pin").notNull(),
-  paymentMethod: paymentMethodEnum("payment_method").notNull(),
+  // Nullable: for an online-payment order this isn't known until Razorpay reports which
+  // method the customer actually used (card/upi/netbanking/wallet) — "cod" is set
+  // immediately since there's nothing to wait for.
+  paymentMethod: paymentMethodEnum("payment_method"),
+  paymentStatus: paymentStatusEnum("payment_status").notNull().default("pending"),
+  razorpayOrderId: text("razorpay_order_id"),
+  razorpayPaymentId: text("razorpay_payment_id"),
+  razorpaySignature: text("razorpay_signature"),
   subtotal: integer("subtotal").notNull(),
   shipping: integer("shipping").notNull(),
   total: integer("total").notNull(),

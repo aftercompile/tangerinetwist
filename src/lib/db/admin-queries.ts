@@ -197,6 +197,7 @@ export interface AdminOrderRow {
   id: string;
   orderNumber: string;
   status: "pending" | "confirmed" | "in_production" | "shipped" | "delivered" | "cancelled";
+  paymentStatus: "pending" | "paid" | "failed" | "cod";
   customerId: string | null;
   customerName: string;
   customerEmail: string;
@@ -211,6 +212,7 @@ export async function getAdminOrderRows(): Promise<AdminOrderRow[]> {
       id: ordersTable.id,
       orderNumber: ordersTable.orderNumber,
       status: ordersTable.status,
+      paymentStatus: ordersTable.paymentStatus,
       customerId: ordersTable.customerId,
       customerName: ordersTable.customerName,
       customerEmail: ordersTable.customerEmail,
@@ -238,7 +240,9 @@ export interface AdminOrderDetail {
   city: string;
   state: string | null;
   pin: string;
-  paymentMethod: "card" | "upi" | "cod";
+  paymentMethod: "card" | "upi" | "cod" | "netbanking" | "wallet" | null;
+  paymentStatus: "pending" | "paid" | "failed" | "cod";
+  razorpayPaymentId: string | null;
   subtotal: number;
   shipping: number;
   total: number;
@@ -282,6 +286,8 @@ export async function getAdminOrderById(id: string): Promise<AdminOrderDetail | 
     state: order.state,
     pin: order.pin,
     paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    razorpayPaymentId: order.razorpayPaymentId,
     subtotal: order.subtotal,
     shipping: order.shipping,
     total: order.total,

@@ -6,7 +6,15 @@ import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceho
 import { OrderStatusSelect } from "@/components/admin/OrderStatusSelect";
 import { ShiprocketPanel } from "@/components/admin/ShiprocketPanel";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { formatINR } from "@/lib/utils";
+
+const paymentStatusBadge = {
+  pending: { variant: "outline", label: "Payment pending" },
+  paid: { variant: "bestseller", label: "Paid" },
+  failed: { variant: "limited", label: "Payment failed" },
+  cod: { variant: "soft", label: "Cash on Delivery" },
+} as const;
 
 export default async function AdminOrderDetailPage({ params }: { params: { id: string } }) {
   const order = await getAdminOrderById(params.id);
@@ -105,8 +113,18 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
                 </p>
               </div>
               <div>
-                <h3 className="font-display text-lg text-charcoal">Payment</h3>
-                <p className="mt-2 text-sm capitalize text-charcoal">{order.paymentMethod}</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display text-lg text-charcoal">Payment</h3>
+                  <Badge variant={paymentStatusBadge[order.paymentStatus].variant}>
+                    {paymentStatusBadge[order.paymentStatus].label}
+                  </Badge>
+                </div>
+                <p className="mt-2 text-sm capitalize text-charcoal">
+                  {order.paymentMethod ?? "Awaiting payment"}
+                </p>
+                {order.razorpayPaymentId && (
+                  <p className="text-xs text-muted">Razorpay: {order.razorpayPaymentId}</p>
+                )}
               </div>
             </CardContent>
           </Card>

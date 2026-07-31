@@ -22,6 +22,20 @@ const statusBadgeVariant: Record<AdminOrderRow["status"], "outline" | "soft" | "
   cancelled: "limited",
 };
 
+const paymentBadgeVariant: Record<AdminOrderRow["paymentStatus"], "outline" | "soft" | "bestseller" | "limited"> = {
+  pending: "outline",
+  paid: "bestseller",
+  failed: "limited",
+  cod: "soft",
+};
+
+const paymentBadgeLabel: Record<AdminOrderRow["paymentStatus"], string> = {
+  pending: "Payment pending",
+  paid: "Paid",
+  failed: "Payment failed",
+  cod: "COD",
+};
+
 export function OrdersTable({ orders }: { orders: AdminOrderRow[] }) {
   const [search, setSearch] = React.useState("");
   const [status, setStatus] = React.useState("all");
@@ -109,7 +123,10 @@ export function OrdersTable({ orders }: { orders: AdminOrderRow[] }) {
                 <TableCell>{o.itemCount}</TableCell>
                 <TableCell>{formatINR(o.total)}</TableCell>
                 <TableCell>
-                  <Badge variant={statusBadgeVariant[o.status]}>{o.status.replace("_", " ")}</Badge>
+                  <div className="flex flex-col items-start gap-1">
+                    <Badge variant={statusBadgeVariant[o.status]}>{o.status.replace("_", " ")}</Badge>
+                    <Badge variant={paymentBadgeVariant[o.paymentStatus]}>{paymentBadgeLabel[o.paymentStatus]}</Badge>
+                  </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted">
                   {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(o.createdAt)}
