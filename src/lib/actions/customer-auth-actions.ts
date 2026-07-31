@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { customers } from "@/lib/db/schema";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { siteConfig } from "@/lib/seo";
+import { claimGuestOrders } from "@/lib/actions/order-actions";
 import {
   signUpSchema,
   signInSchema,
@@ -45,6 +46,11 @@ export async function signUpAction(_prevState: ActionState | undefined, formData
   // sign-up so getCurrentCustomer() never has to lazily backfill it.
   await db.insert(customers).values({ id: data.user.id, email, fullName });
 
+  // Sweep up any guest orders placed under this email before the account existed —
+  // otherwise a customer who checks out as a guest and immediately registers with the
+  // same email would never see that order under "Order history".
+  await claimGuestOrders(data.user.id, email);
+
   redirect(safeAccountRedirect(formData.get("from")));
 }
 
@@ -58,9 +64,15 @@ export async function signInAction(_prevState: ActionState | undefined, formData
   }
 
   const supabase = createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) {
     return { error: "Incorrect email or password." };
+  }
+
+  // Also sweep on sign-in, not just sign-up — covers a customer who already has an
+  // account but placed a later order as a guest (different browser, cleared cookies).
+  if (data.user) {
+    await claimGuestOrders(data.user.id, parsed.data.email);
   }
 
   redirect(safeAccountRedirect(formData.get("from")));

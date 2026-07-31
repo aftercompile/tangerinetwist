@@ -2,7 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { requireAdminSession } from "@/lib/auth/guard";
 import { getCurrentCustomer } from "@/lib/auth/customer-guard";
 import { db } from "@/lib/db/index";
@@ -118,6 +118,20 @@ export async function placeOrder(
   revalidatePath("/admin");
 
   return { orderNumber: orderId ? orderNumber : undefined };
+}
+
+// Attaches any guest orders placed under this email to the account that now owns it —
+// called right after sign-up and sign-in, since a guest order's customerId is only ever
+// set at checkout time from the session that existed then (which was none). Case-
+// insensitive comparison via lower() on both sides, not ilike, since ilike treats "_" as
+// a single-character wildcard and emails can legitimately contain underscores.
+export async function claimGuestOrders(customerId: string, email: string): Promise<void> {
+  await db
+    .update(orders)
+    .set({ customerId })
+    .where(and(isNull(orders.customerId), sql`lower(${orders.customerEmail}) = lower(${email})`));
+
+  revalidatePath("/account");
 }
 
 // Online payment: creates the Razorpay order first (nothing touches our DB if that call
