@@ -12,6 +12,12 @@ const tones: Record<string, "warm" | "charcoal" | "cool"> = {
   "desk-organizers": "cool",
 };
 
+const images: Record<string, string> = {
+  lamps: "/images/collections/collections-lamps.jpg",
+  idols: "/images/collections/collections-idols.jpg",
+  "desk-organizers": "/images/collections/collections-desk-organizers.jpg",
+};
+
 export function CollectionsSection({ categories }: { categories: CategoryMeta[] }) {
   return (
     <section className="container-wide py-24">
@@ -35,6 +41,8 @@ export function CollectionsSection({ categories }: { categories: CategoryMeta[] 
                         : "LayoutGrid"
                   }
                   tone={tones[category.slug] ?? "beige"}
+                  src={images[category.slug]}
+                  alt={category.name}
                   className="h-full w-full transition-transform duration-900 ease-premium group-hover:scale-[1.06]"
                 />
                 {/* Scrim deepens on hover so the copy stays legible as the art moves. */}

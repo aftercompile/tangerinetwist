@@ -14,6 +14,12 @@ const icons: Record<string, string> = {
   "layout-grid": "LayoutGrid",
 };
 
+const banners: Record<string, string> = {
+  lamps: "/images/banners/banner-lamps.jpg",
+  idols: "/images/banners/banner-idols.jpg",
+  "desk-organizers": "/images/banners/banner-desk-organizers.jpg",
+};
+
 export function CategoryBanner({ category }: { category: CategoryMeta }) {
   return (
     <section className="relative overflow-hidden">
@@ -21,6 +27,8 @@ export function CategoryBanner({ category }: { category: CategoryMeta }) {
         <ProductImagePlaceholder
           icon={icons[category.heroIcon] ?? "Sparkles"}
           tone={tones[category.slug]}
+          src={banners[category.slug]}
+          alt={category.name}
           className="h-full w-full"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-charcoal/75 via-charcoal/20 to-transparent" />

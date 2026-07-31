@@ -16,6 +16,8 @@ export function OurStory() {
             <ProductImagePlaceholder
               icon="Sparkles"
               tone="warm"
+              src="/images/story/story-1.jpg"
+              alt="A hand sanding a freshly 3D-printed ribbed vase in the studio"
               className="mt-8 aspect-[3/4] w-full rounded-3xl shadow-lift"
             />
           </Parallax>
@@ -23,6 +25,8 @@ export function OurStory() {
             <ProductImagePlaceholder
               icon="Lamp"
               tone="cool"
+              src="/images/story/story-2.jpg"
+              alt="A 3D printer building a fluted vase layer by layer"
               className="aspect-[3/4] w-full rounded-3xl shadow-lift"
             />
           </Parallax>
