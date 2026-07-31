@@ -108,7 +108,39 @@ export default async function AccountOrderPage({ params }: { params: { id: strin
             <div className="rounded-3xl border border-border p-7">
               <h2 className="text-base font-medium text-charcoal">Tracking</h2>
               <p className="mt-2 text-sm text-charcoal">{order.courierName}</p>
-              <p className="text-sm text-muted">{order.shiprocketStatus ?? "In transit"}</p>
+              {order.trackingEvents.length === 0 && (
+                <p className="text-sm text-muted">{order.shiprocketStatus ?? "In transit"}</p>
+              )}
+
+              {order.trackingEvents.length > 0 && (
+                <div className="mt-4 flex flex-col gap-0">
+                  {order.trackingEvents.map((event, i) => (
+                    <div key={i} className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <span
+                          className={`mt-1 h-2 w-2 shrink-0 rounded-full ${
+                            i === 0 ? "bg-tangerine-500" : "bg-beige"
+                          }`}
+                        />
+                        {i < order.trackingEvents.length - 1 && (
+                          <span className="w-px flex-1 bg-border" />
+                        )}
+                      </div>
+                      <div className="pb-3 text-sm">
+                        <p className="font-medium text-charcoal">{event.status}</p>
+                        {event.location && <p className="text-xs text-muted">{event.location}</p>}
+                        <p className="text-xs text-muted">
+                          {new Intl.DateTimeFormat("en-IN", {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          }).format(event.occurredAt)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {order.trackingUrl && (
                 <a
                   href={order.trackingUrl}

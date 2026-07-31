@@ -16,6 +16,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function ShiprocketPanel({ order }: { order: AdminOrderDetail }) {
   const router = useRouter();
@@ -115,11 +116,43 @@ export function ShiprocketPanel({ order }: { order: AdminOrderDetail }) {
                 <span className="text-muted">Courier</span>
                 <span className="font-medium text-charcoal">{order.courierName}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted">Status</span>
-                <span className="font-medium text-charcoal">{order.shiprocketStatus ?? "—"}</span>
-              </div>
+              {order.trackingEvents.length === 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted">Status</span>
+                  <span className="font-medium text-charcoal">{order.shiprocketStatus ?? "—"}</span>
+                </div>
+              )}
             </div>
+
+            {order.trackingEvents.length > 0 && (
+              <div className="flex flex-col gap-0 border-t border-border pt-3">
+                {order.trackingEvents.map((event, i) => (
+                  <div key={i} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <span
+                        className={cn(
+                          "mt-1 h-2 w-2 shrink-0 rounded-full",
+                          i === 0 ? "bg-tangerine-500" : "bg-beige"
+                        )}
+                      />
+                      {i < order.trackingEvents.length - 1 && (
+                        <span className="w-px flex-1 bg-border" />
+                      )}
+                    </div>
+                    <div className="pb-3 text-sm">
+                      <p className="font-medium text-charcoal">{event.status}</p>
+                      {event.location && <p className="text-xs text-muted">{event.location}</p>}
+                      <p className="text-xs text-muted">
+                        {new Intl.DateTimeFormat("en-IN", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        }).format(event.occurredAt)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {order.trackingUrl && (
               <a

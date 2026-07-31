@@ -1,6 +1,7 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "./index";
-import { customerAddresses, orderItems, orders } from "./schema";
+import { customerAddresses, orderItems, orderTrackingEvents, orders } from "./schema";
+import type { OrderTrackingEvent } from "@/lib/shiprocket/types";
 
 // Account-dashboard reads are uncached (always live), same reasoning as admin-queries.ts —
 // a customer must always see their own latest order status/addresses, not a stale cache.
@@ -49,6 +50,7 @@ export interface CustomerOrderDetail {
   courierName: string | null;
   trackingUrl: string | null;
   shiprocketStatus: string | null;
+  trackingEvents: OrderTrackingEvent[];
   items: {
     id: string;
     name: string;
@@ -73,6 +75,16 @@ export async function getCustomerOrderById(customerId: string, orderId: string):
   if (!order) return undefined;
 
   const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+  const trackingEvents = await db
+    .select({
+      status: orderTrackingEvents.status,
+      activity: orderTrackingEvents.activity,
+      location: orderTrackingEvents.location,
+      occurredAt: orderTrackingEvents.occurredAt,
+    })
+    .from(orderTrackingEvents)
+    .where(eq(orderTrackingEvents.orderId, order.id))
+    .orderBy(desc(orderTrackingEvents.occurredAt));
 
   return {
     id: order.id,
@@ -90,6 +102,7 @@ export async function getCustomerOrderById(customerId: string, orderId: string):
     courierName: order.courierName,
     trackingUrl: order.trackingUrl,
     shiprocketStatus: order.shiprocketStatus,
+    trackingEvents,
     items: items.map((i) => ({
       id: i.id,
       name: i.name,

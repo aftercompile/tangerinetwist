@@ -4,15 +4,63 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireAdminSession } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
-import { orderItems, orders } from "@/lib/db/schema";
+import { orderItems, orderTrackingEvents, orders } from "@/lib/db/schema";
 import { shiprocketFetch, getPickupLocation, buildTrackingUrl } from "@/lib/shiprocket/client";
 import type {
   CreateOrderResponse,
   AssignAwbResponse,
   TrackingResponse,
+  ShiprocketTrackingActivity,
   LabelResponse,
   InvoiceResponse,
 } from "@/lib/shiprocket/types";
+
+function isDeliveredStatus(status: string): boolean {
+  return /delivered/i.test(status);
+}
+
+// Shared by the manual "Refresh tracking" button and the /api/webhooks/shiprocket
+// route, so both paths apply identical replace-all-events + status-sync logic and
+// can't drift apart. Shiprocket's response is treated as the complete current history
+// for the shipment, not a delta — existing events for this order are wiped and
+// replaced with whatever it reports now.
+export async function applyTrackingUpdate(
+  orderId: string,
+  activities: ShiprocketTrackingActivity[],
+  latestStatus: string,
+  source: "webhook" | "manual_refresh"
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(orderTrackingEvents).where(eq(orderTrackingEvents.orderId, orderId));
+
+    if (activities.length > 0) {
+      await tx.insert(orderTrackingEvents).values(
+        activities.map((a) => ({
+          orderId,
+          status: a.status || a.activity || "Update",
+          activity: a.activity ?? null,
+          location: a.location ?? null,
+          occurredAt: a.date ? new Date(a.date) : new Date(),
+          source,
+        }))
+      );
+    }
+
+    // Closes the loop between courier status and our own fulfillment status — today
+    // orders.status otherwise only ever moves via manual admin action.
+    await tx
+      .update(orders)
+      .set({
+        shiprocketStatus: latestStatus,
+        ...(isDeliveredStatus(latestStatus) ? { status: "delivered" as const } : {}),
+      })
+      .where(eq(orders.id, orderId));
+  });
+
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/admin/orders");
+  revalidatePath(`/account/orders/${orderId}`);
+}
 
 interface PackageDetails {
   weight: number;
@@ -117,16 +165,17 @@ export async function refreshShiprocketTracking(orderId: string): Promise<{ erro
 
   try {
     const tracking = await shiprocketFetch<TrackingResponse>(`/courier/track/awb/${order.awbCode}`);
-    const latest = tracking.tracking_data.shipment_track?.[0]?.current_status;
-    await db
-      .update(orders)
-      .set({ shiprocketStatus: latest ?? "Unknown" })
-      .where(eq(orders.id, orderId));
+    const activities = tracking.tracking_data.shipment_track_activities ?? [];
+    const latest =
+      activities[0]?.status ||
+      activities[0]?.activity ||
+      tracking.tracking_data.shipment_track?.[0]?.current_status ||
+      "Unknown";
+    await applyTrackingUpdate(orderId, activities, latest, "manual_refresh");
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to refresh tracking" };
   }
 
-  revalidatePath(`/admin/orders/${orderId}`);
   return {};
 }
 

@@ -4,10 +4,12 @@ import {
   categories as categoriesTable,
   customers as customersTable,
   orderItems as orderItemsTable,
+  orderTrackingEvents as orderTrackingEventsTable,
   orders as ordersTable,
   productRelations as productRelationsTable,
   products as productsTable,
 } from "./schema";
+import type { OrderTrackingEvent } from "@/lib/shiprocket/types";
 
 // Admin pages read the DB directly (uncached, always fresh) — unlike the storefront's
 // unstable_cache-wrapped queries in queries.ts, which are tuned for public-page caching.
@@ -254,6 +256,7 @@ export interface AdminOrderDetail {
   trackingUrl: string | null;
   shiprocketStatus: string | null;
   invoiceUrl: string | null;
+  trackingEvents: OrderTrackingEvent[];
   items: {
     id: string;
     productId: string | null;
@@ -273,6 +276,16 @@ export async function getAdminOrderById(id: string): Promise<AdminOrderDetail | 
   if (!order) return undefined;
 
   const items = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, id));
+  const trackingEvents = await db
+    .select({
+      status: orderTrackingEventsTable.status,
+      activity: orderTrackingEventsTable.activity,
+      location: orderTrackingEventsTable.location,
+      occurredAt: orderTrackingEventsTable.occurredAt,
+    })
+    .from(orderTrackingEventsTable)
+    .where(eq(orderTrackingEventsTable.orderId, id))
+    .orderBy(desc(orderTrackingEventsTable.occurredAt));
 
   return {
     id: order.id,
@@ -300,6 +313,7 @@ export async function getAdminOrderById(id: string): Promise<AdminOrderDetail | 
     trackingUrl: order.trackingUrl,
     shiprocketStatus: order.shiprocketStatus,
     invoiceUrl: order.invoiceUrl,
+    trackingEvents,
     items: items.map((i) => ({
       id: i.id,
       productId: i.productId,

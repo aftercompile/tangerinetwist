@@ -222,6 +222,24 @@ export const orderItems = pgTable("order_items", {
   quantity: integer("quantity").notNull(),
 });
 
+// One row per Shiprocket tracking checkpoint (Shipped, In Transit, Out for Delivery,
+// Delivered, ...). Ingestion is always replace-all for an order — both the webhook and
+// the manual refresh button delete this order's rows and re-insert Shiprocket's current
+// full history, rather than trying to append/dedupe against what's already stored.
+export const orderTrackingEvents = pgTable("order_tracking_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orderId: uuid("order_id")
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  status: text("status").notNull(),
+  activity: text("activity"),
+  location: text("location"),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  // "webhook" | "manual_refresh" | "ship" — which path recorded this, for debugging.
+  source: text("source").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
 }));
@@ -269,6 +287,14 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   customer: one(customers, {
     fields: [orders.customerId],
     references: [customers.id],
+  }),
+  trackingEvents: many(orderTrackingEvents),
+}));
+
+export const orderTrackingEventsRelations = relations(orderTrackingEvents, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderTrackingEvents.orderId],
+    references: [orders.id],
   }),
 }));
 

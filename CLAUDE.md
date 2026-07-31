@@ -193,10 +193,31 @@ stored per-product — Shiprocket's adhoc order API takes one order-level packag
 `products.weight`/`dimensions` (free-text display copy) didn't need to become structured data for
 this.
 
-Tracking sync is a **manual "Refresh tracking" button** (`refreshShiprocketTracking`), not a
-webhook — simpler to ship, no webhook URL/secret to register in the Shiprocket dashboard. `orders`
-carries the result: `shiprocketOrderId`, `shiprocketShipmentId`, `awbCode`, `courierName`,
-`trackingUrl`, `shiprocketStatus`, all nullable until an admin ships the order.
+Tracking is **live via webhook**, with the manual "Refresh tracking" button
+(`refreshShiprocketTracking`) kept as a fallback for whenever the webhook hasn't fired yet or
+needs to be forced. `POST /api/webhooks/shiprocket` (`src/app/api/webhooks/shiprocket/route.ts`)
+receives Shiprocket's push notifications on shipment status change. Unlike Razorpay's webhook,
+Shiprocket has no official SDK and doesn't sign the body with a verifiable HMAC — it just echoes
+back a shared secret (`SHIPROCKET_WEBHOOK_SECRET`, set by you when you register the webhook in
+Shiprocket's dashboard under Settings > API > Webhooks), so `checkSharedSecret()` checks that
+value across a couple of plausible header names (`x-api-key`, `x-webhook-secret`) and body fields
+(`token`, `secret`) defensively, since the exact contract isn't documented as precisely as
+Razorpay's. Both the webhook and the manual refresh button funnel into one shared helper,
+`applyTrackingUpdate()` (`shiprocket-actions.ts`), so their status-mapping/timeline logic can't
+drift apart.
+
+**Every tracking checkpoint is stored, not just the latest status.** `orderTrackingEvents` (schema)
+holds one row per checkpoint (status, activity, location, occurredAt, source). Each fetch —
+webhook or manual — is treated as Shiprocket's complete current history for that shipment, so
+`applyTrackingUpdate()` deletes existing rows for the order and inserts the fresh set rather than
+appending/deduping. `getAdminOrderById`/`getCustomerOrderById` return these (newest first) as
+`trackingEvents`, rendered as a real timeline on both the admin order page (`ShiprocketPanel.tsx`)
+and the customer's `/account/orders/[id]` page — not just a single status string. If a tracking
+update's latest status matches `/delivered/i`, `applyTrackingUpdate()` also flips `orders.status`
+to `"delivered"` automatically — the one place courier status and fulfillment status talk to each
+other. `orders` still carries `shiprocketOrderId`, `shiprocketShipmentId`, `awbCode`, `courierName`,
+`trackingUrl`, `shiprocketStatus` (now just a cached "latest" convenience field), all nullable
+until an admin ships the order.
 
 **`billing_state` is mandatory for Shiprocket and this app didn't collect it before this
 integration** — `orders.state`/`customerAddresses.state` are new nullable columns (nullable only

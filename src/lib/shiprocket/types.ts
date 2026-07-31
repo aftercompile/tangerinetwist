@@ -49,10 +49,24 @@ export interface AssignAwbResponse {
   };
 }
 
+// Shiprocket's track API nests the checkpoint history under
+// shipment_track_activities (each entry roughly { date, status, activity, location }),
+// separate from shipment_track (one summary row per courier leg with current_status).
+// Field presence/naming has some documented variance across Shiprocket API versions, so
+// applyTrackingUpdate() (shiprocket-actions.ts) parses this tolerantly rather than
+// assuming every field is always present.
+export interface ShiprocketTrackingActivity {
+  date?: string;
+  status?: string;
+  activity?: string;
+  location?: string;
+}
+
 export interface TrackingResponse {
   tracking_data: {
     shipment_status?: number;
     shipment_track?: { current_status?: string }[];
+    shipment_track_activities?: ShiprocketTrackingActivity[];
   };
 }
 
@@ -64,4 +78,13 @@ export interface LabelResponse {
 export interface InvoiceResponse {
   is_invoice_created: boolean;
   invoice_url: string;
+}
+
+// A stored checkpoint row (order_tracking_events), shared by both the admin and
+// customer-facing order detail queries so they render the same timeline shape.
+export interface OrderTrackingEvent {
+  status: string;
+  activity: string | null;
+  location: string | null;
+  occurredAt: Date;
 }
