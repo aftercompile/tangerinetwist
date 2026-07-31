@@ -26,10 +26,10 @@ export default function ContactPage() {
       <div className="mt-14 grid grid-cols-1 gap-14 lg:grid-cols-[1fr_1.1fr]">
         <AnimatedReveal delay={0.05}>
           <div className="flex flex-col gap-6">
-            <ContactRow icon={Mail} label="Email" value="hello@tangerinetwist.com" href="mailto:hello@tangerinetwist.com" />
-            <ContactRow icon={Phone} label="Phone" value="+91 98765 43210" href="tel:+919876543210" />
+            <ContactRow icon={Mail} label="Email" value="hello@tangerinetwist.in" href="mailto:hello@tangerinetwist.in" />
+            <ContactRow icon={Phone} label="Phone" value="+91 63539 08104" href="tel:+916353908104" />
             <ContactRow icon={Instagram} label="Instagram" value="@tangerinetwist.studio" href="https://instagram.com" />
-            <ContactRow icon={MapPin} label="Studio" value="TangerineTwist Design Studio, Bengaluru, Karnataka, India" />
+            <ContactRow icon={MapPin} label="Studio" value="TangerineTwist Design Studio, Vadodara, Gujarat, India" />
           </div>
 
           <div className="mt-10 aspect-[4/3] overflow-hidden rounded-3xl border border-border bg-beige">
