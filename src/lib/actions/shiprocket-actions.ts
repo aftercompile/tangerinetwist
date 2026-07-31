@@ -75,6 +75,20 @@ export async function shipOrderViaShiprocket(orderId: string, pkg: PackageDetail
     });
     const awb = assigned.response.data;
 
+    // Best-effort: a failure here shouldn't undo the shipment that already succeeded
+    // above. The admin panel falls back to generating (and persisting) it on demand
+    // if invoiceUrl ends up null.
+    let invoiceUrl: string | null = null;
+    try {
+      const invoice = await shiprocketFetch<InvoiceResponse>("/orders/print/invoice", {
+        method: "POST",
+        body: JSON.stringify({ ids: [created.order_id] }),
+      });
+      invoiceUrl = invoice.invoice_url;
+    } catch {
+      // Non-fatal — see comment above.
+    }
+
     await db
       .update(orders)
       .set({
@@ -84,6 +98,7 @@ export async function shipOrderViaShiprocket(orderId: string, pkg: PackageDetail
         courierName: awb.courier_name,
         trackingUrl: buildTrackingUrl(awb.awb_code),
         shiprocketStatus: "AWB Assigned",
+        invoiceUrl,
       })
       .where(eq(orders.id, orderId));
   } catch (err) {
@@ -132,17 +147,22 @@ export async function getShiprocketLabelUrl(orderId: string): Promise<{ url?: st
   }
 }
 
+// Fallback path for the rare case shipOrderViaShiprocket's own invoice generation
+// failed — persists the result the same way so it doesn't need regenerating again
+// next time.
 export async function getShiprocketInvoiceUrl(orderId: string): Promise<{ url?: string; error?: string }> {
   await requireAdminSession();
 
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
   if (!order?.shiprocketOrderId) return { error: "This order hasn't been shipped via Shiprocket yet." };
+  if (order.invoiceUrl) return { url: order.invoiceUrl };
 
   try {
     const invoice = await shiprocketFetch<InvoiceResponse>("/orders/print/invoice", {
       method: "POST",
       body: JSON.stringify({ ids: [Number(order.shiprocketOrderId)] }),
     });
+    await db.update(orders).set({ invoiceUrl: invoice.invoice_url }).where(eq(orders.id, orderId));
     return { url: invoice.invoice_url };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to generate invoice" };

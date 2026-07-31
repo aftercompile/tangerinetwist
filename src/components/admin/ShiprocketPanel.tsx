@@ -56,13 +56,29 @@ export function ShiprocketPanel({ order }: { order: AdminOrderDetail }) {
     }
   }
 
-  async function handlePrint(kind: "label" | "invoice") {
-    const result = kind === "label" ? await getShiprocketLabelUrl(order.id) : await getShiprocketInvoiceUrl(order.id);
+  async function handlePrintLabel() {
+    const result = await getShiprocketLabelUrl(order.id);
     if (result.error || !result.url) {
-      toast.error(result.error ?? `Failed to generate ${kind}`);
+      toast.error(result.error ?? "Failed to generate label");
       return;
     }
     window.open(result.url, "_blank", "noopener,noreferrer");
+  }
+
+  async function handlePrintInvoice() {
+    // Generated automatically at ship time — only hits the server if that failed and
+    // this is the first time it's actually being generated.
+    if (order.invoiceUrl) {
+      window.open(order.invoiceUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+    const result = await getShiprocketInvoiceUrl(order.id);
+    if (result.error || !result.url) {
+      toast.error(result.error ?? "Failed to generate invoice");
+      return;
+    }
+    window.open(result.url, "_blank", "noopener,noreferrer");
+    router.refresh();
   }
 
   return (
@@ -120,10 +136,10 @@ export function ShiprocketPanel({ order }: { order: AdminOrderDetail }) {
               <Button variant="outline" size="sm" disabled={refreshing} onClick={handleRefresh}>
                 <RefreshCw className="h-3.5 w-3.5" /> Refresh tracking
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handlePrint("label")}>
+              <Button variant="outline" size="sm" onClick={handlePrintLabel}>
                 <Tag className="h-3.5 w-3.5" /> Print label
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handlePrint("invoice")}>
+              <Button variant="outline" size="sm" onClick={handlePrintInvoice}>
                 <FileText className="h-3.5 w-3.5" /> Print invoice
               </Button>
             </div>

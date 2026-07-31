@@ -179,13 +179,19 @@ mutations (`shipOrderViaShiprocket`, `refreshShiprocketTracking`, `getShiprocket
 `getShiprocketInvoiceUrl`, `cancelShiprocketShipment`), each starting with
 `requireAdminSession()` like every other admin action.
 
-**"Ship via Shiprocket" is one action, not two.** `shipOrderViaShiprocket` calls
-`orders/create/adhoc` and then immediately `courier/assign/awb` with no `courier_id` — Shiprocket
-auto-picks the cheapest/recommended courier, so there's no separate rate-shopping screen. Package
-weight/dimensions are entered in `ShiprocketPanel.tsx`'s dialog at ship time (defaulted to a
-sensible 0.5kg/20×15×10cm), **not** stored per-product — Shiprocket's adhoc order API takes one
-order-level package size, so `products.weight`/`dimensions` (free-text display copy) didn't need
-to become structured data for this.
+**"Ship via Shiprocket" is one action, not two — really three.** `shipOrderViaShiprocket` calls
+`orders/create/adhoc`, then immediately `courier/assign/awb` with no `courier_id` (Shiprocket
+auto-picks the cheapest/recommended courier, so there's no separate rate-shopping screen), then
+`orders/print/invoice` to generate the invoice up front rather than waiting for an admin to click
+a separate button. That last step is best-effort inside its own `try/catch` — a failure there
+doesn't unwind the shipment that already succeeded, it just leaves `orders.invoiceUrl` null.
+`ShiprocketPanel.tsx`'s "Print invoice" button opens the cached `invoiceUrl` directly with no
+server round-trip when it's set, and only falls back to calling (and persisting the result of)
+`getShiprocketInvoiceUrl` in that rarer null case. Package weight/dimensions are entered in
+`ShiprocketPanel.tsx`'s dialog at ship time (defaulted to a sensible 0.5kg/20×15×10cm), **not**
+stored per-product — Shiprocket's adhoc order API takes one order-level package size, so
+`products.weight`/`dimensions` (free-text display copy) didn't need to become structured data for
+this.
 
 Tracking sync is a **manual "Refresh tracking" button** (`refreshShiprocketTracking`), not a
 webhook — simpler to ship, no webhook URL/secret to register in the Shiprocket dashboard. `orders`

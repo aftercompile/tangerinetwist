@@ -253,6 +253,7 @@ export interface AdminOrderDetail {
   courierName: string | null;
   trackingUrl: string | null;
   shiprocketStatus: string | null;
+  invoiceUrl: string | null;
   items: {
     id: string;
     productId: string | null;
@@ -298,6 +299,7 @@ export async function getAdminOrderById(id: string): Promise<AdminOrderDetail | 
     courierName: order.courierName,
     trackingUrl: order.trackingUrl,
     shiprocketStatus: order.shiprocketStatus,
+    invoiceUrl: order.invoiceUrl,
     items: items.map((i) => ({
       id: i.id,
       productId: i.productId,

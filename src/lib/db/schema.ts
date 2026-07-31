@@ -199,6 +199,10 @@ export const orders = pgTable("orders", {
   courierName: text("courier_name"),
   trackingUrl: text("tracking_url"),
   shiprocketStatus: text("shiprocket_status"),
+  // Generated automatically at ship time (see shipOrderViaShiprocket) — null only if
+  // that generation call itself failed, in which case the admin panel falls back to
+  // generating (and persisting) it on demand.
+  invoiceUrl: text("invoice_url"),
 });
 
 export const orderItems = pgTable("order_items", {
