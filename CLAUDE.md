@@ -197,14 +197,16 @@ Tracking is **live via webhook**, with the manual "Refresh tracking" button
 (`refreshShiprocketTracking`) kept as a fallback for whenever the webhook hasn't fired yet or
 needs to be forced. `POST /api/webhooks/shiprocket` (`src/app/api/webhooks/shiprocket/route.ts`)
 receives Shiprocket's push notifications on shipment status change. Unlike Razorpay's webhook,
-Shiprocket has no official SDK and doesn't sign the body with a verifiable HMAC — it just echoes
-back a shared secret (`SHIPROCKET_WEBHOOK_SECRET`, set by you when you register the webhook in
-Shiprocket's dashboard under Settings > API > Webhooks), so `checkSharedSecret()` checks that
-value across a couple of plausible header names (`x-api-key`, `x-webhook-secret`) and body fields
-(`token`, `secret`) defensively, since the exact contract isn't documented as precisely as
-Razorpay's. Both the webhook and the manual refresh button funnel into one shared helper,
-`applyTrackingUpdate()` (`shiprocket-actions.ts`), so their status-mapping/timeline logic can't
-drift apart.
+Shiprocket has no official SDK and doesn't sign the body with a verifiable HMAC — its "Configure
+Webhook" dashboard screen (Settings > API > Webhooks) instead has you pick a single HTTP header
+(the "Auth Token Type" dropdown) that carries a shared secret (`SHIPROCKET_WEBHOOK_SECRET`); this
+app's webhook route only checks `x-api-key`, so leave that dropdown on its default when
+registering. The payload shape is confirmed from Shiprocket's sample payload: `awb` (numeric,
+top-level), `current_status`, and a `scans` array of `{ date, activity, location }` checkpoints —
+notably *not* `shipment_track_activities`, which is only the shape of the separate manual
+track-by-AWB API `refreshShiprocketTracking` calls. Both the webhook and the manual refresh button
+funnel into one shared helper, `applyTrackingUpdate()` (`shiprocket-actions.ts`), so their
+status-mapping/timeline logic can't drift apart.
 
 **Every tracking checkpoint is stored, not just the latest status.** `orderTrackingEvents` (schema)
 holds one row per checkpoint (status, activity, location, occurredAt, source). Each fetch —

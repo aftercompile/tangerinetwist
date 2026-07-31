@@ -6,56 +6,46 @@ import { applyTrackingUpdate } from "@/lib/actions/shiprocket-actions";
 import type { ShiprocketTrackingActivity } from "@/lib/shiprocket/types";
 
 // The authoritative "live" tracking path — Shiprocket calls this on shipment status
-// change instead of us having to poll. Unlike Razorpay, Shiprocket doesn't sign the
-// body with an HMAC we can independently recompute — it just echoes back a shared
-// secret, so this checks that value directly rather than verifying a signature.
-//
-// KNOWN UNCERTAINTY: the exact header name Shiprocket sends the secret in, and the
-// exact field names in the tracking payload, aren't confirmed against a real payload
-// yet — checked defensively across a couple of plausible shapes below. If this stops
-// matching (fields come back undefined), log the raw body once and adjust the field
-// names here; the architecture (verify secret -> find order by AWB -> replace tracking
-// events) won't need to change.
-function checkSharedSecret(request: NextRequest, body: Record<string, unknown>): boolean {
+// change instead of us having to poll. Confirmed against the dashboard's "Configure
+// Webhook" screen (Settings > API > Webhooks): the secret is sent in a single HTTP
+// header chosen via an "Auth Token Type" dropdown at registration time — there's no
+// HMAC signature to independently recompute like Razorpay's, and no secret embedded in
+// the body either. This app's setup instructions say to leave that dropdown on its
+// default, "x-api-key", so that's the only header checked here.
+function checkSharedSecret(request: NextRequest): boolean {
   const secret = process.env.SHIPROCKET_WEBHOOK_SECRET;
   if (!secret) return false;
-
-  const headerValue = request.headers.get("x-api-key") ?? request.headers.get("x-webhook-secret");
-  if (headerValue === secret) return true;
-
-  const bodyToken = body?.token ?? body?.secret;
-  return bodyToken === secret;
+  return request.headers.get("x-api-key") === secret;
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => null);
-  if (!body || !checkSharedSecret(request, body)) {
+  if (!checkSharedSecret(request)) {
     return NextResponse.json({ error: "Invalid or missing secret" }, { status: 401 });
   }
 
-  const awbCode = body.awb ?? body.awb_code;
-  if (!awbCode) {
+  const body = await request.json().catch(() => null);
+  if (!body?.awb) {
     return NextResponse.json({ received: true });
   }
 
-  const [order] = await db.select().from(orders).where(eq(orders.awbCode, String(awbCode)));
+  const [order] = await db.select().from(orders).where(eq(orders.awbCode, String(body.awb)));
   if (!order) {
     return NextResponse.json({ received: true });
   }
 
-  const rawActivities: unknown[] = body.scans ?? body.shipment_track_activities ?? [];
-  const activities: ShiprocketTrackingActivity[] = rawActivities.map((a) => {
-    const entry = a as Record<string, unknown>;
+  // Confirmed shape: checkpoints are under `scans`, each { date, activity, location } —
+  // no per-checkpoint `status` field, only the top-level `current_status`.
+  const rawScans: unknown[] = Array.isArray(body.scans) ? body.scans : [];
+  const activities: ShiprocketTrackingActivity[] = rawScans.map((s) => {
+    const entry = s as Record<string, unknown>;
     return {
       date: (entry.date as string) ?? undefined,
-      status: (entry.status as string) ?? undefined,
       activity: (entry.activity as string) ?? undefined,
       location: (entry.location as string) ?? undefined,
     };
   });
 
-  const latest =
-    activities[0]?.status || activities[0]?.activity || (body.current_status as string) || "Unknown";
+  const latest = (body.current_status as string) || activities[0]?.activity || "Unknown";
 
   await applyTrackingUpdate(order.id, activities, latest, "webhook");
 
