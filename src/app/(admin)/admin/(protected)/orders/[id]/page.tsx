@@ -9,6 +9,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatINR } from "@/lib/utils";
 
+// Nothing here calls a dynamic API, so Next's automatic static optimization would
+// otherwise freeze it at build time — admin data pages must always be live.
+export const dynamic = "force-dynamic";
+
 const paymentStatusBadge = {
   pending: { variant: "outline", label: "Payment pending" },
   paid: { variant: "bestseller", label: "Paid" },

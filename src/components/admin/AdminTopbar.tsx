@@ -2,12 +2,19 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Menu, ExternalLink, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/lib/actions/auth-actions";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+
+// Admin data pages are all force-dynamic (fresh DB read per request), but nothing
+// pushes new orders/DB changes into a tab that's already sitting open — without this,
+// an admin only sees new data after a manual browser refresh. Polling with
+// router.refresh() re-runs the current route's server components in place (no full
+// reload, scroll position and open dialogs are preserved) roughly every LIVE_REFRESH_MS.
+const LIVE_REFRESH_MS = 15_000;
 
 const navLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -27,12 +34,25 @@ const pageTitles: Record<string, string> = {
 
 export function AdminTopbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const title =
     pageTitles[pathname] ??
     Object.entries(pageTitles).find(([href]) => pathname.startsWith(href) && href !== "/admin")?.[1] ??
     "Admin";
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      // Skip while the tab is backgrounded — no point re-rendering a route nobody's
+      // looking at, and it avoids a burst of refreshes firing the instant a stack of
+      // background tabs regains focus.
+      if (document.visibilityState === "visible") {
+        router.refresh();
+      }
+    }, LIVE_REFRESH_MS);
+    return () => clearInterval(interval);
+  }, [router]);
 
   return (
     <header className="flex h-20 items-center justify-between border-b border-border px-6">
@@ -76,6 +96,16 @@ export function AdminTopbar() {
       </div>
 
       <div className="flex items-center gap-2">
+        <span
+          title={`Auto-refreshes every ${LIVE_REFRESH_MS / 1000}s`}
+          className="hidden items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-charcoal/60 sm:flex"
+        >
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-tangerine-500 opacity-75" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-tangerine-500" />
+          </span>
+          Live
+        </span>
         <Button variant="ghost" size="sm" asChild>
           <Link href="/" target="_blank">
             <ExternalLink className="h-4 w-4" /> View Storefront
