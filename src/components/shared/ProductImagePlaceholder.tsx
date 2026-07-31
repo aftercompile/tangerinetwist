@@ -32,6 +32,7 @@ export function ProductImagePlaceholder({
   alt = "",
   className,
   iconClassName,
+  objectPosition,
 }: {
   icon: string;
   tone?: "warm" | "cool" | "charcoal" | "beige";
@@ -39,6 +40,9 @@ export function ProductImagePlaceholder({
   alt?: string;
   className?: string;
   iconClassName?: string;
+  /** Overrides object-cover's default center crop — e.g. "center 20%" to keep a tall
+   * subject's top in frame when it sits in a much wider container than the source photo. */
+  objectPosition?: string;
 }) {
   const Icon = getIcon(icon);
   const style = toneStyles[tone] ?? toneStyles.beige;
@@ -52,6 +56,7 @@ export function ProductImagePlaceholder({
           fill
           sizes="(max-width: 768px) 100vw, 50vw"
           className="object-cover"
+          style={objectPosition ? { objectPosition } : undefined}
         />
       </div>
     );

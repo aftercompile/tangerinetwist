@@ -117,8 +117,9 @@ function ProductStack({ reduced }: { reduced: boolean }) {
             icon="Lamp"
             tone="warm"
             src="/images/hero/hero-lamp.jpg"
-            alt="A designer table lamp glowing warmly on a bedside surface"
+            alt="A ribbed, dome-shaded 3D-printed table lamp glowing warmly on a shelf"
             className="aspect-[16/10] w-full rounded-3xl shadow-lift"
+            objectPosition="center 10%"
           />
         </TiltCard>
       </motion.div>
