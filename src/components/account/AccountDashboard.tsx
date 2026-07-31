@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, LogOut, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, LogOut, Package, ChevronRight } from "lucide-react";
 import { signOutAction } from "@/lib/actions/customer-auth-actions";
 import { deleteAddressAction } from "@/lib/actions/customer-actions";
 import type { CurrentCustomer } from "@/lib/auth/customer-guard";
@@ -102,7 +103,11 @@ export function AccountDashboard({
           <div className="mt-5 flex flex-col divide-y divide-border rounded-2xl border border-border">
             {orders.length === 0 && <p className="p-5 text-sm text-muted">No orders yet.</p>}
             {orders.map((o) => (
-              <div key={o.id} className="flex items-center justify-between gap-4 p-5">
+              <Link
+                key={o.id}
+                href={`/account/orders/${o.id}`}
+                className="flex items-center justify-between gap-4 p-5 transition-colors hover:bg-beige"
+              >
                 <div className="flex items-center gap-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-beige">
                     <Package className="h-4 w-4 text-tangerine-600" />
@@ -115,11 +120,14 @@ export function AccountDashboard({
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-charcoal">{formatINR(o.total)}</p>
-                  <p className="text-xs text-muted">{STATUS_LABEL[o.status]}</p>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-charcoal">{formatINR(o.total)}</p>
+                    <p className="text-xs text-muted">{STATUS_LABEL[o.status]}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </AnimatedReveal>

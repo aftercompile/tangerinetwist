@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "./index";
 import { customerAddresses, orderItems, orders } from "./schema";
 
@@ -31,6 +31,77 @@ export async function getCustomerOrders(customerId: string): Promise<CustomerOrd
     .orderBy(desc(orders.createdAt));
 
   return rows.map((r) => ({ ...r, itemCount: Number(r.itemCount) }));
+}
+
+export interface CustomerOrderDetail {
+  id: string;
+  orderNumber: string;
+  status: "pending" | "confirmed" | "in_production" | "shipped" | "delivered" | "cancelled";
+  paymentStatus: "pending" | "paid" | "failed" | "cod";
+  addressLine: string;
+  city: string;
+  state: string | null;
+  pin: string;
+  subtotal: number;
+  shipping: number;
+  total: number;
+  createdAt: Date;
+  courierName: string | null;
+  trackingUrl: string | null;
+  shiprocketStatus: string | null;
+  items: {
+    id: string;
+    name: string;
+    slug: string;
+    price: number;
+    material: string;
+    imageSrc: string | null;
+    imageIcon: string;
+    imageTone: "warm" | "cool" | "charcoal" | "beige";
+    quantity: number;
+  }[];
+}
+
+// Scoped by customerId, not just the order id — a customer must never be able to view
+// another customer's order by guessing/incrementing an id in the URL. Returns undefined
+// for both "doesn't exist" and "exists but isn't yours", identical 404 either way.
+export async function getCustomerOrderById(customerId: string, orderId: string): Promise<CustomerOrderDetail | undefined> {
+  const [order] = await db
+    .select()
+    .from(orders)
+    .where(and(eq(orders.id, orderId), eq(orders.customerId, customerId)));
+  if (!order) return undefined;
+
+  const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    addressLine: order.addressLine,
+    city: order.city,
+    state: order.state,
+    pin: order.pin,
+    subtotal: order.subtotal,
+    shipping: order.shipping,
+    total: order.total,
+    createdAt: order.createdAt,
+    courierName: order.courierName,
+    trackingUrl: order.trackingUrl,
+    shiprocketStatus: order.shiprocketStatus,
+    items: items.map((i) => ({
+      id: i.id,
+      name: i.name,
+      slug: i.slug,
+      price: i.price,
+      material: i.material,
+      imageSrc: i.imageSrc,
+      imageIcon: i.imageIcon,
+      imageTone: i.imageTone,
+      quantity: i.quantity,
+    })),
+  };
 }
 
 export interface CustomerAddressRow {
