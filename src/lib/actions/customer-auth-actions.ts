@@ -25,13 +25,14 @@ export async function signUpAction(_prevState: ActionState | undefined, formData
   const parsed = signUpSchema.safeParse({
     fullName: String(formData.get("fullName") ?? ""),
     email: String(formData.get("email") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
     password: String(formData.get("password") ?? ""),
     confirmPassword: String(formData.get("confirmPassword") ?? ""),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
-  const { fullName, email, password } = parsed.data;
+  const { fullName, email, phone, password } = parsed.data;
 
   const supabase = createSupabaseServerClient();
   const { data, error } = await supabase.auth.signUp({ email, password });
@@ -44,7 +45,7 @@ export async function signUpAction(_prevState: ActionState | undefined, formData
 
   // Supabase owns auth.users; this is our own profile row, created once right after
   // sign-up so getCurrentCustomer() never has to lazily backfill it.
-  await db.insert(customers).values({ id: data.user.id, email, fullName });
+  await db.insert(customers).values({ id: data.user.id, email, fullName, phone: phone || null });
 
   // Sweep up any guest orders placed under this email before the account existed —
   // otherwise a customer who checks out as a guest and immediately registers with the

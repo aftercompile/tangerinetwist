@@ -27,6 +27,10 @@ function SignUpForm() {
         <Input id="email" name="email" type="email" required />
       </div>
       <div>
+        <Label htmlFor="phone">Phone</Label>
+        <Input id="phone" name="phone" type="tel" />
+      </div>
+      <div>
         <Label htmlFor="password">Password</Label>
         <Input id="password" name="password" type="password" required minLength={8} />
       </div>

@@ -19,17 +19,12 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 // lines are a denormalized localStorage snapshot that can go stale or be tampered with.
 async function resolveOrderItems(items: PlaceOrderInput["items"]) {
   const slugs = items.map((i) => i.slug);
-  const rows = await db
-    .select({
-      id: products.id,
-      slug: products.slug,
-      name: products.name,
-      price: products.price,
-      material: products.material,
-      icon: products.icon,
-    })
-    .from(products)
-    .where(inArray(products.slug, slugs));
+  const rows = await db.query.products.findMany({
+    where: inArray(products.slug, slugs),
+    with: {
+      images: { orderBy: (img, { asc }) => [asc(img.position)] },
+    },
+  });
 
   const bySlug = new Map(rows.map((r) => [r.slug, r]));
   const missing = slugs.filter((s) => !bySlug.has(s));
@@ -39,13 +34,16 @@ async function resolveOrderItems(items: PlaceOrderInput["items"]) {
 
   const orderItemRows = items.map((item) => {
     const product = bySlug.get(item.slug)!;
+    const primaryImage = product.images[0];
     return {
       productId: product.id,
       name: product.name,
       slug: product.slug,
       price: product.price,
       material: product.material,
-      imageIcon: product.icon,
+      imageSrc: primaryImage?.src ?? null,
+      imageIcon: primaryImage?.icon ?? product.icon,
+      imageTone: primaryImage?.tone ?? "beige",
       quantity: item.quantity,
     };
   });

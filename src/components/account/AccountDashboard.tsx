@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { formatINR } from "@/lib/utils";
 import { AnimatedReveal } from "@/components/shared/AnimatedReveal";
 import { AddressDialog } from "./AddressDialog";
+import { ProfileDialog } from "./ProfileDialog";
 
 const STATUS_LABEL: Record<CustomerOrderRow["status"], string> = {
   pending: "Pending",
@@ -33,6 +34,7 @@ export function AccountDashboard({
 }) {
   // undefined = dialog closed, null = adding a new address, row = editing that address.
   const [editingAddress, setEditingAddress] = React.useState<CustomerAddressRow | null | undefined>(undefined);
+  const [editingProfile, setEditingProfile] = React.useState(false);
 
   async function handleDelete(id: string) {
     if (!confirm("Remove this address?")) return;
@@ -51,12 +53,18 @@ export function AccountDashboard({
           <p className="eyebrow mb-3">Account</p>
           <h1 className="h-display text-3xl md:text-4xl">Hi, {customer.fullName.split(" ")[0]}</h1>
           <p className="mt-2 text-sm text-muted">{customer.email}</p>
+          <p className="mt-1 text-sm text-muted">{customer.phone ?? "No phone number on file"}</p>
         </div>
-        <form action={signOutAction}>
-          <Button type="submit" variant="outline" size="md">
-            <LogOut className="h-4 w-4" /> Sign out
+        <div className="flex gap-2">
+          <Button variant="outline" size="md" onClick={() => setEditingProfile(true)}>
+            <Pencil className="h-4 w-4" /> Edit profile
           </Button>
-        </form>
+          <form action={signOutAction}>
+            <Button type="submit" variant="outline" size="md">
+              <LogOut className="h-4 w-4" /> Sign out
+            </Button>
+          </form>
+        </div>
       </AnimatedReveal>
 
       <div className="mt-14 grid grid-cols-1 gap-14 lg:grid-cols-[1fr_1.2fr]">
@@ -138,6 +146,8 @@ export function AccountDashboard({
         onOpenChange={(open) => !open && setEditingAddress(undefined)}
         address={editingAddress ?? undefined}
       />
+
+      <ProfileDialog open={editingProfile} onOpenChange={setEditingProfile} customer={customer} />
     </div>
   );
 }
