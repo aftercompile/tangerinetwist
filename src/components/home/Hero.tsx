@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 import { TextReveal } from "@/components/shared/TextReveal";
 import { TiltCard } from "@/components/shared/TiltCard";
 import { Magnetic } from "@/components/shared/Magnetic";
@@ -21,7 +21,7 @@ export function Hero() {
   const reduced = useReducedMotion();
 
   // One shared timeline so copy, CTAs and imagery feel like a single entrance
-  // rather than several components that happen to animate at once.
+  // rather than four components that happen to animate at once.
   const fade = (delay: number) => ({
     initial: reduced ? { opacity: 0 } : { opacity: 0, y: 18 },
     animate: { opacity: 1, y: 0 },
@@ -41,7 +41,7 @@ export function Hero() {
 
           <TextReveal
             immediate
-            text={"Built light,\nlayer by layer."}
+            text={"Everyday living,\nbeautifully engineered."}
             delay={0.12}
             className="h-display text-[2.75rem] leading-[1.05] sm:text-6xl lg:text-[4.25rem]"
           />
@@ -89,7 +89,7 @@ export function Hero() {
           </motion.dl>
         </div>
 
-        <HeroLampArt reduced={!!reduced} />
+        <ProductStack reduced={!!reduced} />
       </div>
 
       <ScrollCue />
@@ -98,51 +98,56 @@ export function Hero() {
 }
 
 /**
- * The hero product shot: a real render of the Ganesh idol lamp, transparent
- * background. The source PNG is a 2400x1340 canvas with the subject occupying
- * only the centre ~37% of its width — framing it in an aspect-[2/3] box with
- * object-cover crops that dead transparent margin away instead of leaving the
- * lamp stranded in the middle of a wide, mostly-empty box.
- *
- * The glow behind it is CSS, not baked into the image: the source render has
- * no illumination effect, so a blurred warm wash stands in for the "lit lamp"
- * feel the art direction calls for. Same for the grounding shadow beneath the
- * base — a transparent cutout has no shadow of its own.
+ * Three product plates that drift in on a shared timeline, then respond
+ * individually to the cursor. The staggered vertical offsets give the cluster
+ * an arranged, editorial feel rather than a rigid grid.
  */
-function HeroLampArt({ reduced }: { reduced: boolean }) {
-  return (
-    <motion.div
-      initial={reduced ? { opacity: 0 } : { opacity: 0, y: 28, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: DURATION.cinematic, delay: reduced ? 0 : 0.3, ease: EASE_PREMIUM }}
-      className="relative mx-auto w-full max-w-md lg:max-w-none"
-    >
-      <div className="relative aspect-[2/3]">
-        {/* Warm glow standing in for the lamp's light source */}
-        <div
-          aria-hidden
-          className="absolute left-1/2 top-[38%] h-2/3 w-2/3 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-60 blur-3xl"
-          style={{ background: "radial-gradient(circle, #F0A164 0%, transparent 70%)" }}
-        />
-        {/* Grounding shadow — the render is a transparent cutout with none of its own */}
-        <div
-          aria-hidden
-          className="absolute bottom-[6%] left-1/2 h-10 w-2/3 -translate-x-1/2 rounded-[50%] opacity-25 blur-xl"
-          style={{ background: "radial-gradient(ellipse, #1B1815 0%, transparent 72%)" }}
-        />
+function ProductStack({ reduced }: { reduced: boolean }) {
+  const plate = (delay: number) => ({
+    initial: reduced ? { opacity: 0 } : { opacity: 0, y: 28, scale: 0.96 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    transition: { duration: DURATION.cinematic, delay: reduced ? 0 : delay, ease: EASE_PREMIUM },
+  });
 
-        <TiltCard className="relative h-full w-full">
-          <Image
-            src="/images/hero/hero_main.png"
-            alt="A 3D-printed table lamp with an intricately detailed Ganesh idol built into its base"
-            fill
-            priority
-            sizes="(max-width: 1024px) 80vw, 40vw"
-            className="object-contain object-center"
+  return (
+    <div className="relative grid grid-cols-2 gap-4 sm:gap-5">
+      <motion.div {...plate(0.25)} className="col-span-2">
+        <TiltCard>
+          <ProductImagePlaceholder
+            icon="Lamp"
+            tone="warm"
+            src="/images/hero/hero-lamp.jpg"
+            alt="A ribbed, dome-shaded 3D-printed table lamp glowing warmly on a shelf"
+            className="aspect-[16/10] w-full rounded-3xl shadow-lift"
+            objectPosition="center 10%"
           />
         </TiltCard>
-      </div>
-    </motion.div>
+      </motion.div>
+
+      <motion.div {...plate(0.38)} className="lg:-mt-2">
+        <TiltCard>
+          <ProductImagePlaceholder
+            icon="Sparkles"
+            tone="charcoal"
+            src="/images/hero/hero-idol.jpg"
+            alt="A finely detailed sculptural bust lit dramatically against a dark background"
+            className="aspect-square w-full rounded-3xl shadow-lift"
+          />
+        </TiltCard>
+      </motion.div>
+
+      <motion.div {...plate(0.5)} className="lg:mt-6">
+        <TiltCard>
+          <ProductImagePlaceholder
+            icon="LayoutGrid"
+            tone="cool"
+            src="/images/hero/hero-desk.jpg"
+            alt="A minimalist desk organizer tray with a notebook and pen"
+            className="aspect-square w-full rounded-3xl shadow-lift"
+          />
+        </TiltCard>
+      </motion.div>
+    </div>
   );
 }
 

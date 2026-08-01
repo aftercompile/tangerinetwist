@@ -17,7 +17,6 @@ export function TextReveal({
   text,
   className,
   as: Tag = "h1",
-  id,
   delay = 0,
   stagger = 0.055,
   /** Renders on mount instead of on scroll — use for above-the-fold headlines. */
@@ -26,8 +25,6 @@ export function TextReveal({
   text: string;
   className?: string;
   as?: "h1" | "h2" | "h3" | "p";
-  /** Set when something needs to point at this heading via aria-labelledby. */
-  id?: string;
   delay?: number;
   stagger?: number;
   immediate?: boolean;
@@ -44,7 +41,7 @@ export function TextReveal({
     : { initial: "hidden" as const, whileInView: "visible" as const, viewport: VIEWPORT };
 
   return (
-    <Tag id={id} className={cn(className)}>
+    <Tag className={cn(className)}>
       {/* The visible text is aria-hidden and the full string is exposed once,
           so assistive tech reads a clean sentence rather than fragments. */}
       <span className="sr-only">{text.replace(/\n/g, " ")}</span>
