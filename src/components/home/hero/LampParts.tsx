@@ -81,7 +81,7 @@ export function LampParts({ refs, quality }: LampPartsProps) {
       }),
       base: new THREE.MeshStandardMaterial({
         color: "#E4D8C3",
-        roughness: 0.82,
+        roughness: 0.7,
         metalness: 0.02,
         transparent: true,
         opacity: 0,
@@ -111,9 +111,13 @@ export function LampParts({ refs, quality }: LampPartsProps) {
         // shade's inner face sort badly against it.
         depthWrite: false,
       }),
+      // Deliberately NOT #FBF8F3 — that's the page's own bg-cream, and the shade
+      // was rendering camouflaged against its own backdrop. This ivory reads as
+      // a distinct object, and the lower roughness gives it a soft sheen instead
+      // of the flat, no-highlight look pure matte diffuse has under one key light.
       shadeOuter: new THREE.MeshStandardMaterial({
-        color: "#FBF8F3",
-        roughness: 0.88,
+        color: "#F6EEDF",
+        roughness: 0.55,
         metalness: 0,
         side: THREE.FrontSide,
         clippingPlanes: clip,

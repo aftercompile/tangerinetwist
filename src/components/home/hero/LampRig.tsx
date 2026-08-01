@@ -91,13 +91,13 @@ export function LampRig({ progress, reduced, pausedRef, quality }: LampRigProps)
         what does that job, at zero network cost. The cool fill is deliberate: it
         keeps the cream from going muddy where the warm key falls off, and the
         tangerine rim from behind-left separates the shade from a page background
-        that is very nearly the same value.
+        it now only nearly matches (see the shadeOuter comment in LampParts).
       */}
       <hemisphereLight color="#FBF8F3" groundColor="#E4D8C3" intensity={0.42} />
       <ambientLight color="#FDFCFA" intensity={0.34} />
-      <directionalLight position={[3.2, 5.0, 4.0]} intensity={1.55} color="#FFF6EA" />
+      <directionalLight position={[3.2, 5.0, 4.0]} intensity={1.85} color="#FFF6EA" />
       <directionalLight position={[-4.0, 2.0, 2.5]} intensity={0.48} color="#E9F0FA" />
-      <directionalLight position={[-1.5, 3.0, -4.5]} intensity={0.95} color="#F0A164" />
+      <directionalLight position={[-1.5, 3.0, -4.5]} intensity={1.35} color="#EC833F" />
 
       <LampParts refs={refs} quality={quality} />
     </>
