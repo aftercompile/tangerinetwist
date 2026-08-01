@@ -34,7 +34,6 @@ export function CategoryBanner({ category }: { category: CategoryMeta }) {
         <div className="absolute inset-0 bg-gradient-to-t from-charcoal/75 via-charcoal/20 to-transparent" />
         <div className="container-wide absolute inset-x-0 bottom-0 pb-12">
           <AnimatedReveal>
-            <p className="eyebrow mb-3 text-tangerine-300">{category.priceRange}</p>
             <h1 className="h-display max-w-xl text-4xl text-white md:text-5xl">{category.name}</h1>
             <p className="mt-4 max-w-lg text-sm text-white/85 md:text-base">{category.description}</p>
           </AnimatedReveal>

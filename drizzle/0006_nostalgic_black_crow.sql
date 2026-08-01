@@ -1,0 +1,3 @@
+ALTER TABLE "product_reviews" ADD COLUMN "customer_id" uuid;--> statement-breakpoint
+ALTER TABLE "product_reviews" ADD CONSTRAINT "product_reviews_customer_id_customers_id_fk" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "product_reviews" ADD CONSTRAINT "product_reviews_product_id_customer_id_unique" UNIQUE("product_id","customer_id");

@@ -9,6 +9,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -108,19 +109,32 @@ export const productImages = pgTable("product_images", {
   position: integer("position").notNull().default(0),
 });
 
-export const productReviews = pgTable("product_reviews", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  productId: uuid("product_id")
-    .notNull()
-    .references(() => products.id, { onDelete: "cascade" }),
-  author: text("author").notNull(),
-  location: text("location").notNull(),
-  rating: integer("rating").notNull(),
-  title: text("title").notNull(),
-  body: text("body").notNull(),
-  verified: boolean("verified").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const productReviews = pgTable(
+  "product_reviews",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    // Null for the seed/marketing reviews written before this feature existed. Set for
+    // every review submitted through submitProductReviewAction — "set null" (not
+    // cascade) so a review stays visible on the product page even if the customer's
+    // account is ever removed, same preserve-history principle as orderItems.productId.
+    customerId: uuid("customer_id").references(() => customers.id, { onDelete: "set null" }),
+    author: text("author").notNull(),
+    location: text("location").notNull(),
+    rating: integer("rating").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    verified: boolean("verified").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    // One review per customer per product. NULLs (the legacy seed rows) are each
+    // treated as distinct by Postgres, so this only constrains real customer reviews.
+    oneReviewPerCustomer: unique().on(table.productId, table.customerId),
+  })
+);
 
 // Replaces relatedSlugs: string[] with real referential integrity —
 // a deleted product cascades its relation rows instead of leaving dangling slugs.
@@ -267,6 +281,10 @@ export const productReviewsRelations = relations(productReviews, ({ one }) => ({
     fields: [productReviews.productId],
     references: [products.id],
   }),
+  customer: one(customers, {
+    fields: [productReviews.customerId],
+    references: [customers.id],
+  }),
 }));
 
 export const productRelationsRelations = relations(productRelations, ({ one }) => ({
@@ -312,6 +330,7 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
 export const customersRelations = relations(customers, ({ many }) => ({
   orders: many(orders),
   addresses: many(customerAddresses),
+  reviews: many(productReviews),
 }));
 
 export const customerAddressesRelations = relations(customerAddresses, ({ one }) => ({

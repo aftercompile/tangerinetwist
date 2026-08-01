@@ -4,6 +4,7 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import { getCurrentCustomer } from "@/lib/auth/customer-guard";
 import { getCustomerOrderById } from "@/lib/db/customer-queries";
 import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
+import { OrderItemReviewAction } from "@/components/account/OrderItemReviewAction";
 import { formatINR } from "@/lib/utils";
 
 const STATUS_LABEL = {
@@ -71,6 +72,16 @@ export default async function AccountOrderPage({ params }: { params: { id: strin
                     <p className="font-medium text-charcoal">{item.name}</p>
                     <p className="text-xs text-muted">{item.material}</p>
                     <p className="text-xs text-muted">Qty {item.quantity}</p>
+                    {order.status === "delivered" && item.productId && (
+                      <div className="mt-2">
+                        <OrderItemReviewAction
+                          productId={item.productId}
+                          orderId={order.id}
+                          productName={item.name}
+                          reviewed={item.reviewed}
+                        />
+                      </div>
+                    )}
                   </div>
                   <p className="font-medium text-charcoal">{formatINR(item.price * item.quantity)}</p>
                 </div>

@@ -1,6 +1,6 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "./index";
-import { customerAddresses, orderItems, orderTrackingEvents, orders } from "./schema";
+import { customerAddresses, orderItems, orderTrackingEvents, orders, productReviews } from "./schema";
 import type { OrderTrackingEvent } from "@/lib/shiprocket/types";
 
 // Account-dashboard reads are uncached (always live), same reasoning as admin-queries.ts —
@@ -53,6 +53,7 @@ export interface CustomerOrderDetail {
   trackingEvents: OrderTrackingEvent[];
   items: {
     id: string;
+    productId: string | null;
     name: string;
     slug: string;
     price: number;
@@ -61,6 +62,7 @@ export interface CustomerOrderDetail {
     imageIcon: string;
     imageTone: "warm" | "cool" | "charcoal" | "beige";
     quantity: number;
+    reviewed: boolean;
   }[];
 }
 
@@ -75,6 +77,19 @@ export async function getCustomerOrderById(customerId: string, orderId: string):
   if (!order) return undefined;
 
   const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+
+  const reviewedProductIds = new Set<string>();
+  if (order.status === "delivered") {
+    const productIds = items.map((i) => i.productId).filter((id): id is string => id !== null);
+    if (productIds.length > 0) {
+      const reviewed = await db
+        .select({ productId: productReviews.productId })
+        .from(productReviews)
+        .where(and(eq(productReviews.customerId, customerId), inArray(productReviews.productId, productIds)));
+      reviewed.forEach((r) => reviewedProductIds.add(r.productId));
+    }
+  }
+
   const trackingEvents = await db
     .select({
       status: orderTrackingEvents.status,
@@ -105,6 +120,7 @@ export async function getCustomerOrderById(customerId: string, orderId: string):
     trackingEvents,
     items: items.map((i) => ({
       id: i.id,
+      productId: i.productId,
       name: i.name,
       slug: i.slug,
       price: i.price,
@@ -113,6 +129,7 @@ export async function getCustomerOrderById(customerId: string, orderId: string):
       imageIcon: i.imageIcon,
       imageTone: i.imageTone,
       quantity: i.quantity,
+      reviewed: i.productId !== null && reviewedProductIds.has(i.productId),
     })),
   };
 }

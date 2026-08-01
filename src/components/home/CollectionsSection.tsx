@@ -49,10 +49,7 @@ export function CollectionsSection({ categories }: { categories: CategoryMeta[] 
                 <div className="absolute inset-0 bg-gradient-to-t from-charcoal/75 via-charcoal/10 to-transparent transition-opacity duration-500 ease-premium group-hover:from-charcoal/85" />
 
                 <div className="absolute inset-x-0 bottom-0 p-7">
-                  <p className="text-xs font-medium uppercase tracking-wide text-white/70">
-                    {category.priceRange}
-                  </p>
-                  <h3 className="mt-1 font-display text-2xl text-white">{category.name}</h3>
+                  <h3 className="font-display text-2xl text-white">{category.name}</h3>
                   <p className="mt-2 text-sm text-white/80">{category.tagline}</p>
 
                   {/* Underline draws in on hover — a small reward for reaching the card. */}
