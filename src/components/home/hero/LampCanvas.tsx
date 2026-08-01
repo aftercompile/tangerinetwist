@@ -34,14 +34,27 @@ function detectCapability() {
 
   const coarse = window.matchMedia?.("(pointer: coarse)").matches ?? false;
 
-  // A low-core phone will technically run this and technically look terrible doing
-  // it. A static poster hero beats a 25fps one, so we'd rather not start at all.
-  const weak = coarse && (navigator.hardwareConcurrency ?? 8) <= 4;
+  // Deliberately NOT navigator.hardwareConcurrency: WebKit clamps it to 2 on iOS
+  // to frustrate fingerprinting, so it reports the same value for an iPhone 16 Pro
+  // as for a decade-old handset. Gating on it disqualified every iPhone and left
+  // them all showing the static poster.
+  //
+  // deviceMemory is Chrome/Android-only and simply absent on iOS, so it can only
+  // ever downgrade the devices it actually describes. The floor is set low on
+  // purpose — the dpr, LOD and no-shadow-map settings below are what carry mobile;
+  // this only catches hardware that genuinely cannot.
+  const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+  const weak = typeof memory === "number" && memory <= 1;
 
   let hasWebGL = false;
   try {
     const probe = document.createElement("canvas");
-    hasWebGL = Boolean(probe.getContext("webgl2") ?? probe.getContext("webgl"));
+    const ctx = probe.getContext("webgl2") ?? probe.getContext("webgl");
+    hasWebGL = Boolean(ctx);
+    // iOS caps how many WebGL contexts can exist at once and counts this probe
+    // against that budget, so hand it back immediately — otherwise the real
+    // canvas can be refused a context or lose one straight after creation.
+    ctx?.getExtension("WEBGL_lose_context")?.loseContext();
   } catch {
     hasWebGL = false;
   }
