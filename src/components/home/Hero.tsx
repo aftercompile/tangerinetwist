@@ -32,7 +32,7 @@ export function Hero() {
     <section className="relative overflow-hidden bg-cream">
       <AmbientField />
 
-      <div className="container-wide relative grid grid-cols-1 items-center gap-12 py-16 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:py-24">
+      <div className="container-wide relative grid grid-cols-1 items-center gap-8 py-12 sm:gap-10 lg:grid-cols-[1.05fr_1fr] lg:items-start lg:gap-16 lg:py-20">
         <div>
           <motion.p {...fade(0)} className="eyebrow mb-5 flex items-center gap-3">
             <span className="inline-block h-px w-8 bg-tangerine-500" />
@@ -70,7 +70,7 @@ export function Hero() {
 
           <motion.dl
             {...fade(0.7)}
-            className="mt-14 flex items-center gap-8 border-t border-border pt-8 sm:gap-12"
+            className="mt-10 hidden items-center gap-8 border-t border-border pt-8 sm:flex sm:gap-12 lg:mt-14"
           >
             {stats.map((stat) => (
               <div key={stat.label}>
@@ -124,7 +124,7 @@ function ProductStack({ reduced }: { reduced: boolean }) {
         </TiltCard>
       </motion.div>
 
-      <motion.div {...plate(0.38)} className="lg:-mt-2">
+      <motion.div {...plate(0.38)} className="hidden sm:block lg:-mt-2">
         <TiltCard>
           <ProductImagePlaceholder
             icon="Sparkles"
@@ -136,7 +136,7 @@ function ProductStack({ reduced }: { reduced: boolean }) {
         </TiltCard>
       </motion.div>
 
-      <motion.div {...plate(0.5)} className="lg:mt-6">
+      <motion.div {...plate(0.5)} className="hidden sm:block lg:mt-6">
         <TiltCard>
           <ProductImagePlaceholder
             icon="LayoutGrid"
