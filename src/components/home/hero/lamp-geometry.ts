@@ -147,6 +147,36 @@ export function buildBaseGeometry(segments = 96): THREE.BufferGeometry {
 }
 
 /**
+ * Coarse, unfluted outline geometries for the "ghost" preview — the faint
+ * blueprint-style silhouette shown before any part has actually printed (see
+ * choreography.ts). Built from the same profile curves as the real parts, but at
+ * a low segment count and run through EdgesGeometry, which keeps only the edges
+ * where adjacent face normals diverge meaningfully. That gives a clean faceted
+ * contour; wireframing the real 192-segment fluted geometry instead would draw
+ * every flute triangle and look like a tangle rather than a preview line.
+ */
+export function buildGhostShadeOutline(segments = 20): THREE.EdgesGeometry {
+  const lathe = new THREE.LatheGeometry(toVector2s(SHADE_PROFILE), segments, 0, Math.PI * 2);
+  const edges = new THREE.EdgesGeometry(lathe, 1);
+  lathe.dispose();
+  return edges;
+}
+
+export function buildGhostBaseOutline(segments = 20): THREE.EdgesGeometry {
+  const lathe = new THREE.LatheGeometry(toVector2s(BASE_PROFILE), segments, 0, Math.PI * 2);
+  const edges = new THREE.EdgesGeometry(lathe, 1);
+  lathe.dispose();
+  return edges;
+}
+
+export function buildGhostColumnOutline(): THREE.EdgesGeometry {
+  const cylinder = new THREE.CylinderGeometry(0.13, 0.17, 1.35, 12, 1);
+  const edges = new THREE.EdgesGeometry(cylinder, 1);
+  cylinder.dispose();
+  return edges;
+}
+
+/**
  * Radius of the shade at a given height, by linear interpolation of the profile.
  * The print-head ring rides the clip plane during the shade wipe and has to hug the
  * silhouette as it climbs, which means reading the same curve the lathe was built from.

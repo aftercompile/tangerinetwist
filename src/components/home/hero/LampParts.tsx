@@ -6,6 +6,9 @@ import {
   LAMP_LAYOUT,
   buildBaseGeometry,
   buildShadeGeometry,
+  buildGhostBaseOutline,
+  buildGhostColumnOutline,
+  buildGhostShadeOutline,
   makeGridTexture,
   makeRadialTexture,
 } from "./lamp-geometry";
@@ -35,6 +38,9 @@ export function LampParts({ refs, quality }: LampPartsProps) {
   // --- Geometry -------------------------------------------------------------
   const shadeGeometry = React.useMemo(() => buildShadeGeometry(shadeSegments), [shadeSegments]);
   const baseGeometry = React.useMemo(() => buildBaseGeometry(baseSegments), [baseSegments]);
+  const ghostShadeGeometry = React.useMemo(() => buildGhostShadeOutline(), []);
+  const ghostBaseGeometry = React.useMemo(() => buildGhostBaseOutline(), []);
+  const ghostColumnGeometry = React.useMemo(() => buildGhostColumnOutline(), []);
 
   // --- Textures -------------------------------------------------------------
   const gridTexture = React.useMemo(() => makeGridTexture(), []);
@@ -59,24 +65,35 @@ export function LampParts({ refs, quality }: LampPartsProps) {
     const clip = [clipPlane];
 
     return {
+      // Bed, grid and contact shadow are the permanent stage — opacity here is
+      // their resting value; choreography holds it steady rather than fading
+      // it in, so there's never a moment with nothing rendered at all.
       bed: new THREE.MeshStandardMaterial({
         color: "#F1E9DC",
         roughness: 0.96,
         metalness: 0,
         transparent: true,
-        opacity: 0,
+        opacity: 1,
       }),
       grid: new THREE.MeshBasicMaterial({
         map: gridTexture ?? undefined,
         transparent: true,
-        opacity: 0,
+        opacity: 0.35,
         depthWrite: false,
       }),
       contactShadow: new THREE.MeshBasicMaterial({
         color: "#1B1815",
         alphaMap: shadowTexture ?? undefined,
         transparent: true,
-        opacity: 0,
+        opacity: 0.2,
+        depthWrite: false,
+      }),
+      // Faint blueprint line for the pre-scroll ghost preview — muted, thin,
+      // meant to be noticed rather than admired.
+      ghost: new THREE.LineBasicMaterial({
+        color: "#8A8177",
+        transparent: true,
+        opacity: 0.3,
         depthWrite: false,
       }),
       base: new THREE.MeshStandardMaterial({
@@ -173,17 +190,39 @@ export function LampParts({ refs, quality }: LampPartsProps) {
     };
   }, [refs, clipPlane]);
 
+  // Hand the ghost material over too — its opacity is the only thing choreography
+  // needs to drive, since visibility toggling happens on the group.
+  React.useEffect(() => {
+    refs.ghostMaterial = materials.ghost;
+    return () => {
+      refs.ghostMaterial = null;
+    };
+  }, [refs, materials.ghost]);
+
   // --- Disposal -------------------------------------------------------------
   React.useEffect(() => {
     return () => {
       shadeGeometry.dispose();
       baseGeometry.dispose();
+      ghostShadeGeometry.dispose();
+      ghostBaseGeometry.dispose();
+      ghostColumnGeometry.dispose();
       gridTexture?.dispose();
       shadowTexture?.dispose();
       glowTexture?.dispose();
       Object.values(materials).forEach((material) => material.dispose());
     };
-  }, [shadeGeometry, baseGeometry, gridTexture, shadowTexture, glowTexture, materials]);
+  }, [
+    shadeGeometry,
+    baseGeometry,
+    ghostShadeGeometry,
+    ghostBaseGeometry,
+    ghostColumnGeometry,
+    gridTexture,
+    shadowTexture,
+    glowTexture,
+    materials,
+  ]);
 
   return (
     <group ref={(node) => {
@@ -346,6 +385,34 @@ export function LampParts({ refs, quality }: LampPartsProps) {
         <mesh material={materials.accent} position={[0, LAMP_LAYOUT.finialCapY, 0]}>
           <sphereGeometry args={[0.1, 24, 16]} />
         </mesh>
+      </group>
+
+      {/*
+        Ghost preview: a faint outline of the finished lamp, visible only at
+        rest before the real parts start printing. Positioned to match the
+        real base/column/shade exactly, so the silhouette lines up with what
+        it's a preview of.
+      */}
+      <group
+        ref={(node) => {
+          refs.ghostGroup = node;
+        }}
+      >
+        <lineSegments
+          geometry={ghostBaseGeometry}
+          material={materials.ghost}
+          position={[0, LAMP_LAYOUT.baseY, 0]}
+        />
+        <lineSegments
+          geometry={ghostColumnGeometry}
+          material={materials.ghost}
+          position={[0, LAMP_LAYOUT.columnY, 0]}
+        />
+        <lineSegments
+          geometry={ghostShadeGeometry}
+          material={materials.ghost}
+          position={[0, LAMP_LAYOUT.shadeY, 0]}
+        />
       </group>
     </group>
   );

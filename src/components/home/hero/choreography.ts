@@ -35,7 +35,7 @@ export function winLinear(p: number, a: number, b: number) {
  * as one continuous build rather than nine separate animations queued back to back.
  */
 export const STAGES = {
-  bed: [0.0, 0.14],
+  ghost: [0.0, 0.16],
   base: [0.1, 0.3],
   column: [0.24, 0.44],
   socket: [0.4, 0.55],
@@ -65,6 +65,9 @@ export interface LampRefs {
   bulbLight: THREE.PointLight | null;
   /** Shared by both shade materials; its `.constant` is the print-wipe height. */
   clipPlane: THREE.Plane | null;
+  /** Faint faceted preview of the finished lamp, visible only before p advances. */
+  ghostGroup: THREE.Group | null;
+  ghostMaterial: THREE.LineBasicMaterial | null;
 }
 
 export function createLampRefs(): LampRefs {
@@ -85,6 +88,8 @@ export function createLampRefs(): LampRefs {
     glow: null,
     bulbLight: null,
     clipPlane: null,
+    ghostGroup: null,
+    ghostMaterial: null,
   };
 }
 
@@ -109,22 +114,29 @@ function basicMaterial(mesh: THREE.Mesh | null): THREE.MeshBasicMaterial | null 
  * `time` is only used for the ignition flicker; everything else is a function of p alone.
  */
 export function applyChoreography(refs: LampRefs, p: number, time: number): void {
-  // --- Print bed ------------------------------------------------------------
-  const bedP = win(p, ...STAGES.bed);
-  // Bed and grid are flat circles rotated onto the XZ plane, so their in-plane
-  // axes are still local X/Y — scaling Z here would do nothing.
-  if (refs.bed) {
-    const s = 0.72 + 0.28 * bedP;
-    refs.bed.scale.set(s, s, 1);
+  // --- Print bed --------------------------------------------------------
+  // The bed is the stage itself, not a printed part — it's present at rest
+  // (p=0, before any scroll) so a visitor who never scrolls sees a grounded
+  // stage rather than an empty transparent canvas over the page background.
+  {
     const mat = standardMaterial(refs.bed);
-    if (mat) mat.opacity = bedP;
+    if (mat) mat.opacity = 1;
   }
-  if (refs.grid) {
-    const s = 0.72 + 0.28 * bedP;
-    refs.grid.scale.set(s, s, 1);
+  {
     const mat = basicMaterial(refs.grid);
-    if (mat) mat.opacity = 0.35 * bedP;
+    if (mat) mat.opacity = 0.35;
   }
+
+  // --- Ghost preview ------------------------------------------------------
+  // A faint faceted outline of the finished lamp, standing in for the parts
+  // that haven't printed yet. Without it, the moment before scrolling is
+  // just the bare bed — this gives that moment something to look at, like a
+  // slicer's print preview. Fades out as soon as the base actually starts
+  // rising, and reappears symmetrically if the user scrubs back toward p=0,
+  // since it's driven by the same p as everything else.
+  const ghostFade = 1 - win(p, ...STAGES.ghost, easeOut);
+  if (refs.ghostMaterial) refs.ghostMaterial.opacity = 0.3 * ghostFade;
+  if (refs.ghostGroup) refs.ghostGroup.visible = ghostFade > 0.005;
 
   // --- Base rises out of the bed -------------------------------------------
   const baseP = win(p, ...STAGES.base);
@@ -227,8 +239,8 @@ export function applyChoreography(refs: LampRefs, p: number, time: number): void
 
   if (refs.contactShadow) {
     const mat = basicMaterial(refs.contactShadow);
-    // The object gains visual weight once it's lit.
-    if (mat) mat.opacity = bedP * (0.2 + 0.14 * igniteP);
+    // Present from rest, same as the bed; gains weight once the lamp lights.
+    if (mat) mat.opacity = 0.2 + 0.14 * igniteP;
   }
 
   // --- Final settle ---------------------------------------------------------
