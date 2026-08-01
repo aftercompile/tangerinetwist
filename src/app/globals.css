@@ -43,6 +43,55 @@
     @apply mx-auto w-full max-w-8xl px-5 md:px-8 lg:px-12;
   }
 
+  /* Scroll track for the pinned hero. The extra 150vh beyond the sticky child's
+     100vh is the distance over which the lamp assembles.
+
+     Doing the reduced-motion case in CSS rather than in React is deliberate: the
+     server HTML stays byte-identical either way (so there's nothing to mismatch on
+     hydration), and the media query resolves before first paint, so the shorter
+     track never causes a visible jump. 120vh rather than 100vh because a
+     zero-length scroll range makes useScroll divide by zero. */
+  .hero-scroll-track {
+    height: 250vh;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-scroll-track {
+      height: 120vh;
+    }
+  }
+
+  /* The lamp's stage. Height lives here rather than on the canvas so the box is
+     reserved from first paint and CLS is structurally zero.
+
+     The sizes are budgeted against the pinned viewport: the sticky child is one
+     screen tall with 80px of navbar padding, and the copy block needs ~310px, so
+     the stage gets what's left. Overshooting it would push the CTA under the
+     `overflow-hidden` and clip it. */
+  .hero-stage {
+    height: 32vh;
+  }
+
+  @media (min-width: 640px) {
+    .hero-stage {
+      height: 38vh;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-stage {
+      height: 68vh;
+    }
+  }
+
+  /* Landscape phones and short windows can't fit both. The lamp is decorative
+     (aria-hidden), the CTA isn't — so the lamp is what gives way. */
+  @media (max-height: 640px) and (max-width: 1023px) {
+    .hero-stage {
+      display: none;
+    }
+  }
+
   .eyebrow {
     @apply text-xs font-semibold uppercase tracking-[0.22em] text-tangerine-600;
   }
