@@ -45,8 +45,20 @@ export default function AboutPage() {
           </p>
         </AnimatedReveal>
         <AnimatedReveal delay={0.1} className="grid grid-cols-2 gap-4">
-          <ProductImagePlaceholder icon="Sparkles" tone="charcoal" className="aspect-[3/4] rounded-3xl shadow-lift" />
-          <ProductImagePlaceholder icon="Lamp" tone="warm" className="mt-8 aspect-[3/4] rounded-3xl shadow-lift" />
+          <ProductImagePlaceholder
+            icon="Sparkles"
+            tone="charcoal"
+            src="/images/story/story-1.jpg"
+            alt="A hand sanding a freshly 3D-printed ribbed vase in the studio"
+            className="aspect-[3/4] rounded-3xl shadow-lift"
+          />
+          <ProductImagePlaceholder
+            icon="Lamp"
+            tone="warm"
+            src="/images/story/story-2.jpg"
+            alt="A 3D printer building a fluted vase layer by layer"
+            className="mt-8 aspect-[3/4] rounded-3xl shadow-lift"
+          />
         </AnimatedReveal>
       </section>
 
