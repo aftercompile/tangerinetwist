@@ -8,6 +8,7 @@ const HERO_ICON_MAP: Record<string, string> = {
   lamp: "Lamp",
   sparkles: "Sparkles",
   "layout-grid": "LayoutGrid",
+  watch: "Watch",
 };
 
 // Renders nothing when the category has neither storytelling copy nor journey

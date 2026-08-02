@@ -11,12 +11,14 @@ const HERO_ICON_MAP: Record<string, string> = {
   lamp: "Lamp",
   sparkles: "Sparkles",
   "layout-grid": "LayoutGrid",
+  watch: "Watch",
 };
 
 const HERO_TONE: Record<string, "warm" | "charcoal" | "cool"> = {
   lamps: "warm",
   idols: "charcoal",
   "desk-organizers": "cool",
+  "home-accents": "cool",
 };
 
 const HERO_IMAGE: Record<string, string> = {

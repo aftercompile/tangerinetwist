@@ -10,12 +10,20 @@ const tones: Record<string, "warm" | "charcoal" | "cool"> = {
   lamps: "warm",
   idols: "charcoal",
   "desk-organizers": "cool",
+  "home-accents": "cool",
 };
 
 const images: Record<string, string> = {
   lamps: "/images/collections/collections-lamps.jpg",
   idols: "/images/collections/collections-idols.jpg",
   "desk-organizers": "/images/collections/collections-desk-organizers.jpg",
+};
+
+const heroIconToLucide: Record<string, string> = {
+  lamp: "Lamp",
+  sparkles: "Sparkles",
+  "layout-grid": "LayoutGrid",
+  watch: "Watch",
 };
 
 export function CollectionsSection({ categories }: { categories: CategoryMeta[] }) {
@@ -33,13 +41,7 @@ export function CollectionsSection({ categories }: { categories: CategoryMeta[] 
             <Link href={`/${category.slug}`} className="group block">
               <div className="relative aspect-[3/4] overflow-hidden rounded-3xl">
                 <ProductImagePlaceholder
-                  icon={
-                    category.heroIcon === "lamp"
-                      ? "Lamp"
-                      : category.heroIcon === "sparkles"
-                        ? "Sparkles"
-                        : "LayoutGrid"
-                  }
+                  icon={heroIconToLucide[category.heroIcon] ?? "Sparkles"}
                   tone={tones[category.slug] ?? "beige"}
                   src={images[category.slug]}
                   alt={category.name}
