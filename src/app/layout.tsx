@@ -48,16 +48,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${manrope.variable} ${jakarta.variable}`}>
       <body className="flex min-h-screen flex-col font-sans">
+        {/* Organization + LocalBusiness combined on one entity (schema.org allows a
+            type array) rather than two separate script tags that could read as
+            conflicting entities. No `sameAs` — TangerineTwist doesn't have public
+            social profiles live yet; a placeholder link to instagram.com's own
+            homepage (the previous state here) is worse than no field at all. */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "Organization",
+              "@type": ["Organization", "LocalBusiness"],
               name: siteConfig.name,
               url: siteConfig.url,
               description: siteConfig.description,
-              sameAs: ["https://instagram.com", "https://facebook.com", "https://youtube.com"],
+              email: "hello@tangerinetwist.in",
+              telephone: "+91-63539-08104",
+              address: {
+                "@type": "PostalAddress",
+                // No public street-level address exists on the Contact page —
+                // this mirrors what's actually displayed there rather than
+                // inventing precision that isn't public.
+                streetAddress: "TangerineTwist Design Studio",
+                addressLocality: "Vadodara",
+                addressRegion: "Gujarat",
+                addressCountry: "IN",
+              },
             }),
           }}
         />

@@ -42,13 +42,26 @@ export default async function ProductPage({ params }: { params: { slug: string }
     getRelatedProducts(product),
   ]);
 
+  // Real image URLs, not the page URL — Google's Product rich result requires
+  // `image` to resolve to actual image files to be eligible at all. Falls
+  // back to nothing (field omitted) rather than a wrong URL if a product has
+  // no real photo yet, since every non-photo image is a CSS/SVG placeholder
+  // with no meaningful file to point to. Admin-uploaded images are already
+  // absolute Supabase Storage URLs; only seed-fixture-style relative paths
+  // (starting with "/") need siteConfig.url prepended.
+  const imageUrls = product.images
+    .map((img) => img.src)
+    .filter((src): src is string => Boolean(src))
+    .map((src) => (src.startsWith("/") ? `${siteConfig.url}${src}` : src));
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
     description: product.description,
     sku: product.id,
-    image: `${siteConfig.url}/product/${product.slug}`,
+    brand: { "@type": "Brand", name: siteConfig.name },
+    ...(imageUrls.length > 0 ? { image: imageUrls } : {}),
     offers: {
       "@type": "Offer",
       priceCurrency: "INR",
@@ -59,11 +72,17 @@ export default async function ProductPage({ params }: { params: { slug: string }
           : "https://schema.org/PreOrder",
       url: `${siteConfig.url}/product/${product.slug}`,
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: product.rating,
-      reviewCount: product.reviewCount,
-    },
+    // Google's guidelines explicitly disallow AggregateRating with zero
+    // reviews (it reads as fabricated) — only emit it once real reviews exist.
+    ...(product.reviewCount > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: product.rating,
+            reviewCount: product.reviewCount,
+          },
+        }
+      : {}),
   };
 
   return (

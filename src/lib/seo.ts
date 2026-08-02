@@ -2,7 +2,9 @@ import { Metadata } from "next";
 
 export const siteConfig = {
   name: "TangerineTwist",
-  url: "https://tangerinetwist.com",
+  // The apex domain 308-redirects here, so this must be the final resolved
+  // URL — every canonical tag, OG url, and JSON-LD url is built from this.
+  url: "https://www.tangerinetwist.in",
   description:
     "TangerineTwist is a modern design studio crafting premium 3D-printed home décor and workspace essentials — designer lamps, decorative idols and desk organizers, made in India.",
   keywords: [

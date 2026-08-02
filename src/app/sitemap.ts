@@ -8,7 +8,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getAllProductsForSitemap(),
   ]);
 
-  const staticRoutes = ["", "/about", "/contact", "/cart", "/wishlist"].map((path) => ({
+  // /cart and /wishlist are user-state pages with no indexable content of
+  // their own (and /cart is explicitly disallowed in robots.ts) — submitting
+  // them here would be self-contradictory and waste crawl budget.
+  const staticRoutes = ["", "/about", "/contact"].map((path) => ({
     url: `${siteConfig.url}${path}`,
     lastModified: new Date(),
   }));
