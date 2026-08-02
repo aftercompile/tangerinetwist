@@ -21,6 +21,9 @@ export const siteConfig = {
     "Contemporary Desk Setup",
     "Minimal Desk Accessories",
   ],
+  social: {
+    instagram: "https://www.instagram.com/tangerinetwist.studio",
+  },
 };
 
 export function buildMetadata({

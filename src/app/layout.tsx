@@ -50,9 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-screen flex-col font-sans">
         {/* Organization + LocalBusiness combined on one entity (schema.org allows a
             type array) rather than two separate script tags that could read as
-            conflicting entities. No `sameAs` — TangerineTwist doesn't have public
-            social profiles live yet; a placeholder link to instagram.com's own
-            homepage (the previous state here) is worse than no field at all. */}
+            conflicting entities. */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -64,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               description: siteConfig.description,
               email: "hello@tangerinetwist.in",
               telephone: "+91-63539-08104",
+              sameAs: [siteConfig.social.instagram],
               address: {
                 "@type": "PostalAddress",
                 // No public street-level address exists on the Contact page —

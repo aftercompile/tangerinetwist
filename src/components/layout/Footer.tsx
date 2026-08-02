@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Instagram, Facebook, Youtube, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { siteConfig } from "@/lib/seo";
 import { toast } from "sonner";
 
 const shopLinks = [
@@ -64,7 +65,7 @@ export function Footer() {
             </form>
             <div className="mt-6 flex gap-3">
               <a
-                href="https://instagram.com"
+                href={siteConfig.social.instagram}
                 target="_blank"
                 rel="noreferrer"
                 aria-label="TangerineTwist on Instagram"

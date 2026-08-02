@@ -1,5 +1,6 @@
 import { Instagram, ArrowUpRight } from "lucide-react";
 import { instagramPosts } from "@/data/content";
+import { siteConfig } from "@/lib/seo";
 import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 import { SectionHeading } from "@/components/shared/SectionHeading";
 import { AnimatedReveal } from "@/components/shared/AnimatedReveal";
@@ -21,7 +22,7 @@ export function InstagramGallery() {
         <SectionHeading eyebrow="Follow Along" title="@tangerinetwist.studio" className="mb-0" />
         <AnimatedReveal delay={0.1}>
           <a
-            href="https://instagram.com"
+            href={siteConfig.social.instagram}
             target="_blank"
             rel="noreferrer"
             className="link-underline group flex items-center gap-2 text-sm font-medium text-charcoal"
@@ -35,7 +36,7 @@ export function InstagramGallery() {
         {instagramPosts.map((post, i) => (
           <AnimatedReveal key={post.id} delay={staggerDelay(i, 0.05)}>
             <a
-              href="https://instagram.com"
+              href={siteConfig.social.instagram}
               target="_blank"
               rel="noreferrer"
               className="group relative block aspect-square overflow-hidden rounded-xl"
