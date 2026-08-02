@@ -23,6 +23,21 @@ function DialogContent({
           "fixed left-1/2 top-1/2 z-50 flex max-h-[85vh] w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-warm-white p-0 shadow-lift outline-none data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out",
           className
         )}
+        // Radix focuses the content (or the trigger, on close) automatically, and on
+        // mobile that default focus() call makes the browser scroll the focused element
+        // into view — which, combined with `scroll-behavior: smooth` on <html>, animates
+        // a visible glide across whatever product cards sit between the trigger and this
+        // fixed/centered dialog. preventScroll keeps focus (and keyboard/screen-reader
+        // behavior) working without that scroll side effect.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement | null)?.focus({ preventScroll: true });
+        }}
+        // Radix's default here refocuses the trigger button, which is the same
+        // scroll-into-view risk in reverse. Skipping it is a fair trade: focus falls
+        // back to the document instead of precisely returning to the trigger, but
+        // nothing jumps.
+        onCloseAutoFocus={(e) => e.preventDefault()}
         {...props}
       >
         <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
