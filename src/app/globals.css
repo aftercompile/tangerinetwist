@@ -20,6 +20,40 @@
     @apply outline-none ring-2 ring-tangerine-400 ring-offset-2 ring-offset-cream;
   }
 
+  /* Page scrollbar: hidden on mobile (native scroll still works, it just doesn't
+     draw a bar) since touch devices already show a transient one; a slim
+     tangerine-tinted bar appears from the md breakpoint up, where a mouse/
+     trackpad user actually benefits from a persistent scroll affordance. */
+  html {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    html {
+      scrollbar-width: thin;
+      scrollbar-color: theme("colors.tangerine.400") theme("colors.beige");
+    }
+    html::-webkit-scrollbar {
+      display: block;
+      width: 10px;
+    }
+    html::-webkit-scrollbar-track {
+      background: theme("colors.beige");
+    }
+    html::-webkit-scrollbar-thumb {
+      background-color: theme("colors.tangerine.400");
+      border-radius: 9999px;
+      border: 2px solid theme("colors.beige");
+    }
+    html::-webkit-scrollbar-thumb:hover {
+      background-color: theme("colors.tangerine.500");
+    }
+  }
+
   /* Framer Motion's useReducedMotion covers JS-driven animation, but Tailwind
      transition utilities and smooth scrolling are pure CSS and need their own
      guard. Kept near-zero rather than 0 so transitionend listeners still fire. */
