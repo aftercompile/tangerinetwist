@@ -54,6 +54,8 @@ export function CategoryForm({
       }
       toast.success(mode === "create" ? "Category created" : "Category updated");
       onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }

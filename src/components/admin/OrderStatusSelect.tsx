@@ -26,6 +26,9 @@ export function OrderStatusSelect({ orderId, status }: { orderId: string; status
       }
       toast.success("Order status updated");
       router.refresh();
+    } catch (err) {
+      setCurrent(status);
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setUpdating(false);
     }

@@ -37,6 +37,8 @@ export function ShiprocketPanel({ order }: { order: AdminOrderDetail }) {
       toast.success("Shipped via Shiprocket");
       setDialogOpen(false);
       router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setShipping(false);
     }
@@ -52,6 +54,8 @@ export function ShiprocketPanel({ order }: { order: AdminOrderDetail }) {
       }
       toast.success("Tracking updated");
       router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setRefreshing(false);
     }

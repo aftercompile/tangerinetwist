@@ -43,6 +43,8 @@ export function CategoriesManager({ categories }: { categories: AdminCategoryRow
       }
       toast.success("Category deleted");
       router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setDeletingId(null);
     }

@@ -58,6 +58,8 @@ export function ProductsTable({
       }
       toast.success("Product deleted");
       router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setDeletingId(null);
     }

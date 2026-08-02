@@ -138,6 +138,14 @@ export function ProductForm({
       toast.success(mode === "create" ? "Product created" : "Product updated");
       router.push("/admin/products");
       router.refresh();
+    } catch (err) {
+      // createProduct/updateProduct only return a friendly {error} for a slug
+      // collision — anything else (an expired session, a stale category
+      // reference, a transient DB error) throws instead. Without this catch
+      // that exception was an unhandled rejection: the button re-enabled via
+      // `finally` below but nothing else happened, which from the admin's side
+      // looked exactly like the button didn't do anything at all.
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -156,6 +164,8 @@ export function ProductForm({
       toast.success("Product deleted");
       router.push("/admin/products");
       router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setDeleting(false);
     }
