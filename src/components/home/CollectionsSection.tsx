@@ -17,6 +17,7 @@ const images: Record<string, string> = {
   lamps: "/images/collections/collections-lamps.jpg",
   idols: "/images/collections/collections-idols.jpg",
   "desk-organizers": "/images/collections/collections-desk-organizers.jpg",
+  "home-accents": "/images/collections/collections-home-accents.jpg",
 };
 
 const heroIconToLucide: Record<string, string> = {

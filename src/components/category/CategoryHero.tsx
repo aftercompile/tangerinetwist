@@ -25,6 +25,7 @@ const HERO_IMAGE: Record<string, string> = {
   lamps: "/images/banners/banner-lamps.jpg",
   idols: "/images/banners/banner-idols.jpg",
   "desk-organizers": "/images/banners/banner-desk-organizers.jpg",
+  "home-accents": "/images/banners/banner-home-accents.jpg",
 };
 
 const GRAIN =
