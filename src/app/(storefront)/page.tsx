@@ -1,3 +1,4 @@
+import { SmoothScroll } from "@/components/shared/SmoothScroll";
 import { Hero } from "@/components/home/Hero";
 import { CollectionsSection } from "@/components/home/CollectionsSection";
 import { OurStory } from "@/components/home/OurStory";
@@ -20,6 +21,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <SmoothScroll />
       <Hero />
       <CollectionsSection categories={categories} />
       <OurStory />
