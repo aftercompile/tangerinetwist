@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { getAdminCategoryOptions, getAdminProductRows } from "@/lib/db/admin-queries";
 import { ProductsTable } from "@/components/admin/ProductsTable";
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,18 @@ export default async function AdminProductsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted">{products.length} products</p>
-        <Button asChild>
-          <Link href="/admin/products/new">
-            <Plus className="h-4 w-4" /> New Product
-          </Link>
-        </Button>
+        <div className="flex gap-3">
+          <Button variant="outline" asChild>
+            <Link href="/admin/products/bulk-import">
+              <Sparkles className="h-4 w-4" /> Bulk Import
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/admin/products/new">
+              <Plus className="h-4 w-4" /> New Product
+            </Link>
+          </Button>
+        </div>
       </div>
       <ProductsTable products={products} categories={categories.map((c) => ({ slug: c.slug, name: c.name }))} />
     </div>

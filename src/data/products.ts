@@ -1,41 +1,45 @@
 import { Product, ProductFaq, ProductReview } from "@/lib/types";
 
-const lampCare = [
+// Exported (not just module-local) so src/lib/actions/bulk-import-actions.ts can reuse the
+// exact same boilerplate instead of duplicating it — one source of truth for copy that's
+// operational/legal in nature (care, shipping, returns), which the bulk-import AI drafter
+// deliberately never generates per product.
+export const lampCare = [
   "Dust with a soft, dry microfibre cloth — avoid abrasive cleaners.",
   "Keep away from direct rain or prolonged sun exposure.",
   "Use only with the included warm-white LED module (max 5W).",
   "Do not immerse in water or use solvent-based cleaning agents.",
 ];
 
-const idolCare = [
+export const idolCare = [
   "Wipe gently with a dry, soft cloth to preserve the hand-finished surface.",
   "Avoid direct, prolonged sunlight to prevent gradual colour fading.",
   "Keep away from open flame and excessive heat sources.",
   "Handle base firmly when relocating — lift, don't drag.",
 ];
 
-const deskCare = [
+export const deskCare = [
   "Wipe clean with a lightly damp cloth; dry immediately.",
   "Avoid prolonged exposure to direct, high-intensity sunlight.",
   "Rated for everyday indoor desk use at room temperature.",
   "Silicone components can be cleaned with mild soap and water.",
 ];
 
-const shippingStandard = [
+export const shippingStandard = [
   "Dispatched within 2–4 business days — every piece is printed and finished to order.",
   "Delivered in 4–7 business days across India via trusted courier partners.",
   "Free shipping on all prepaid orders above ₹799.",
   "Each order is packed in protective, recyclable packaging designed for zero-damage transit.",
 ];
 
-const returnsStandard = [
+export const returnsStandard = [
   "7-day easy returns from the date of delivery on unused, undamaged items.",
   "Replacement guarantee if your piece arrives damaged — just share a photo within 48 hours.",
   "Made-to-order and personalised pieces are final sale unless defective.",
   "Refunds are processed to the original payment method within 5–7 business days.",
 ];
 
-function faqs(extra: ProductFaq[] = []): ProductFaq[] {
+export function faqs(extra: ProductFaq[] = []): ProductFaq[] {
   return [
     {
       question: "Is this made to order?",
@@ -373,7 +377,7 @@ const lamps: Product[] = [
 // DECORATIVE IDOLS
 // ---------------------------------------------------------------------------
 
-const idolFeatures = [
+export const idolFeatures = [
   "8K resin printing captures fabric folds, jewellery and expression in fine detail",
   "Hand-finished by studio artisans for a smooth, premium surface",
   "Lightweight resin body — easy to place, gift, or travel with",
@@ -702,7 +706,7 @@ const idols: Product[] = [
 // DESK ORGANIZERS
 // ---------------------------------------------------------------------------
 
-const deskFeatures = [
+export const deskFeatures = [
   "Precision-printed in premium PLA for a smooth, durable finish",
   "Non-slip silicone base pads included",
   "Modular footprint — mixes and matches with the full desk collection",
