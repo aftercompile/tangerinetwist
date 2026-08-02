@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Menu, ExternalLink, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/lib/actions/auth-actions";
+import { adminHref } from "@/lib/auth/admin-routes";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
@@ -16,31 +17,21 @@ import { Button } from "@/components/ui/button";
 // reload, scroll position and open dialogs are preserved) roughly every LIVE_REFRESH_MS.
 const LIVE_REFRESH_MS = 15_000;
 
-const navLinks = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/products", label: "Products", icon: Package },
-  { href: "/admin/categories", label: "Categories", icon: FolderTree },
-  { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
-  { href: "/admin/customers", label: "Customers", icon: Users },
-];
-
-const pageTitles: Record<string, string> = {
-  "/admin": "Dashboard",
-  "/admin/products": "Products",
-  "/admin/categories": "Categories",
-  "/admin/orders": "Orders",
-  "/admin/customers": "Customers",
-};
-
-export function AdminTopbar() {
+export function AdminTopbar({ isAdminHost }: { isAdminHost: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
+  const navLinks = [
+    { href: adminHref(isAdminHost, ""), label: "Dashboard", icon: LayoutDashboard, exact: true },
+    { href: adminHref(isAdminHost, "products"), label: "Products", icon: Package },
+    { href: adminHref(isAdminHost, "categories"), label: "Categories", icon: FolderTree },
+    { href: adminHref(isAdminHost, "orders"), label: "Orders", icon: ShoppingCart },
+    { href: adminHref(isAdminHost, "customers"), label: "Customers", icon: Users },
+  ];
+
   const title =
-    pageTitles[pathname] ??
-    Object.entries(pageTitles).find(([href]) => pathname.startsWith(href) && href !== "/admin")?.[1] ??
-    "Admin";
+    navLinks.find((l) => (l.exact ? pathname === l.href : pathname.startsWith(l.href)))?.label ?? "Admin";
 
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -107,7 +98,10 @@ export function AdminTopbar() {
           Live
         </span>
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/" target="_blank">
+          {/* On the admin subdomain, a relative "/" would hit the admin-clean-path
+             rewrite (see middleware.ts) and reopen the dashboard instead of the
+             storefront — needs an absolute cross-host URL there. */}
+          <Link href={isAdminHost ? "https://tangerinetwist.in" : "/"} target="_blank">
             <ExternalLink className="h-4 w-4" /> View Storefront
           </Link>
         </Button>

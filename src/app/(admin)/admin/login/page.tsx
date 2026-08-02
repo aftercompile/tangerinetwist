@@ -19,7 +19,7 @@ function SubmitButton() {
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const from = searchParams.get("from") ?? "/admin";
+  const from = searchParams.get("from") ?? "";
   const [state, formAction] = useFormState(loginAction, undefined);
 
   return (
