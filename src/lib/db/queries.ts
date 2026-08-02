@@ -46,6 +46,9 @@ function mapProductRow(row: ProductRow, relatedSlugs: string[] = []): Product {
     rating: Number(row.rating),
     reviewCount: row.reviewCount,
     badges: row.badges as Product["badges"],
+    styleTags: row.styleTags,
+    colorTag: row.colorTag ?? undefined,
+    sizeTier: row.sizeTier ?? undefined,
     features: row.features,
     careInstructions: row.careInstructions,
     shippingInfo: row.shippingInfo,
@@ -63,6 +66,7 @@ function mapProductRow(row: ProductRow, relatedSlugs: string[] = []): Product {
     })),
     relatedSlugs,
     stock: row.stock,
+    createdAt: row.createdAt.toISOString(),
     isPersonalized: row.isPersonalized,
   };
 }
@@ -239,6 +243,18 @@ export const getAllCategories = unstable_cache(
         heroIcon: c.heroIcon,
         priceRange,
         material: c.material,
+        heroStatement: c.heroStatement,
+        storyTitle: c.storyTitle,
+        storyBody: c.storyBody,
+        storyImage: c.storyImage ?? undefined,
+        journeySteps: c.journeySteps,
+        stats: c.stats,
+        lifestyleImage: c.lifestyleImage ?? undefined,
+        lifestyleHeadline: c.lifestyleHeadline,
+        lifestyleBody: c.lifestyleBody,
+        closingImage: c.closingImage ?? undefined,
+        closingHeadline: c.closingHeadline,
+        closingBody: c.closingBody,
       };
     });
   },

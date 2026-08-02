@@ -1,14 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Matches ProductCard's current shape — info now overlays the image rather
+// than stacking below it, so the skeleton is just the one card-sized block.
 export function ProductCardSkeleton() {
-  return (
-    <div className="flex flex-col gap-4">
-      <Skeleton className="aspect-[4/5] w-full" />
-      <div className="flex flex-col gap-2">
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-3 w-1/2" />
-        <Skeleton className="h-4 w-1/3" />
-      </div>
-    </div>
-  );
+  return <Skeleton className="aspect-[4/5] w-full rounded-[28px]" />;
 }

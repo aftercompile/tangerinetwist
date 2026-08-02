@@ -12,6 +12,12 @@ const badgeVariants = cva(
         limited: "bg-beige-dark text-charcoal",
         outline: "border border-border text-charcoal",
         soft: "bg-tangerine-50 text-tangerine-700",
+        // Richer editorial labels for the category-page redesign — assigned sparingly to
+        // standout products, not a replacement for the three core badges above.
+        "artist-pick": "bg-tangerine-100 text-tangerine-800",
+        "hand-finished": "border border-beige-dark bg-beige text-charcoal",
+        signature: "bg-tangerine-800 text-cream",
+        "premium-finish": "border border-tangerine-300 bg-tangerine-50 text-tangerine-700",
       },
     },
     defaultVariants: { variant: "outline" },

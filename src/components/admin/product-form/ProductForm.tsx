@@ -29,6 +29,10 @@ const badgeOptions = [
   { value: "bestseller", label: "Best Seller" },
   { value: "new", label: "New" },
   { value: "limited", label: "Limited Batch" },
+  { value: "artist-pick", label: "Artist Pick" },
+  { value: "hand-finished", label: "Hand Finished" },
+  { value: "signature", label: "Signature Collection" },
+  { value: "premium-finish", label: "Premium Finish" },
 ] as const;
 
 const TABS = ["basics", "pricing", "specs", "media", "copy", "related"] as const;
@@ -97,7 +101,7 @@ export function ProductForm({
     if (name) setValue("slug", slugify(name), { shouldValidate: true });
   }
 
-  function toggleBadge(value: "bestseller" | "new" | "limited") {
+  function toggleBadge(value: (typeof badgeOptions)[number]["value"]) {
     const next = badges.includes(value) ? badges.filter((b) => b !== value) : [...badges, value];
     setValue("badges", next);
   }

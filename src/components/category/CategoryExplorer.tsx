@@ -1,168 +1,136 @@
 "use client";
 
 import * as React from "react";
-import { SlidersHorizontal, X } from "lucide-react";
-import { Product } from "@/lib/types";
+import { Product, CategoryMeta } from "@/lib/types";
 import { ProductCard } from "@/components/product/ProductCard";
 import { ProductCardSkeleton } from "@/components/product/ProductCardSkeleton";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { FilterChips } from "./FilterChips";
+import { SortSegmented, type SortOption } from "./SortSegmented";
+import { CategoryLifestyleBreak } from "./CategoryLifestyleBreak";
+import { computeFilterChips, productMatchesChip } from "@/lib/category-filters";
 
-type SortKey = "featured" | "price-asc" | "price-desc" | "rating";
+type SortKey = "featured" | "newest" | "popular" | "price-asc" | "price-desc" | "rating";
 
-export function CategoryExplorer({ products }: { products: Product[] }) {
+const SORT_OPTIONS: SortOption<SortKey>[] = [
+  { value: "featured", label: "Featured" },
+  { value: "newest", label: "Newest" },
+  { value: "popular", label: "Popular" },
+  { value: "price-asc", label: "Price ↑" },
+  { value: "price-desc", label: "Price ↓" },
+  { value: "rating", label: "Most Loved" },
+];
+
+// Scroll target for the lifestyle break's "Continue Exploring" CTA and the
+// closing CTA's "Explore the Collection" button — both live outside this
+// component, so the id is exported rather than duplicated as a string literal.
+export const GRID_ANCHOR_ID = "shop";
+
+function sortProducts(products: Product[], sort: SortKey): Product[] {
+  const list = [...products];
+  switch (sort) {
+    case "newest":
+      return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    case "popular":
+      return list.sort((a, b) => b.reviewCount - a.reviewCount);
+    case "price-asc":
+      return list.sort((a, b) => a.price - b.price);
+    case "price-desc":
+      return list.sort((a, b) => b.price - a.price);
+    case "rating":
+      return list.sort((a, b) => b.rating - a.rating);
+    case "featured":
+    default:
+      return list.sort((a, b) => Number(b.badges.includes("bestseller")) - Number(a.badges.includes("bestseller")));
+  }
+}
+
+export function CategoryExplorer({ products, category }: { products: Product[]; category: CategoryMeta }) {
   const [loading, setLoading] = React.useState(true);
   const [sort, setSort] = React.useState<SortKey>("featured");
-  const [materials, setMaterials] = React.useState<string[]>([]);
-  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [active, setActive] = React.useState<string[]>([]);
+
+  // A mood card elsewhere on the page can link back here with ?mood=<chipId>
+  // (see CategoryMoodCollections, which uses a plain full-navigation <a> for
+  // this rather than next/link — deliberately so this can be a mount-time
+  // read of window.location instead of next/navigation's useSearchParams(),
+  // which would force this entire product grid into a Suspense-gated
+  // client-only render and lose server-rendered product content, a real SEO
+  // cost on a category page).
+  React.useEffect(() => {
+    const mood = new URLSearchParams(window.location.search).get("mood");
+    if (mood) setActive([mood]);
+  }, []);
 
   React.useEffect(() => {
     const t = setTimeout(() => setLoading(false), 500);
     return () => clearTimeout(t);
   }, []);
 
-  const availableMaterials = React.useMemo(
-    () => Array.from(new Set(products.map((p) => p.material))),
-    [products]
-  );
+  const chips = React.useMemo(() => computeFilterChips(products), [products]);
 
   const filtered = React.useMemo(() => {
-    let list = products;
-    if (materials.length > 0) {
-      list = list.filter((p) => materials.includes(p.material));
-    }
-    list = [...list];
-    switch (sort) {
-      case "price-asc":
-        list.sort((a, b) => a.price - b.price);
-        break;
-      case "price-desc":
-        list.sort((a, b) => b.price - a.price);
-        break;
-      case "rating":
-        list.sort((a, b) => b.rating - a.rating);
-        break;
-      default:
-        list.sort((a, b) => Number(b.badges.includes("bestseller")) - Number(a.badges.includes("bestseller")));
-    }
-    return list;
-  }, [products, materials, sort]);
+    if (active.length === 0) return products;
+    return products.filter((p) => active.some((chipId) => productMatchesChip(p, chipId)));
+  }, [products, active]);
 
-  function toggleMaterial(material: string) {
-    setMaterials((prev) =>
-      prev.includes(material) ? prev.filter((m) => m !== material) : [...prev, material]
-    );
+  const sorted = React.useMemo(() => sortProducts(filtered, sort), [filtered, sort]);
+
+  function toggleChip(id: string) {
+    setActive((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
   }
 
+  // Split into two batches with a lifestyle break between them, but only
+  // when there's enough product to actually breathe around it.
+  const showBreak = !loading && sorted.length >= 6 && Boolean(category.lifestyleImage || category.lifestyleHeadline);
+  const splitAt = showBreak ? Math.ceil(sorted.length / 2) : sorted.length;
+  const firstBatch = sorted.slice(0, splitAt);
+  const secondBatch = sorted.slice(splitAt);
+
   return (
-    <div className="container-wide py-14">
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-        <aside className="hidden w-56 shrink-0 sm:block">
-          <FilterPanel
-            availableMaterials={availableMaterials}
-            materials={materials}
-            toggleMaterial={toggleMaterial}
-          />
-        </aside>
-
-        <div className="flex-1">
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                className="sm:hidden"
-                onClick={() => setFiltersOpen((v) => !v)}
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5" /> Filters
-              </Button>
-              <p className="text-sm text-muted">{filtered.length} products</p>
-            </div>
-            <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="featured">Featured</SelectItem>
-                <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                <SelectItem value="rating">Highest Rated</SelectItem>
-              </SelectContent>
-            </Select>
+    <div id={GRID_ANCHOR_ID} className="scroll-mt-24 bg-cream py-20">
+      <div className="container-wide">
+        <div className="mb-10 flex flex-col gap-6">
+          <FilterChips options={chips} active={active} onToggle={toggleChip} onClear={() => setActive([])} />
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-muted">
+              {loading ? "Loading" : `${sorted.length} ${sorted.length === 1 ? "piece" : "pieces"}`}
+            </p>
+            <SortSegmented options={SORT_OPTIONS} value={sort} onChange={setSort} />
           </div>
+        </div>
 
-          {filtersOpen && (
-            <div className="mb-8 rounded-2xl border border-border p-5 sm:hidden">
-              <FilterPanel
-                availableMaterials={availableMaterials}
-                materials={materials}
-                toggleMaterial={toggleMaterial}
-              />
-            </div>
-          )}
+        <div className="grid grid-cols-1 gap-x-8 gap-y-16 md:grid-cols-2">
+          {loading
+            ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)
+            : firstBatch.map((product) => <ProductCard key={product.id} product={product} />)}
+        </div>
 
-          {materials.length > 0 && (
-            <div className="mb-6 flex flex-wrap gap-2">
-              {materials.map((m) => (
-                <button
-                  key={m}
-                  onClick={() => toggleMaterial(m)}
-                  className="flex items-center gap-1.5 rounded-full bg-beige px-3 py-1.5 text-xs text-charcoal"
-                >
-                  {m} <X className="h-3 w-3" />
-                </button>
+        {!loading && sorted.length === 0 && (
+          <p className="py-24 text-center text-sm text-muted">
+            No pieces match these filters. Try clearing a few.
+          </p>
+        )}
+      </div>
+
+      {showBreak && (
+        <>
+          <div className="mt-4">
+            <CategoryLifestyleBreak
+              image={category.lifestyleImage}
+              headline={category.lifestyleHeadline}
+              body={category.lifestyleBody}
+              gridAnchorId={GRID_ANCHOR_ID}
+            />
+          </div>
+          <div className="container-wide">
+            <div className="grid grid-cols-1 gap-x-8 gap-y-16 md:grid-cols-2">
+              {secondBatch.map((product) => (
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-            {loading
-              ? Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)
-              : filtered.map((product) => <ProductCard key={product.id} product={product} />)}
           </div>
-
-          {!loading && filtered.length === 0 && (
-            <p className="py-20 text-center text-sm text-muted">
-              No products match these filters. Try clearing a few.
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function FilterPanel({
-  availableMaterials,
-  materials,
-  toggleMaterial,
-}: {
-  availableMaterials: string[];
-  materials: string[];
-  toggleMaterial: (m: string) => void;
-}) {
-  return (
-    <div>
-      <Label className="mb-3">Material</Label>
-      <div className="flex flex-col gap-3">
-        {availableMaterials.map((material) => (
-          <label key={material} className="flex cursor-pointer items-center gap-2.5 text-sm text-charcoal">
-            <Checkbox
-              checked={materials.includes(material)}
-              onCheckedChange={() => toggleMaterial(material)}
-            />
-            {material}
-          </label>
-        ))}
-      </div>
+        </>
+      )}
     </div>
   );
 }

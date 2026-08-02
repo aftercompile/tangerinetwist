@@ -57,6 +57,21 @@ export const categories = pgTable("categories", {
   description: text("description").notNull(),
   heroIcon: text("hero_icon").notNull(),
   material: text("material").notNull(),
+  // Everything below powers the editorial category-page redesign. All nullable/defaulted
+  // so an admin-created category with none of it filled in just renders without these
+  // sections (each component checks its own content and returns null) instead of breaking.
+  heroStatement: text("hero_statement").notNull().default(""),
+  storyTitle: text("story_title").notNull().default(""),
+  storyBody: text("story_body").notNull().default(""),
+  storyImage: text("story_image"),
+  journeySteps: jsonb("journey_steps").$type<string[]>().notNull().default([]),
+  stats: jsonb("stats").$type<{ label: string; icon: string }[]>().notNull().default([]),
+  lifestyleImage: text("lifestyle_image"),
+  lifestyleHeadline: text("lifestyle_headline").notNull().default(""),
+  lifestyleBody: text("lifestyle_body").notNull().default(""),
+  closingImage: text("closing_image"),
+  closingHeadline: text("closing_headline").notNull().default(""),
+  closingBody: text("closing_body").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -86,6 +101,12 @@ export const products = pgTable("products", {
   reviewCount: integer("review_count").notNull().default(0),
   // real array (not jsonb): getBestSellers/getNewArrivals filter on this, backed by a GIN index
   badges: text("badges").array().notNull().default([]),
+  // Same real-array pattern as badges — the category page's floating filter chips are
+  // computed from whatever distinct values are actually present, never hardcoded, so a
+  // future category with different style tags gets correct chips automatically.
+  styleTags: text("style_tags").array().notNull().default([]),
+  colorTag: text("color_tag"),
+  sizeTier: text("size_tier"),
   features: jsonb("features").$type<string[]>().notNull().default([]),
   careInstructions: jsonb("care_instructions").$type<string[]>().notNull().default([]),
   shippingInfo: jsonb("shipping_info").$type<string[]>().notNull().default([]),

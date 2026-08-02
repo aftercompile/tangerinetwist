@@ -77,6 +77,18 @@ async function main() {
         description: cat.description,
         heroIcon: cat.heroIcon,
         material: cat.material,
+        heroStatement: cat.heroStatement,
+        storyTitle: cat.storyTitle,
+        storyBody: cat.storyBody,
+        storyImage: cat.storyImage ?? null,
+        journeySteps: cat.journeySteps,
+        stats: cat.stats,
+        lifestyleImage: cat.lifestyleImage ?? null,
+        lifestyleHeadline: cat.lifestyleHeadline,
+        lifestyleBody: cat.lifestyleBody,
+        closingImage: cat.closingImage ?? null,
+        closingHeadline: cat.closingHeadline,
+        closingBody: cat.closingBody,
       })
       .returning({ id: categoriesTable.id });
     categoryIdBySlug.set(cat.slug, row.id);
@@ -110,6 +122,9 @@ async function main() {
         rating: p.rating.toString(),
         reviewCount: p.reviewCount,
         badges: p.badges,
+        styleTags: p.styleTags,
+        colorTag: p.colorTag ?? null,
+        sizeTier: p.sizeTier ?? null,
         features: p.features,
         careInstructions: p.careInstructions,
         shippingInfo: p.shippingInfo,
@@ -117,6 +132,7 @@ async function main() {
         faqs: p.faqs,
         stock: p.stock,
         isPersonalized: p.slug === "personalized-desk-name-plate",
+        createdAt: new Date(p.createdAt),
       })
       .returning({ id: productsTable.id });
     productIdBySlug.set(p.slug, row.id);

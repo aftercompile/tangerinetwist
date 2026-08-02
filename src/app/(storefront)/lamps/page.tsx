@@ -1,7 +1,11 @@
 import { Metadata } from "next";
 import { getCategory, getProductsByCategory } from "@/lib/db/queries";
-import { CategoryBanner } from "@/components/category/CategoryBanner";
-import { CategoryExplorer } from "@/components/category/CategoryExplorer";
+import { CategoryHero } from "@/components/category/CategoryHero";
+import { CategoryStats } from "@/components/category/CategoryStats";
+import { CategoryStory } from "@/components/category/CategoryStory";
+import { CategoryExplorer, GRID_ANCHOR_ID } from "@/components/category/CategoryExplorer";
+import { CategoryMoodCollections } from "@/components/category/CategoryMoodCollections";
+import { CategoryClosingCTA } from "@/components/category/CategoryClosingCTA";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
@@ -19,8 +23,12 @@ export default async function LampsPage() {
   ]);
   return (
     <>
-      <CategoryBanner category={category!} />
-      <CategoryExplorer products={products} />
+      <CategoryHero category={category!} />
+      <CategoryStats productCount={products.length} countLabel={category!.shortName} stats={category!.stats} />
+      <CategoryStory category={category!} />
+      <CategoryExplorer products={products} category={category!} />
+      <CategoryMoodCollections categorySlug={category!.slug} products={products} gridAnchorId={GRID_ANCHOR_ID} />
+      <CategoryClosingCTA category={category!} gridAnchorId={GRID_ANCHOR_ID} />
     </>
   );
 }

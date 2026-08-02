@@ -308,14 +308,59 @@ differently-structured component when extending this folder. Admin-specific comp
 `productFormSchema` (`src/lib/validation/product.ts`) is re-validated server-side in
 `product-actions.ts`, since client validation is only a UX nicety.
 
-### Category pages, still one shared client component, now DB-backed
+### Category pages: editorial redesign, still one shared set of components, now DB-backed
 
-`/lamps`, `/idols`, `/desk-organizers` are still near-identical thin **async** server components
-(metadata + `await getProductsByCategory(...)` + `<CategoryBanner>` + `<CategoryExplorer>`), and all
-filtering/sorting logic still lives once in `src/components/category/CategoryExplorer.tsx` — that
-component still takes `Product[]` as a prop and knows nothing about the DB. Adding a fourth category
-now means adding a row via `/admin/categories` (or the seed script) instead of editing
-`src/data/categories.ts`, plus a new `src/app/(storefront)/<slug>/page.tsx`.
+`/lamps`, `/idols`, `/desk-organizers` are still near-identical thin **async** server components,
+but each now composes six sections instead of two: `CategoryHero` (full-viewport cinematic banner,
+replaces the old `CategoryBanner`) → `CategoryStats` → `CategoryStory` (with `ProductionJourney`) →
+`CategoryExplorer` → `CategoryMoodCollections` → `CategoryClosingCTA`. All of it lives in
+`src/components/category/`, and — same principle as before — adding a fourth category means adding
+a row via `/admin/categories` (or the seed script), not editing component code. Every new section
+independently checks its own content and renders `null` when unset (`CategoryStats` needs either a
+product count or `category.stats`; `CategoryStory` needs story copy or journey steps; the lifestyle
+break and closing CTA need their own image/headline/body), so a freshly created category with none
+of the new fields filled in just skips those sections instead of showing broken empty blocks — this
+is what makes "any future category" true without extra code per category.
+
+**The new editorial content is DB-backed but not yet admin-editable.** `categories` gained
+`heroStatement`, `storyTitle`/`storyBody`/`storyImage`, `journeySteps` (jsonb `string[]`), `stats`
+(jsonb `{label, icon}[]`), `lifestyleImage`/`lifestyleHeadline`/`lifestyleBody`, and
+`closingImage`/`closingHeadline`/`closingBody`. For now this only gets populated via
+`src/data/categories.ts` (the seed fixture) — `/admin/categories` doesn't have form fields for any
+of it yet, a deliberate scope cut to keep that first pass focused on the customer-facing redesign.
+
+**Floating filter chips replace the old sidebar, and they're always computed from real product
+data — never hardcoded per category.** `src/lib/category-filters.ts`'s `computeFilterChips()`
+scans whatever products are passed in and derives chips for distinct `material`, `styleTags`,
+`colorTag`, `sizeTier`, plus `badge:new`/`badge:bestseller` — using the same `"type:value"` id
+scheme (`productMatchesChip()`) that `CategoryMoodCollections`' mood cards use to pre-apply a real
+filter. `products` gained `styleTags: text[]` (same real-array-with-GIN-index pattern as the
+existing `badges` column), `colorTag`, and `sizeTier` for this — all nullable/empty-default, hand
+-tagged per product in the seed fixture, not yet admin-editable either. `src/lib/moods.ts` is a
+small **shared, cross-category, non-DB-driven** list of curated "Shop by Mood" cards (Minimal
+Living, Zen Spaces, Modern Office, ...) — these are an editorial concept the studio defines once,
+not per-category content, so they don't belong in the categories table. A mood card links back to
+its own category page with `?mood=<chipId>` using a plain `<a>` (not `next/link`) specifically so
+it's a full navigation — `CategoryExplorer` seeds its filter state from a mount-time read of
+`window.location.search` rather than `next/navigation`'s `useSearchParams()`, since that hook would
+force the whole product grid into a Suspense-gated client-only render and lose server-rendered
+product content, a real SEO cost on a category page.
+
+`ProductCard` (`src/components/product/ProductCard.tsx`) now overlays name/material/price/rating
+directly on the image (dark gradient scrim) instead of stacking them below it, wraps in the
+existing `TiltCard` primitive it wasn't using before, and only reveals Quick View/Add to Cart on
+hover/focus. `Price` and `RatingStars` both gained a `tone?: "dark" | "light"` prop for this — their
+text/star colors are explicit Tailwind classes on the inner elements, not something a wrapper
+`className` can override by cascading. Badges widened from `bestseller`/`new`/`limited` to also
+include `artist-pick`/`hand-finished`/`signature`/`premium-finish` (`src/components/ui/badge.tsx`
+has matching variants, `ProductForm.tsx`'s badge picker has the new options) — at most 2 ever show
+on one card, in a fixed priority order, so it never reads as a clearance-rack stamp collection.
+
+**Known gap, not yet resolved:** the live database currently has exactly one real product (created
+directly through the admin panel) — the 27-product `src/data/products.ts` fixture has never actually
+been seeded into production, only ever used for local/dev environments. The redesign degrades
+gracefully with a sparse or single-item catalog (verified directly), but seeding the full demo
+catalog into production is a real content decision, not something to do unprompted.
 
 ### Product detail page
 

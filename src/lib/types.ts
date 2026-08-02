@@ -1,6 +1,11 @@
 // Widened from a closed union now that categories are DB rows an admin can add to.
 export type CategorySlug = string;
 
+export interface CategoryStat {
+  label: string;
+  icon: string;
+}
+
 export interface CategoryMeta {
   slug: CategorySlug;
   name: string;
@@ -10,6 +15,20 @@ export interface CategoryMeta {
   heroIcon: string;
   priceRange: string;
   material: string;
+  // Editorial category-page content — all default to "" / [] / null when unset, and every
+  // section that reads them renders nothing rather than an empty block in that case.
+  heroStatement: string;
+  storyTitle: string;
+  storyBody: string;
+  storyImage?: string;
+  journeySteps: string[];
+  stats: CategoryStat[];
+  lifestyleImage?: string;
+  lifestyleHeadline: string;
+  lifestyleBody: string;
+  closingImage?: string;
+  closingHeadline: string;
+  closingBody: string;
 }
 
 export interface ProductReview {
@@ -36,6 +55,15 @@ export interface ProductImage {
   src?: string;
 }
 
+export type ProductBadge =
+  | "bestseller"
+  | "new"
+  | "limited"
+  | "artist-pick"
+  | "hand-finished"
+  | "signature"
+  | "premium-finish";
+
 export interface Product {
   id: string;
   slug: string;
@@ -57,7 +85,12 @@ export interface Product {
   icon: string;
   rating: number;
   reviewCount: number;
-  badges: Array<"bestseller" | "new" | "limited">;
+  badges: ProductBadge[];
+  // Floating filter-chip facets — computed dynamically per category from whatever values
+  // are actually present, never a hardcoded per-category list (see FilterChips.tsx).
+  styleTags: string[];
+  colorTag?: string;
+  sizeTier?: string;
   features: string[];
   careInstructions: string[];
   shippingInfo: string[];
@@ -66,6 +99,7 @@ export interface Product {
   reviews: ProductReview[];
   relatedSlugs: string[];
   stock: "in-stock" | "made-to-order" | "low-stock";
+  createdAt: string;
   // Optional: absent on the static seed fixture in src/data/products.ts, always set by the DB query layer.
   isPersonalized?: boolean;
 }

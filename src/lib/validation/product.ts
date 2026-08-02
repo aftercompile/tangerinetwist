@@ -67,7 +67,14 @@ export const productFormSchema = z.object({
   colorway: z.string().trim().min(1, "Colorway is required"),
   finishTime: z.string().trim().min(1, "Finish time is required"),
   icon: z.enum(iconNames, "Choose an icon"),
-  badges: z.array(z.enum(["bestseller", "new", "limited"], "Invalid badge")).default([]),
+  badges: z
+    .array(
+      z.enum(
+        ["bestseller", "new", "limited", "artist-pick", "hand-finished", "signature", "premium-finish"],
+        "Invalid badge"
+      )
+    )
+    .default([]),
   features: nonEmptyStringList,
   careInstructions: nonEmptyStringList,
   shippingInfo: nonEmptyStringList,

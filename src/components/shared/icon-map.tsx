@@ -21,6 +21,9 @@ import {
   ScanLine,
   MapPin,
   Gift,
+  Hand,
+  Truck,
+  Feather,
   type LucideIcon,
 } from "lucide-react";
 
@@ -48,6 +51,9 @@ export const iconMap: Record<string, LucideIcon> = {
   ScanLine,
   MapPin,
   Gift,
+  Hand,
+  Truck,
+  Feather,
 };
 
 export function getIcon(name: string): LucideIcon {
