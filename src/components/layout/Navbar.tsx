@@ -12,16 +12,15 @@ import type { CurrentCustomer } from "@/lib/auth/customer-guard";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SearchOverlay } from "./SearchOverlay";
 
-const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/lamps", label: "Designer Lamps" },
-  { href: "/idols", label: "Decorative Idols" },
-  { href: "/desk-organizers", label: "Desk Organizers" },
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
-];
-
 export function Navbar({ categories, customer }: { categories: CategoryMeta[]; customer: CurrentCustomer | null }) {
+  // Built from the live categories list (not hardcoded) so a newly added category
+  // shows up in both the desktop and mobile nav without a code change.
+  const navLinks = [
+    { href: "/", label: "Home" },
+    ...categories.map((c) => ({ href: `/${c.slug}`, label: c.name })),
+    { href: "/about", label: "About" },
+    { href: "/contact", label: "Contact" },
+  ];
   const [scrolled, setScrolled] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -130,16 +129,6 @@ export function Navbar({ categories, customer }: { categories: CategoryMeta[]; c
                   </Link>
                 ))}
               </nav>
-              <div className="mt-auto border-t border-border px-6 py-5">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Collections</p>
-                <div className="flex flex-col gap-2">
-                  {categories.map((c) => (
-                    <Link key={c.slug} href={`/${c.slug}`} className="text-sm text-charcoal/80">
-                      {c.name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
             </SheetContent>
           </Sheet>
         </div>
