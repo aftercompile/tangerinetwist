@@ -46,7 +46,7 @@ export function AdminTopbar({ isAdminHost }: { isAdminHost: boolean }) {
   }, [router]);
 
   return (
-    <header className="flex h-20 items-center justify-between border-b border-border px-6">
+    <header className="flex h-20 shrink-0 items-center justify-between border-b border-border px-6">
       <div className="flex items-center gap-3">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>

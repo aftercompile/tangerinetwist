@@ -17,8 +17,8 @@ export function AdminSidebar({ isAdminHost }: { isAdminHost: boolean }) {
   ];
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-white/10 bg-charcoal lg:flex">
-      <div className="flex h-20 items-center gap-2 px-6">
+    <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-white/10 bg-charcoal lg:flex">
+      <div className="flex h-20 shrink-0 items-center gap-2 px-6">
         <span className="h-2 w-2 rounded-full bg-tangerine-500" />
         <span className="h-display text-lg tracking-tight text-cream">TangerineTwist</span>
       </div>
