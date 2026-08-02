@@ -72,7 +72,7 @@ function ProductRow({ items, tabKey }: { items: Product[]; tabKey: string }) {
               ease: EASE_PREMIUM,
             }}
           >
-            <ProductCard product={product} />
+            <ProductCard product={product} siblings={items} />
           </motion.div>
         ))}
       </motion.div>

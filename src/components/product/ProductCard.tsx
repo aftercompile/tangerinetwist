@@ -36,12 +36,25 @@ const BADGE_PRIORITY: ProductBadge[] = [
   "new",
 ];
 
-export function ProductCard({ product, className }: { product: Product; className?: string }) {
+export function ProductCard({
+  product,
+  className,
+  siblings,
+}: {
+  product: Product;
+  className?: string;
+  /** The grid this card is rendered within — passed through to QuickView so its
+   * prev/next arrows cycle through the same products the user was already browsing,
+   * rather than the entire catalog. Falls back to just this product if omitted. */
+  siblings?: Product[];
+}) {
   const { addItem } = useCart();
   const { toggle, has } = useWishlist();
-  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const [quickViewIndex, setQuickViewIndex] = useState<number | null>(null);
   const wished = has(product.slug);
   const visibleBadges = BADGE_PRIORITY.filter((b) => product.badges.includes(b)).slice(0, 2);
+  const quickViewList = siblings ?? [product];
+  const ownIndex = quickViewList.findIndex((p) => p.id === product.id);
 
   return (
     <>
@@ -101,7 +114,7 @@ export function ProductCard({ product, className }: { product: Product; classNam
             {/* Quick actions reveal on hover/focus only. */}
             <div className="mt-3 flex max-h-0 gap-2 overflow-hidden opacity-0 transition-all duration-300 ease-premium group-hover:max-h-14 group-hover:opacity-100 group-focus-within:max-h-14 group-focus-within:opacity-100">
               <button
-                onClick={() => setQuickViewOpen(true)}
+                onClick={() => setQuickViewIndex(ownIndex === -1 ? 0 : ownIndex)}
                 className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full bg-white/95 text-xs font-medium text-charcoal shadow-soft backdrop-blur transition hover:bg-white"
               >
                 <Eye className="h-3.5 w-3.5" /> Quick View
@@ -118,7 +131,13 @@ export function ProductCard({ product, className }: { product: Product; classNam
         </div>
       </TiltCard>
 
-      <QuickView product={product} open={quickViewOpen} onOpenChange={setQuickViewOpen} />
+      <QuickView
+        products={quickViewList}
+        activeIndex={quickViewIndex ?? 0}
+        onNavigate={setQuickViewIndex}
+        open={quickViewIndex !== null}
+        onOpenChange={(open) => setQuickViewIndex(open ? (quickViewIndex ?? 0) : null)}
+      />
     </>
   );
 }
