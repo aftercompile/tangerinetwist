@@ -65,7 +65,7 @@ export async function createProduct(
         })
         .returning({ id: products.id });
 
-      await db.insert(productImages).values(
+      await tx.insert(productImages).values(
         data.images.map((img, i) => ({
           productId: row.id,
           src: img.src,
@@ -77,7 +77,7 @@ export async function createProduct(
       );
 
       if (data.relatedProductIds.length > 0) {
-        await db.insert(productRelations).values(
+        await tx.insert(productRelations).values(
           data.relatedProductIds.map((relatedProductId, i) => ({
             productId: row.id,
             relatedProductId,
