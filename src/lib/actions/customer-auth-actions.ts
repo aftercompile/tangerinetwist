@@ -79,6 +79,22 @@ export async function signInAction(_prevState: ActionState | undefined, formData
   redirect(safeAccountRedirect(formData.get("from")));
 }
 
+export async function signInWithGoogleAction(formData: FormData) {
+  const origin = headers().get("origin") ?? siteConfig.url;
+  const from = safeAccountRedirect(formData.get("from"));
+
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(from)}` },
+  });
+
+  if (error || !data.url) {
+    redirect(`/account/login?error=google`);
+  }
+  redirect(data.url);
+}
+
 export async function signOutAction() {
   const supabase = createSupabaseServerClient();
   await supabase.auth.signOut();
