@@ -100,7 +100,15 @@ export function Footer() {
         </div>
 
         <div className="mt-16 flex flex-col items-start justify-between gap-4 border-t border-border pt-8 text-xs text-muted md:flex-row md:items-center">
-          <p>© {new Date().getFullYear()} TangerineTwist Design Studio. All rights reserved.</p>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <p>© {new Date().getFullYear()} TangerineTwist Design Studio. All rights reserved.</p>
+            <Link href="/privacy" className="hover:text-charcoal">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="hover:text-charcoal">
+              Terms of Service
+            </Link>
+          </div>
           <div className="flex gap-6">
             <span>Made with precision in India</span>
             <span>Premium PLA · 8K Resin</span>

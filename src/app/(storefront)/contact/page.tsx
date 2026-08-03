@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { Mail, Phone, Instagram, MapPin } from "lucide-react";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { AnimatedReveal } from "@/components/shared/AnimatedReveal";
-import { buildMetadata } from "@/lib/seo";
+import { buildMetadata, siteConfig } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
   title: "Contact Us",
@@ -28,7 +28,7 @@ export default function ContactPage() {
           <div className="flex flex-col gap-6">
             <ContactRow icon={Mail} label="Email" value="hello@tangerinetwist.in" href="mailto:hello@tangerinetwist.in" />
             <ContactRow icon={Phone} label="Phone" value="+91 63539 08104" href="tel:+916353908104" />
-            <ContactRow icon={Instagram} label="Instagram" value="@tangerinetwist.studio" href="https://instagram.com" />
+            <ContactRow icon={Instagram} label="Instagram" value="@tangerinetwist.studio" href={siteConfig.social.instagram} />
             <ContactRow icon={MapPin} label="Studio" value="TangerineTwist Design Studio, Vadodara, Gujarat, India" />
           </div>
 
