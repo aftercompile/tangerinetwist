@@ -47,7 +47,8 @@ export default function TermsOfServicePage() {
           Orders are typically dispatched within 2–4 business days and delivered within 4–7 business days across
           India, via our courier partner Shiprocket. Shipping is free on prepaid orders above ₹799; a flat shipping
           fee applies below that. Delivery estimates are our best expectation, not a guarantee — occasional delays
-          can happen once a shipment is with the courier.
+          can happen once a shipment is with the courier. See our full <Link href="/shipping">Shipping Policy</Link>{" "}
+          for details.
         </p>
       </LegalSection>
 
@@ -66,7 +67,9 @@ export default function TermsOfServicePage() {
         </ul>
         <p>
           To start a return or report a damaged item, contact us at{" "}
-          <a href="mailto:hello@tangerinetwist.in">hello@tangerinetwist.in</a>.
+          <a href="mailto:hello@tangerinetwist.in">hello@tangerinetwist.in</a>. See our full{" "}
+          <Link href="/returns">Return &amp; Exchange Policy</Link> and <Link href="/refunds">Refund Policy</Link>{" "}
+          for details.
         </p>
       </LegalSection>
 

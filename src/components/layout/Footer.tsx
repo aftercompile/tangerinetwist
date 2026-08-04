@@ -22,8 +22,9 @@ const companyLinks = [
 ];
 
 const helpLinks = [
-  { href: "/contact", label: "Shipping Information" },
-  { href: "/contact", label: "Returns & Exchanges" },
+  { href: "/shipping", label: "Shipping Information" },
+  { href: "/returns", label: "Returns & Exchanges" },
+  { href: "/refunds", label: "Refund Policy" },
   { href: "/contact", label: "FAQs" },
 ];
 
