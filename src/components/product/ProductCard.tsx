@@ -60,9 +60,9 @@ export function ProductCard({ product, className }: { product: Product; classNam
         />
 
         {visibleBadges.length > 0 && (
-          <div className="absolute left-4 top-4 flex flex-col gap-1.5">
+          <div className="absolute left-4 right-14 top-4 flex flex-col items-start gap-1.5">
             {visibleBadges.map((b) => (
-              <Badge key={b} variant={b}>
+              <Badge key={b} variant={b} className="whitespace-normal text-left">
                 {BADGE_LABELS[b]}
               </Badge>
             ))}
@@ -83,13 +83,17 @@ export function ProductCard({ product, className }: { product: Product; classNam
           />
         </button>
 
-        {/* Overlaid info — replaces the old below-image stack entirely. */}
-        <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 p-5">
+        {/* Overlaid info — replaces the old below-image stack entirely. Clamped/truncated
+            so a long name or a narrow (2-up mobile) card can never grow tall enough to
+            push into the badges pinned at the top of the same image. */}
+        <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 p-4 sm:p-5">
           <Link href={`/product/${product.slug}`} className="w-fit">
-            <h3 className="font-display text-lg leading-snug text-white">{product.name}</h3>
+            <h3 className="line-clamp-2 font-display text-base leading-snug text-white sm:text-lg">
+              {product.name}
+            </h3>
           </Link>
-          <p className="text-xs text-white/70">{product.material}</p>
-          <div className="mt-1.5 flex items-center justify-between">
+          <p className="truncate text-xs text-white/70">{product.material}</p>
+          <div className="mt-1.5 flex items-center justify-between gap-2">
             <Price price={product.price} compareAtPrice={product.compareAtPrice} tone="light" />
             <RatingStars rating={product.rating} tone="light" />
           </div>
