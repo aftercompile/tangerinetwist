@@ -24,9 +24,9 @@ export default function RefundPolicyPage() {
 
       <LegalSection title="2. How refunds are paid">
         <p>
-          <strong>Prepaid orders</strong> (card, UPI, netbanking or wallet via Razorpay) are refunded to the
-          original payment method used at checkout — we can&apos;t redirect a refund to a different card or
-          account.
+          <strong>Prepaid orders</strong> (card, UPI, netbanking or wallet, processed via our checkout partner
+          Fastrr) are refunded to the original payment method used at checkout — we can&apos;t redirect a refund
+          to a different card or account.
         </p>
         <p>
           <strong>Cash on Delivery orders</strong> have no original online payment to reverse, so if a COD order
@@ -38,7 +38,7 @@ export default function RefundPolicyPage() {
       <LegalSection title="3. Refund timeline">
         <p>
           We process approved refunds within <strong>5–7 business days</strong> of approval. Once we&apos;ve
-          initiated it, however long it takes to actually reflect in your account is out of our hands — Razorpay
+          initiated it, however long it takes to actually reflect in your account is out of our hands — Fastrr
           and your bank or card network typically take a further 2–7 business days, occasionally longer for
           netbanking or some card issuers. If it&apos;s been more than 10 business days since we confirmed your
           refund was processed, contact us and we&apos;ll help chase it up.
@@ -72,8 +72,8 @@ export default function RefundPolicyPage() {
 
       <LegalSection title="7. Duplicate or failed payments">
         <p>
-          If Razorpay shows a payment as deducted but your order wasn&apos;t placed, or you were charged twice for
-          the same order, this is almost always reversed automatically by Razorpay within a few business days
+          If our checkout system shows a payment as deducted but your order wasn&apos;t placed, or you were charged
+          twice for the same order, this is almost always reversed automatically within a few business days
           without needing anything from you. If it hasn&apos;t resolved after 7 business days, contact us with the
           payment reference ID from your bank or card statement and we&apos;ll investigate.
         </p>

@@ -36,7 +36,8 @@ export default function TermsOfServicePage() {
 
       <LegalSection title="3. Payment">
         <p>
-          We accept payment online (card, UPI, netbanking and wallets via Razorpay) or Cash on Delivery, where
+          Checkout — including address, shipping, and payment — is handled by Fastrr Checkout (by Shiprocket), our
+          checkout partner. We accept payment online (card, UPI, netbanking and wallets) or Cash on Delivery, where
           available for your location. For online payments, your order is placed once payment is confirmed; for
           Cash on Delivery, payment is collected by our courier partner at the time of delivery.
         </p>

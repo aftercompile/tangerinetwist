@@ -245,6 +245,8 @@ export interface AdminOrderDetail {
   paymentMethod: "card" | "upi" | "cod" | "netbanking" | "wallet" | null;
   paymentStatus: "pending" | "paid" | "failed" | "cod";
   razorpayPaymentId: string | null;
+  fastrrOrderId: string | null;
+  checkoutSource: string | null;
   subtotal: number;
   shipping: number;
   total: number;
@@ -302,6 +304,8 @@ export async function getAdminOrderById(id: string): Promise<AdminOrderDetail | 
     paymentMethod: order.paymentMethod,
     paymentStatus: order.paymentStatus,
     razorpayPaymentId: order.razorpayPaymentId,
+    fastrrOrderId: order.fastrrOrderId,
+    checkoutSource: order.checkoutSource,
     subtotal: order.subtotal,
     shipping: order.shipping,
     total: order.total,

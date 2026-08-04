@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { Minus, Plus, X, ShoppingBag } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -7,9 +8,20 @@ import { Button } from "@/components/ui/button";
 import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 import { useCart } from "@/context/CartContext";
 import { formatINR } from "@/lib/utils";
+import { openFastrrCheckout } from "@/lib/fastrr/checkout-client";
 
 export function CartDrawer() {
   const { lines, isOpen, setOpen, removeItem, updateQuantity, subtotal, itemCount } = useCart();
+  const [checkingOut, setCheckingOut] = React.useState(false);
+
+  async function handleCheckout(e: React.MouseEvent) {
+    setCheckingOut(true);
+    await openFastrrCheckout(
+      e,
+      lines.map((l) => ({ slug: l.slug, quantity: l.quantity }))
+    );
+    setCheckingOut(false);
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={setOpen}>
@@ -96,10 +108,8 @@ export function CartDrawer() {
                 <span className="text-base font-semibold text-charcoal">{formatINR(subtotal)}</span>
               </div>
               <p className="mb-4 text-xs text-muted">Shipping and taxes calculated at checkout.</p>
-              <Button variant="accent" size="lg" className="w-full" asChild>
-                <Link href="/checkout" onClick={() => setOpen(false)}>
-                  Checkout
-                </Link>
+              <Button variant="accent" size="lg" className="w-full" disabled={checkingOut} onClick={handleCheckout}>
+                {checkingOut ? "Please wait..." : "Checkout"}
               </Button>
               <Button variant="ghost" size="md" className="mt-2 w-full" asChild>
                 <Link href="/cart" onClick={() => setOpen(false)}>

@@ -33,10 +33,10 @@ export default function PrivacyPolicyPage() {
             name, address, phone number, and the items and prices in that order, so we can fulfil and deliver it.
           </li>
           <li>
-            <strong>Payment information</strong> — if you pay online, your card, UPI or netbanking details are
-            entered directly into our payment processor Razorpay&apos;s secure checkout. We never see or store your
-            full card number; we only receive confirmation of whether a payment succeeded, along with a payment
-            reference ID.
+            <strong>Payment information</strong> — checkout is handled by Fastrr Checkout (by Shiprocket), our
+            checkout and payments partner. If you pay online, your card, UPI or netbanking details are entered
+            directly into their secure hosted checkout. We never see or store your full card number; we only
+            receive confirmation of whether a payment succeeded, along with an order reference ID.
           </li>
           <li>
             <strong>Reviews</strong> — if you submit a product review while signed in, we store the rating and
@@ -73,7 +73,8 @@ export default function PrivacyPolicyPage() {
         <p>We share only what&apos;s necessary with the following service providers, so they can do their job:</p>
         <ul>
           <li>
-            <strong>Razorpay</strong> — processes online payments (cards, UPI, netbanking, wallets) on our behalf.
+            <strong>Fastrr Checkout (by Shiprocket)</strong> — handles our checkout end-to-end, including address
+            and shipping selection, online payments (cards, UPI, netbanking, wallets), and Cash on Delivery.
           </li>
           <li>
             <strong>Shiprocket</strong> — our courier and logistics partner, which receives the shipping name,

@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Heart,
@@ -27,22 +26,24 @@ import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { cn, formatINR } from "@/lib/utils";
 import { DURATION, EASE_PREMIUM } from "@/lib/motion";
+import { openFastrrCheckout } from "@/lib/fastrr/checkout-client";
 
 export function ProductInfo({ product }: { product: Product }) {
   const [quantity, setQuantity] = React.useState(1);
   const [personalization, setPersonalization] = React.useState("");
   const [ctaVisible, setCtaVisible] = React.useState(true);
+  const [buyingNow, setBuyingNow] = React.useState(false);
   const ctaRef = React.useRef<HTMLDivElement>(null);
   const { addItem } = useCart();
   const { toggle, has } = useWishlist();
-  const router = useRouter();
   const reduced = useReducedMotion();
   const wished = has(product.slug);
   const isPersonalized = product.isPersonalized ?? false;
 
-  function handleBuyNow() {
-    addItem(product, quantity);
-    router.push("/checkout");
+  async function handleBuyNow(e: React.MouseEvent) {
+    setBuyingNow(true);
+    await openFastrrCheckout(e, [{ slug: product.slug, quantity }]);
+    setBuyingNow(false);
   }
 
   // Mobile sticky bar mirrors the real CTA row's on-screen state via IntersectionObserver
@@ -152,8 +153,8 @@ export function ProductInfo({ product }: { product: Product }) {
             <ShoppingBag className="h-4 w-4" /> Add to Cart
           </Button>
         </Magnetic>
-        <Button variant="outline" size="lg" className="mt-3 w-full" onClick={handleBuyNow}>
-          Buy Now
+        <Button variant="outline" size="lg" className="mt-3 w-full" disabled={buyingNow} onClick={handleBuyNow}>
+          {buyingNow ? "Please wait..." : "Buy Now"}
         </Button>
       </div>
 

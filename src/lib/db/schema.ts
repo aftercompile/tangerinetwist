@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  bigserial,
   boolean,
   integer,
   jsonb,
@@ -50,6 +51,9 @@ export const paymentStatusEnum = pgEnum("payment_status", ["pending", "paid", "f
 
 export const categories = pgTable("categories", {
   id: uuid("id").defaultRandom().primaryKey(),
+  // Same reasoning as products.externalId — Fastrr's catalog sync expects a unique
+  // numeric "long" id per collection, Shopify-style.
+  externalId: bigserial("external_id", { mode: "number" }).notNull().unique(),
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
   shortName: text("short_name").notNull(),
@@ -78,6 +82,10 @@ export const categories = pgTable("categories", {
 
 export const products = pgTable("products", {
   id: uuid("id").defaultRandom().primaryKey(),
+  // Fastrr by Shiprocket Checkout's catalog sync expects a unique numeric ("long") id per
+  // product/variant, Shopify-style — our real primary key is a UUID, so this is a separate
+  // auto-incrementing id exposed only to that catalog feed, never used internally.
+  externalId: bigserial("external_id", { mode: "number" }).notNull().unique(),
   slug: text("slug").notNull().unique(),
   categoryId: uuid("category_id")
     .notNull()
@@ -220,9 +228,17 @@ export const orders = pgTable("orders", {
   // immediately since there's nothing to wait for.
   paymentMethod: paymentMethodEnum("payment_method"),
   paymentStatus: paymentStatusEnum("payment_status").notNull().default("pending"),
+  // Legacy — the direct Razorpay checkout these powered has been replaced by Fastrr,
+  // which now owns payment collection. Left in place (nullable, unused by new orders)
+  // since historical rows still reference them; not worth a destructive migration.
   razorpayOrderId: text("razorpay_order_id"),
   razorpayPaymentId: text("razorpay_payment_id"),
   razorpaySignature: text("razorpay_signature"),
+  // Fastrr's own order id (the "oid" in the redirect_url and the webhook payload) — the
+  // key used to fetch authoritative order/payment details and to de-dupe webhook retries.
+  fastrrOrderId: text("fastrr_order_id").unique(),
+  // "fastrr" for every order going forward; null on historical pre-Fastrr rows.
+  checkoutSource: text("checkout_source"),
   subtotal: integer("subtotal").notNull(),
   shipping: integer("shipping").notNull(),
   total: integer("total").notNull(),
