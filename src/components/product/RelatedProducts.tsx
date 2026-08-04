@@ -12,7 +12,7 @@ export function RelatedProducts({ products, title = "You may also like" }: { pro
       <div className="mt-10 grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
         {products.map((product, i) => (
           <AnimatedReveal key={product.id} delay={staggerDelay(i, 0.08, 0.32)}>
-            <ProductCard product={product} siblings={products} />
+            <ProductCard product={product} />
           </AnimatedReveal>
         ))}
       </div>
