@@ -13,11 +13,21 @@ interface CheckoutTokenResult {
   fastrrOrderId?: string;
 }
 
-// Never trusts client-sent prices or product data — same principle as the old
-// resolveOrderItems in order-actions.ts, just re-derived here against Fastrr's numeric
-// externalId instead of building our own order row directly. Fastrr looks up the actual
-// price itself from the catalog-sync endpoints (/api/fastrr/products), so all we owe it
-// is a valid variant_id + quantity per line.
+function toAbsoluteImageUrl(src: string): string {
+  return src.startsWith("/") ? `${siteConfig.url}${src}` : src;
+}
+
+// Never trusts client-sent prices or product data — the client only sends slugs and
+// quantities, and every price/name/image below is re-read from our own DB, the same
+// principle the old resolveOrderItems in order-actions.ts used.
+//
+// `catalog_data` is sent inline per item rather than relying on Fastrr's catalog-sync
+// polling of /api/fastrr/*. Confirmed necessary, not just belt-and-braces: a token
+// created without it stores only {variant_id, quantity} on Fastrr's side (verified via
+// their Order/Details API), so their overlay has no name/price/image to render and
+// immediately bails to the fallback URL. Sending it makes checkout independent of
+// whether their team has finished registering our catalog endpoints — those endpoints
+// still exist and stay useful for their own product browsing/abandoned-cart features.
 export async function createFastrrCheckoutToken(
   items: { slug: string; quantity: number }[]
 ): Promise<CheckoutTokenResult> {
@@ -28,7 +38,8 @@ export async function createFastrrCheckoutToken(
   const slugs = items.map((i) => i.slug);
   const rows = await db.query.products.findMany({
     where: inArray(products.slug, slugs),
-    columns: { slug: true, externalId: true },
+    columns: { slug: true, externalId: true, name: true, price: true },
+    with: { images: { orderBy: (img, { asc }) => [asc(img.position)], limit: 1 } },
   });
   const bySlug = new Map(rows.map((r) => [r.slug, r]));
 
@@ -37,10 +48,21 @@ export async function createFastrrCheckoutToken(
     return { error: "Some items in your cart are no longer available." };
   }
 
-  const cartItems = items.map((item) => ({
-    variant_id: String(bySlug.get(item.slug)!.externalId),
-    quantity: item.quantity,
-  }));
+  const cartItems = items.map((item) => {
+    const product = bySlug.get(item.slug)!;
+    const rawImage = product.images[0]?.src;
+    return {
+      variant_id: String(product.externalId),
+      quantity: item.quantity,
+      catalog_data: {
+        price: product.price,
+        name: product.name,
+        // Fastrr fetches this from outside our origin, so a site-relative seed path
+        // (as opposed to an absolute Supabase Storage URL) has to be qualified first.
+        image_url: rawImage ? toAbsoluteImageUrl(rawImage) : "",
+      },
+    };
+  });
 
   const origin = headers().get("origin") ?? siteConfig.url;
 
