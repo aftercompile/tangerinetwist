@@ -25,6 +25,13 @@ const toneStyles: Record<string, { bg: string; iconBg: string; iconColor: string
   },
 };
 
+// Exposed so consumers that need a photo to sit on a tone-matched background outside this
+// component (e.g. the gallery's letterbox band around a `fit="contain"` image) reuse the
+// same palette instead of duplicating hex values.
+export function toneBackground(tone: "warm" | "cool" | "charcoal" | "beige"): string {
+  return (toneStyles[tone] ?? toneStyles.beige).bg;
+}
+
 export function ProductImagePlaceholder({
   icon,
   tone = "beige",
@@ -33,6 +40,8 @@ export function ProductImagePlaceholder({
   className,
   iconClassName,
   objectPosition,
+  fit = "cover",
+  sizes = "(max-width: 768px) 100vw, 50vw",
 }: {
   icon: string;
   tone?: "warm" | "cool" | "charcoal" | "beige";
@@ -43,6 +52,9 @@ export function ProductImagePlaceholder({
   /** Overrides object-cover's default center crop — e.g. "center 20%" to keep a tall
    * subject's top in frame when it sits in a much wider container than the source photo. */
   objectPosition?: string;
+  /** "contain" shows the whole photo (letterboxed) instead of cropping to fill. */
+  fit?: "cover" | "contain";
+  sizes?: string;
 }) {
   const Icon = getIcon(icon);
   const style = toneStyles[tone] ?? toneStyles.beige;
@@ -54,8 +66,8 @@ export function ProductImagePlaceholder({
           src={src}
           alt={alt}
           fill
-          sizes="(max-width: 768px) 100vw, 50vw"
-          className="object-cover"
+          sizes={sizes}
+          className={fit === "contain" ? "object-contain" : "object-cover"}
           style={objectPosition ? { objectPosition } : undefined}
         />
       </div>
