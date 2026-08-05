@@ -228,16 +228,16 @@ export const orders = pgTable("orders", {
   // immediately since there's nothing to wait for.
   paymentMethod: paymentMethodEnum("payment_method"),
   paymentStatus: paymentStatusEnum("payment_status").notNull().default("pending"),
-  // Legacy — the direct Razorpay checkout these powered has been replaced by Fastrr,
-  // which now owns payment collection. Left in place (nullable, unused by new orders)
-  // since historical rows still reference them; not worth a destructive migration.
+  // Set for orders placed through the primary Razorpay-based checkout (CheckoutForm.tsx).
   razorpayOrderId: text("razorpay_order_id"),
   razorpayPaymentId: text("razorpay_payment_id"),
   razorpaySignature: text("razorpay_signature"),
-  // Fastrr's own order id (the "oid" in the redirect_url and the webhook payload) — the
-  // key used to fetch authoritative order/payment details and to de-dupe webhook retries.
+  // Set for orders placed through the alternative Fastrr checkout button instead — the
+  // "oid" in its redirect_url and webhook payload, used to fetch authoritative order/
+  // payment details and to de-dupe webhook retries.
   fastrrOrderId: text("fastrr_order_id").unique(),
-  // "fastrr" for every order going forward; null on historical pre-Fastrr rows.
+  // "razorpay" or "fastrr" depending on which checkout path the order came through; null
+  // on historical rows predating this column.
   checkoutSource: text("checkout_source"),
   subtotal: integer("subtotal").notNull(),
   shipping: integer("shipping").notNull(),

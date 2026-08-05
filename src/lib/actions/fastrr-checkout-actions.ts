@@ -68,7 +68,7 @@ export async function createFastrrCheckoutToken(
       result: { token: string; data: { order_id: string } };
     }>("/api/v1/access-token/checkout", {
       cart_data: { items: cartItems },
-      redirect_url: `${origin}/checkout`,
+      redirect_url: `${origin}/checkout/fastrr`,
     });
 
     return { token: response.result.token, fastrrOrderId: response.result.data.order_id };

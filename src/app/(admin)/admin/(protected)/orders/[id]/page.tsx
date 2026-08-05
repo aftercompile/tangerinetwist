@@ -130,7 +130,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
                   <p className="text-xs text-muted">Fastrr order: {order.fastrrOrderId}</p>
                 )}
                 {order.razorpayPaymentId && (
-                  <p className="text-xs text-muted">Razorpay (legacy): {order.razorpayPaymentId}</p>
+                  <p className="text-xs text-muted">Razorpay: {order.razorpayPaymentId}</p>
                 )}
               </div>
             </CardContent>

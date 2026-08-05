@@ -33,10 +33,11 @@ export default function PrivacyPolicyPage() {
             name, address, phone number, and the items and prices in that order, so we can fulfil and deliver it.
           </li>
           <li>
-            <strong>Payment information</strong> — checkout is handled by Fastrr Checkout (by Shiprocket), our
-            checkout and payments partner. If you pay online, your card, UPI or netbanking details are entered
-            directly into their secure hosted checkout. We never see or store your full card number; we only
-            receive confirmation of whether a payment succeeded, along with an order reference ID.
+            <strong>Payment information</strong> — checkout is handled by Razorpay, our primary payments partner,
+            or, if you choose the alternative payment option, by Fastrr Checkout (by Shiprocket). Either way, if
+            you pay online your card, UPI or netbanking details are entered directly into their secure hosted
+            checkout. We never see or store your full card number; we only receive confirmation of whether a
+            payment succeeded, along with an order reference ID.
           </li>
           <li>
             <strong>Reviews</strong> — if you submit a product review while signed in, we store the rating and
@@ -73,8 +74,13 @@ export default function PrivacyPolicyPage() {
         <p>We share only what&apos;s necessary with the following service providers, so they can do their job:</p>
         <ul>
           <li>
-            <strong>Fastrr Checkout (by Shiprocket)</strong> — handles our checkout end-to-end, including address
-            and shipping selection, online payments (cards, UPI, netbanking, wallets), and Cash on Delivery.
+            <strong>Razorpay</strong> — our primary checkout payments partner, processing online payments (cards,
+            UPI, netbanking, wallets) and Cash on Delivery orders placed through our own checkout form.
+          </li>
+          <li>
+            <strong>Fastrr Checkout (by Shiprocket)</strong> — the alternative checkout option, handling
+            address and shipping selection plus payment (online or Cash on Delivery) end-to-end for customers
+            who choose it.
           </li>
           <li>
             <strong>Shiprocket</strong> — our courier and logistics partner, which receives the shipping name,

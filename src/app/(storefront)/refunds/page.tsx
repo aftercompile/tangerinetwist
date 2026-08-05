@@ -24,9 +24,9 @@ export default function RefundPolicyPage() {
 
       <LegalSection title="2. How refunds are paid">
         <p>
-          <strong>Prepaid orders</strong> (card, UPI, netbanking or wallet, processed via our checkout partner
-          Fastrr) are refunded to the original payment method used at checkout — we can&apos;t redirect a refund
-          to a different card or account.
+          <strong>Prepaid orders</strong> (card, UPI, netbanking or wallet, processed via Razorpay or, if you
+          chose the alternative payment option, Fastrr) are refunded to the original payment method used at
+          checkout — we can&apos;t redirect a refund to a different card or account.
         </p>
         <p>
           <strong>Cash on Delivery orders</strong> have no original online payment to reverse, so if a COD order
@@ -38,10 +38,11 @@ export default function RefundPolicyPage() {
       <LegalSection title="3. Refund timeline">
         <p>
           We process approved refunds within <strong>5–7 business days</strong> of approval. Once we&apos;ve
-          initiated it, however long it takes to actually reflect in your account is out of our hands — Fastrr
-          and your bank or card network typically take a further 2–7 business days, occasionally longer for
-          netbanking or some card issuers. If it&apos;s been more than 10 business days since we confirmed your
-          refund was processed, contact us and we&apos;ll help chase it up.
+          initiated it, however long it takes to actually reflect in your account is out of our hands —
+          Razorpay or Fastrr (whichever processed the original payment) and your bank or card network typically
+          take a further 2–7 business days, occasionally longer for netbanking or some card issuers. If it&apos;s
+          been more than 10 business days since we confirmed your refund was processed, contact us and
+          we&apos;ll help chase it up.
         </p>
       </LegalSection>
 

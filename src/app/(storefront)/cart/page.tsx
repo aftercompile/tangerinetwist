@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
 import { Minus, Plus, X, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCart } from "@/context/CartContext";
@@ -8,21 +7,10 @@ import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceho
 import { Button } from "@/components/ui/button";
 import { formatINR } from "@/lib/utils";
 import { calculateTotals } from "@/lib/orders";
-import { openFastrrCheckout } from "@/lib/fastrr/checkout-client";
 
 export default function CartPage() {
   const { lines, removeItem, updateQuantity, subtotal, itemCount } = useCart();
   const { shipping, total } = calculateTotals(subtotal);
-  const [checkingOut, setCheckingOut] = React.useState(false);
-
-  async function handleCheckout(e: React.MouseEvent) {
-    setCheckingOut(true);
-    await openFastrrCheckout(
-      e,
-      lines.map((l) => ({ slug: l.slug, quantity: l.quantity }))
-    );
-    setCheckingOut(false);
-  }
 
   if (lines.length === 0) {
     return (
@@ -116,9 +104,10 @@ export default function CartPage() {
             <span>Total</span>
             <span>{formatINR(total)}</span>
           </div>
-          <Button variant="accent" size="lg" className="mt-6 w-full" disabled={checkingOut} onClick={handleCheckout}>
-            {checkingOut ? "Please wait..." : "Proceed to Checkout"}
-            {!checkingOut && <ArrowRight className="h-4 w-4" />}
+          <Button variant="accent" size="lg" className="mt-6 w-full" asChild>
+            <Link href="/checkout">
+              Proceed to Checkout <ArrowRight className="h-4 w-4" />
+            </Link>
           </Button>
         </div>
       </div>
