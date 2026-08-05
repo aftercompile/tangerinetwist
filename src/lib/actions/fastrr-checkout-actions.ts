@@ -5,6 +5,7 @@ import { inArray } from "drizzle-orm";
 import { db } from "@/lib/db/index";
 import { products } from "@/lib/db/schema";
 import { fastrrFetch } from "@/lib/fastrr/client";
+import { toFastrrImageUrl } from "@/lib/fastrr/images";
 import { siteConfig } from "@/lib/seo";
 
 interface CheckoutTokenResult {
@@ -13,9 +14,6 @@ interface CheckoutTokenResult {
   fastrrOrderId?: string;
 }
 
-function toAbsoluteImageUrl(src: string): string {
-  return src.startsWith("/") ? `${siteConfig.url}${src}` : src;
-}
 
 // Never trusts client-sent prices or product data — the client only sends slugs and
 // quantities, and every price/name/image below is re-read from our own DB, the same
@@ -57,9 +55,8 @@ export async function createFastrrCheckoutToken(
       catalog_data: {
         price: product.price,
         name: product.name,
-        // Fastrr fetches this from outside our origin, so a site-relative seed path
-        // (as opposed to an absolute Supabase Storage URL) has to be qualified first.
-        image_url: rawImage ? toAbsoluteImageUrl(rawImage) : "",
+        // Squared + absolute — see toFastrrImageUrl for why both matter.
+        image_url: rawImage ? toFastrrImageUrl(rawImage) : "",
       },
     };
   });

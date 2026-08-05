@@ -5,18 +5,9 @@
 import { and, asc, count, eq } from "drizzle-orm";
 import { db } from "./index";
 import { categories, products, productImages } from "./schema";
-import { siteConfig } from "@/lib/seo";
+import { toFastrrImageUrl } from "@/lib/fastrr/images";
 
 const DEFAULT_LIMIT = 100;
-
-// Admin-uploaded product images are already absolute Supabase Storage URLs, but the
-// seed/static images (category story/hero art, some fixture products) use the
-// convention of a site-relative path — Fastrr fetches these from outside our own
-// origin, so a relative path would 404 for them. Same fix as the Product JSON-LD image
-// URLs elsewhere in this app.
-function toAbsoluteUrl(src: string): string {
-  return src.startsWith("/") ? `${siteConfig.url}${src}` : src;
-}
 
 function clampLimit(limit: number | undefined): number {
   if (!limit || limit < 1) return DEFAULT_LIMIT;
@@ -65,7 +56,7 @@ function toFastrrProduct(row: typeof products.$inferSelect & { categorySlug: str
         available: row.stock !== "low-stock",
       },
     ],
-    images: row.imageSrc ? [{ src: toAbsoluteUrl(row.imageSrc) }] : [],
+    images: row.imageSrc ? [{ src: toFastrrImageUrl(row.imageSrc) }] : [],
   };
 }
 
@@ -135,7 +126,7 @@ export async function getFastrrCollections(page: number, limit?: number) {
     body_html: `<p>${c.description}</p>`,
     created_at: c.createdAt.toISOString(),
     updated_at: c.updatedAt.toISOString(),
-    ...(c.storyImage ? { image: { src: toAbsoluteUrl(c.storyImage) } } : {}),
+    ...(c.storyImage ? { image: { src: toFastrrImageUrl(c.storyImage) } } : {}),
   }));
 
   return { total, collections };
