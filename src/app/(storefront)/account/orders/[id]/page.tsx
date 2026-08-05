@@ -116,11 +116,15 @@ export default async function AccountOrderPage({ params }: { params: { id: strin
             </p>
           </div>
 
-          {order.courierName && (
+          {order.shiprocketOrderId && (
             <div className="rounded-3xl border border-border p-7">
-              <h2 className="text-base font-medium text-charcoal">Tracking</h2>
-              <p className="mt-2 text-sm text-charcoal">{order.courierName}</p>
-              {order.trackingEvents.length === 0 && (
+              <h2 className="text-base font-medium text-charcoal">Shipping</h2>
+              {order.courierName ? (
+                <p className="mt-2 text-sm text-charcoal">{order.courierName}</p>
+              ) : (
+                <p className="mt-2 text-sm text-muted">Preparing your shipment.</p>
+              )}
+              {order.courierName && order.trackingEvents.length === 0 && (
                 <p className="text-sm text-muted">{order.shiprocketStatus ?? "In transit"}</p>
               )}
 
@@ -164,11 +168,9 @@ export default async function AccountOrderPage({ params }: { params: { id: strin
                 </a>
               )}
 
-              {order.shiprocketOrderId && (
-                <div className="mt-3">
-                  <OrderInvoiceLink orderId={order.id} invoiceUrl={order.invoiceUrl} />
-                </div>
-              )}
+              <div className="mt-3">
+                <OrderInvoiceLink orderId={order.id} invoiceUrl={order.invoiceUrl} />
+              </div>
             </div>
           )}
         </div>

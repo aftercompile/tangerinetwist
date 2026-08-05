@@ -9,6 +9,7 @@ import {
   refreshShiprocketTracking,
   getShiprocketLabelUrl,
   getShiprocketInvoiceUrl,
+  retryAwbAssignment,
 } from "@/lib/actions/shiprocket-actions";
 import type { AdminOrderDetail } from "@/lib/db/admin-queries";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +24,7 @@ export function ShiprocketPanel({ order }: { order: AdminOrderDetail }) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [shipping, setShipping] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
+  const [retryingAwb, setRetryingAwb] = React.useState(false);
   const [pkg, setPkg] = React.useState({ weight: 0.5, length: 20, breadth: 15, height: 10 });
 
   async function handleShip(e: React.FormEvent<HTMLFormElement>) {
@@ -34,13 +36,38 @@ export function ShiprocketPanel({ order }: { order: AdminOrderDetail }) {
         toast.error(result.error);
         return;
       }
-      toast.success("Shipped via Shiprocket");
+      // Order + invoice succeed independently of courier assignment (see
+      // shipOrderViaShiprocket) — an awbError still means the order changed state
+      // (it's now shipped and invoiced, just without a courier yet), so close the
+      // dialog and refresh either way rather than treating this like a hard failure.
+      if (result.awbError) {
+        toast.error(`Shipped and invoiced, but courier assignment failed: ${result.awbError}`);
+      } else {
+        toast.success("Shipped via Shiprocket");
+      }
       setDialogOpen(false);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setShipping(false);
+    }
+  }
+
+  async function handleRetryAwb() {
+    setRetryingAwb(true);
+    try {
+      const result = await retryAwbAssignment(order.id);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Courier assigned");
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setRetryingAwb(false);
     }
   }
 
@@ -91,7 +118,7 @@ export function ShiprocketPanel({ order }: { order: AdminOrderDetail }) {
       <CardContent className="flex flex-col gap-4 p-6">
         <h3 className="font-display text-lg text-charcoal">Shipping (Shiprocket)</h3>
 
-        {!order.awbCode ? (
+        {!order.shiprocketOrderId ? (
           <>
             <p className="text-sm text-muted">Not yet shipped via Shiprocket.</p>
             {!order.state && (
@@ -108,6 +135,25 @@ export function ShiprocketPanel({ order }: { order: AdminOrderDetail }) {
             >
               <Truck className="h-4 w-4" /> Ship via Shiprocket
             </Button>
+          </>
+        ) : !order.awbCode ? (
+          <>
+            <p className="text-sm text-charcoal">
+              Order created and invoiced on Shiprocket, but courier assignment failed.
+            </p>
+            <p className="text-xs text-muted">
+              Common cause: low Shiprocket wallet balance. Fix the issue in your Shiprocket
+              dashboard, then retry below.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" disabled={retryingAwb} onClick={handleRetryAwb}>
+                <RefreshCw className="h-3.5 w-3.5" />
+                {retryingAwb ? "Retrying..." : "Retry courier assignment"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handlePrintInvoice}>
+                <FileText className="h-3.5 w-3.5" /> Print invoice
+              </Button>
+            </div>
           </>
         ) : (
           <>

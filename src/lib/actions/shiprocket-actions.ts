@@ -70,7 +70,40 @@ interface PackageDetails {
   height: number;
 }
 
-export async function shipOrderViaShiprocket(orderId: string, pkg: PackageDetails): Promise<{ error?: string }> {
+// Shiprocket returns HTTP 200 even when AWB assignment itself fails (low wallet balance,
+// no serviceable courier for the pincode, etc.) — shiprocketFetch only throws on a non-2xx
+// status, so this must be checked explicitly rather than assumed from a successful fetch.
+// Shared by shipOrderViaShiprocket (first attempt) and retryAwbAssignment (retry after the
+// underlying issue — e.g. wallet balance — is fixed), so both apply identical validation
+// and persist logic and can't drift apart.
+async function assignAwbAndPersist(orderId: string, shipmentId: string): Promise<{ error?: string }> {
+  const assigned = await shiprocketFetch<AssignAwbResponse>("/courier/assign/awb", {
+    method: "POST",
+    body: JSON.stringify({ shipment_id: Number(shipmentId) }),
+  });
+  const awb = assigned.response.data;
+
+  if (assigned.awb_assign_status !== 1 || !awb.awb_code) {
+    return { error: awb.awb_assign_error ?? assigned.message ?? "Courier assignment failed." };
+  }
+
+  await db
+    .update(orders)
+    .set({
+      awbCode: awb.awb_code,
+      courierName: awb.courier_name,
+      trackingUrl: buildTrackingUrl(awb.awb_code),
+      shiprocketStatus: "AWB Assigned",
+    })
+    .where(eq(orders.id, orderId));
+
+  return {};
+}
+
+export async function shipOrderViaShiprocket(
+  orderId: string,
+  pkg: PackageDetails
+): Promise<{ error?: string; awbError?: string }> {
   await requireAdminSession();
 
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
@@ -84,8 +117,9 @@ export async function shipOrderViaShiprocket(orderId: string, pkg: PackageDetail
 
   const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
 
+  let created: CreateOrderResponse;
   try {
-    const created = await shiprocketFetch<CreateOrderResponse>("/orders/create/adhoc", {
+    created = await shiprocketFetch<CreateOrderResponse>("/orders/create/adhoc", {
       method: "POST",
       body: JSON.stringify({
         order_id: order.orderNumber,
@@ -115,46 +149,68 @@ export async function shipOrderViaShiprocket(orderId: string, pkg: PackageDetail
         weight: pkg.weight,
       }),
     });
-
-    // Omitting courier_id auto-assigns Shiprocket's recommended (cheapest) courier —
-    // the one-click flow this was scoped for, no separate rate/courier picker screen.
-    const assigned = await shiprocketFetch<AssignAwbResponse>("/courier/assign/awb", {
-      method: "POST",
-      body: JSON.stringify({ shipment_id: created.shipment_id }),
-    });
-    const awb = assigned.response.data;
-
-    // Best-effort: a failure here shouldn't undo the shipment that already succeeded
-    // above. The admin panel falls back to generating (and persisting) it on demand
-    // if invoiceUrl ends up null.
-    let invoiceUrl: string | null = null;
-    try {
-      const invoice = await shiprocketFetch<InvoiceResponse>("/orders/print/invoice", {
-        method: "POST",
-        body: JSON.stringify({ ids: [created.order_id] }),
-      });
-      invoiceUrl = invoice.invoice_url;
-    } catch {
-      // Non-fatal — see comment above.
-    }
-
-    await db
-      .update(orders)
-      .set({
-        shiprocketOrderId: String(created.order_id),
-        shiprocketShipmentId: String(created.shipment_id),
-        awbCode: awb.awb_code,
-        courierName: awb.courier_name,
-        trackingUrl: buildTrackingUrl(awb.awb_code),
-        shiprocketStatus: "AWB Assigned",
-        invoiceUrl,
-      })
-      .where(eq(orders.id, orderId));
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to ship via Shiprocket" };
   }
 
+  // Best-effort: a failure here shouldn't undo the shipment that already succeeded
+  // above. The admin panel falls back to generating (and persisting) it on demand
+  // if invoiceUrl ends up null.
+  let invoiceUrl: string | null = null;
+  try {
+    const invoice = await shiprocketFetch<InvoiceResponse>("/orders/print/invoice", {
+      method: "POST",
+      body: JSON.stringify({ ids: [created.order_id] }),
+    });
+    invoiceUrl = invoice.invoice_url;
+  } catch {
+    // Non-fatal — see comment above.
+  }
+
+  // Order creation (and invoicing) succeeded on Shiprocket's side regardless of what
+  // happens next — persist that now so it isn't lost if AWB assignment fails below.
+  await db
+    .update(orders)
+    .set({
+      shiprocketOrderId: String(created.order_id),
+      shiprocketShipmentId: String(created.shipment_id),
+      invoiceUrl,
+    })
+    .where(eq(orders.id, orderId));
+
   revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath(`/account/orders/${orderId}`);
+
+  // Omitting courier_id auto-assigns Shiprocket's recommended (cheapest) courier — the
+  // one-click flow this was scoped for, no separate rate/courier picker screen. If this
+  // fails (e.g. low wallet balance), the order+invoice above are still saved; the admin
+  // panel shows a retry button (retryAwbAssignment) rather than treating this as a total
+  // failure — see assignAwbAndPersist's comment for why this can't be assumed to succeed
+  // just because the HTTP request did.
+  const awbResult = await assignAwbAndPersist(orderId, String(created.shipment_id));
+  if (awbResult.error) {
+    return { awbError: awbResult.error };
+  }
+
+  revalidatePath(`/admin/orders/${orderId}`);
+  return {};
+}
+
+// Retries AWB assignment for an order that was already created/invoiced on Shiprocket's
+// side but never got a courier assigned (see assignAwbAndPersist) — e.g. after the admin
+// fixes whatever caused the original failure (recharging the Shiprocket wallet, etc.).
+export async function retryAwbAssignment(orderId: string): Promise<{ error?: string }> {
+  await requireAdminSession();
+
+  const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+  if (!order?.shiprocketShipmentId) return { error: "This order hasn't been shipped via Shiprocket yet." };
+  if (order.awbCode) return { error: "This order already has a courier assigned." };
+
+  const result = await assignAwbAndPersist(orderId, order.shiprocketShipmentId);
+  if (result.error) return result;
+
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath(`/account/orders/${orderId}`);
   return {};
 }
 

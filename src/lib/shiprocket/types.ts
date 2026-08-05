@@ -38,13 +38,20 @@ export interface CreateOrderResponse {
   status_code: number;
 }
 
+// Shiprocket returns HTTP 200 even when assignment fails (e.g. low wallet balance, no
+// serviceable courier) — awb_assign_status distinguishes success (1) from failure (0),
+// and on failure response.data carries awb_assign_error instead of the AWB fields. Both
+// shapes are optional here so callers must check awb_assign_status before trusting either.
 export interface AssignAwbResponse {
+  status_code?: number;
+  message?: string;
   awb_assign_status: number;
   response: {
     data: {
-      awb_code: string;
-      courier_name: string;
-      courier_company_id: number;
+      awb_code?: string;
+      courier_name?: string;
+      courier_company_id?: number;
+      awb_assign_error?: string;
     };
   };
 }
