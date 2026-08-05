@@ -1,3 +1,4 @@
+import type { SyntheticEvent } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { getIcon } from "./icon-map";
@@ -25,13 +26,6 @@ const toneStyles: Record<string, { bg: string; iconBg: string; iconColor: string
   },
 };
 
-// Exposed so consumers that need a photo to sit on a tone-matched background outside this
-// component (e.g. the gallery's letterbox band around a `fit="contain"` image) reuse the
-// same palette instead of duplicating hex values.
-export function toneBackground(tone: "warm" | "cool" | "charcoal" | "beige"): string {
-  return (toneStyles[tone] ?? toneStyles.beige).bg;
-}
-
 export function ProductImagePlaceholder({
   icon,
   tone = "beige",
@@ -42,6 +36,7 @@ export function ProductImagePlaceholder({
   objectPosition,
   fit = "cover",
   sizes = "(max-width: 768px) 100vw, 50vw",
+  onLoad,
 }: {
   icon: string;
   tone?: "warm" | "cool" | "charcoal" | "beige";
@@ -55,6 +50,10 @@ export function ProductImagePlaceholder({
   /** "contain" shows the whole photo (letterboxed) instead of cropping to fill. */
   fit?: "cover" | "contain";
   sizes?: string;
+  /** Fires only for the real-image branch — e.g. to read naturalWidth/naturalHeight off
+   * the loaded <img> when a consumer needs the photo's real aspect ratio and none is
+   * stored server-side (productImages has no width/height column). */
+  onLoad?: (e: SyntheticEvent<HTMLImageElement>) => void;
 }) {
   const Icon = getIcon(icon);
   const style = toneStyles[tone] ?? toneStyles.beige;
@@ -69,6 +68,7 @@ export function ProductImagePlaceholder({
           sizes={sizes}
           className={fit === "contain" ? "object-contain" : "object-cover"}
           style={objectPosition ? { objectPosition } : undefined}
+          onLoad={onLoad}
         />
       </div>
     );

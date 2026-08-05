@@ -6,8 +6,6 @@ import {
   getProductBySlug,
   getRelatedProducts,
 } from "@/lib/db/queries";
-// To restore the old aspect-square/hover-zoom gallery, swap this import to
-// "@/components/product/ProductGalleryLegacy" — same export name, drop-in.
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductInfo } from "@/components/product/ProductInfo";
 import { ProductTabs } from "@/components/product/ProductTabs";
