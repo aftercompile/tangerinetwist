@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { customerAddresses, customers } from "@/lib/db/schema";
+import { customerAddresses, customers, orders } from "@/lib/db/schema";
 import { requireCustomerSession } from "@/lib/auth/customer-guard";
+import { fetchAndPersistInvoiceUrl } from "@/lib/shiprocket/invoice";
 import { addressSchema, profileSchema, type AddressInput, type ProfileInput } from "@/lib/validation/auth";
 
 export async function saveAddressAction(input: AddressInput): Promise<{ error?: string }> {
@@ -59,4 +60,22 @@ export async function updateProfileAction(input: ProfileInput): Promise<{ error?
 
   revalidatePath("/account");
   return {};
+}
+
+// Same fallback as the admin panel's getShiprocketInvoiceUrl, just customer-scoped:
+// the vast majority of orders already have invoiceUrl cached (generated automatically
+// at ship time), this only calls Shiprocket in the rare case that failed. Scoping by
+// customerId here — not just orderId — is what stops a customer from generating (or
+// reading) another customer's invoice by guessing an id.
+export async function getCustomerInvoiceUrl(orderId: string): Promise<{ url?: string; error?: string }> {
+  const customer = await requireCustomerSession();
+
+  const [order] = await db
+    .select()
+    .from(orders)
+    .where(and(eq(orders.id, orderId), eq(orders.customerId, customer.id)));
+  if (!order?.shiprocketOrderId) return { error: "This order hasn't shipped yet." };
+  if (order.invoiceUrl) return { url: order.invoiceUrl };
+
+  return fetchAndPersistInvoiceUrl(orderId, order.shiprocketOrderId);
 }

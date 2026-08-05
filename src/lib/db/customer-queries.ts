@@ -50,6 +50,8 @@ export interface CustomerOrderDetail {
   courierName: string | null;
   trackingUrl: string | null;
   shiprocketStatus: string | null;
+  shiprocketOrderId: string | null;
+  invoiceUrl: string | null;
   trackingEvents: OrderTrackingEvent[];
   items: {
     id: string;
@@ -117,6 +119,8 @@ export async function getCustomerOrderById(customerId: string, orderId: string):
     courierName: order.courierName,
     trackingUrl: order.trackingUrl,
     shiprocketStatus: order.shiprocketStatus,
+    shiprocketOrderId: order.shiprocketOrderId,
+    invoiceUrl: order.invoiceUrl,
     trackingEvents,
     items: items.map((i) => ({
       id: i.id,

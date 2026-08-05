@@ -5,6 +5,7 @@ import { getCurrentCustomer } from "@/lib/auth/customer-guard";
 import { getCustomerOrderById } from "@/lib/db/customer-queries";
 import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 import { OrderItemReviewAction } from "@/components/account/OrderItemReviewAction";
+import { OrderInvoiceLink } from "@/components/account/OrderInvoiceLink";
 import { formatINR } from "@/lib/utils";
 
 const STATUS_LABEL = {
@@ -161,6 +162,12 @@ export default async function AccountOrderPage({ params }: { params: { id: strin
                 >
                   Track shipment <ExternalLink className="h-3.5 w-3.5" />
                 </a>
+              )}
+
+              {order.shiprocketOrderId && (
+                <div className="mt-3">
+                  <OrderInvoiceLink orderId={order.id} invoiceUrl={order.invoiceUrl} />
+                </div>
               )}
             </div>
           )}

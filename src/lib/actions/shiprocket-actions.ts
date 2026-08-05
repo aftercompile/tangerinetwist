@@ -6,6 +6,7 @@ import { requireAdminSession } from "@/lib/auth/guard";
 import { db } from "@/lib/db";
 import { orderItems, orderTrackingEvents, orders } from "@/lib/db/schema";
 import { shiprocketFetch, getPickupLocation, buildTrackingUrl } from "@/lib/shiprocket/client";
+import { fetchAndPersistInvoiceUrl } from "@/lib/shiprocket/invoice";
 import type {
   CreateOrderResponse,
   AssignAwbResponse,
@@ -206,16 +207,7 @@ export async function getShiprocketInvoiceUrl(orderId: string): Promise<{ url?: 
   if (!order?.shiprocketOrderId) return { error: "This order hasn't been shipped via Shiprocket yet." };
   if (order.invoiceUrl) return { url: order.invoiceUrl };
 
-  try {
-    const invoice = await shiprocketFetch<InvoiceResponse>("/orders/print/invoice", {
-      method: "POST",
-      body: JSON.stringify({ ids: [Number(order.shiprocketOrderId)] }),
-    });
-    await db.update(orders).set({ invoiceUrl: invoice.invoice_url }).where(eq(orders.id, orderId));
-    return { url: invoice.invoice_url };
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : "Failed to generate invoice" };
-  }
+  return fetchAndPersistInvoiceUrl(orderId, order.shiprocketOrderId);
 }
 
 // Called both directly as an admin action and internally from updateOrderStatus
