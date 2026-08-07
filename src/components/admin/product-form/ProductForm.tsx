@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { iconMap } from "@/components/shared/icon-map";
 import { slugify } from "@/lib/utils";
+import { badgeOptions } from "@/lib/badges";
 import { productFormSchema, type ProductFormValues } from "@/lib/validation/product";
 import type { AdminCategoryOption, AdminProductOption } from "@/lib/db/admin-queries";
 import { createProduct, updateProduct, deleteProduct } from "@/lib/actions/product-actions";
@@ -25,15 +26,6 @@ import { RelatedProductsField } from "./RelatedProductsField";
 import { toInternal, fromInternal, emptyProductFormValues, type ProductFormInternal } from "./form-types";
 
 const iconNames = Object.keys(iconMap);
-const badgeOptions = [
-  { value: "bestseller", label: "Best Seller" },
-  { value: "new", label: "New" },
-  { value: "limited", label: "Limited Batch" },
-  { value: "artist-pick", label: "Artist Pick" },
-  { value: "hand-finished", label: "Hand Finished" },
-  { value: "signature", label: "Signature Collection" },
-  { value: "premium-finish", label: "Premium Finish" },
-] as const;
 
 const TABS = ["basics", "pricing", "specs", "media", "copy", "related"] as const;
 
