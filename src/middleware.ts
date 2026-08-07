@@ -98,5 +98,6 @@ export const config = {
     "/categories/:path*",
     "/customers/:path*",
     "/orders/:path*",
+    "/reports/:path*",
   ],
 };

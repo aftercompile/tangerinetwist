@@ -2,19 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, FolderTree, ShoppingCart, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { adminHref } from "@/lib/auth/admin-routes";
+import { getAdminNavLinks } from "@/lib/admin-nav";
 
 export function AdminSidebar({ isAdminHost }: { isAdminHost: boolean }) {
   const pathname = usePathname();
-  const navLinks = [
-    { href: adminHref(isAdminHost, ""), label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { href: adminHref(isAdminHost, "products"), label: "Products", icon: Package },
-    { href: adminHref(isAdminHost, "categories"), label: "Categories", icon: FolderTree },
-    { href: adminHref(isAdminHost, "orders"), label: "Orders", icon: ShoppingCart },
-    { href: adminHref(isAdminHost, "customers"), label: "Customers", icon: Users },
-  ];
+  const navLinks = getAdminNavLinks(isAdminHost);
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-white/10 bg-charcoal lg:flex">

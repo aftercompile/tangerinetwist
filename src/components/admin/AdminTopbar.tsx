@@ -3,10 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Menu, ExternalLink, LogOut } from "lucide-react";
+import { Menu, ExternalLink, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/lib/actions/auth-actions";
-import { adminHref } from "@/lib/auth/admin-routes";
+import { getAdminNavLinks } from "@/lib/admin-nav";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
@@ -22,13 +22,7 @@ export function AdminTopbar({ isAdminHost }: { isAdminHost: boolean }) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
-  const navLinks = [
-    { href: adminHref(isAdminHost, ""), label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { href: adminHref(isAdminHost, "products"), label: "Products", icon: Package },
-    { href: adminHref(isAdminHost, "categories"), label: "Categories", icon: FolderTree },
-    { href: adminHref(isAdminHost, "orders"), label: "Orders", icon: ShoppingCart },
-    { href: adminHref(isAdminHost, "customers"), label: "Customers", icon: Users },
-  ];
+  const navLinks = getAdminNavLinks(isAdminHost);
 
   const title =
     navLinks.find((l) => (l.exact ? pathname === l.href : pathname.startsWith(l.href)))?.label ?? "Admin";
