@@ -25,6 +25,9 @@ const GLOW_COLORS: Record<string, string> = {
 // to match — this fallback is only visible for the first render of a not-yet-loaded photo.
 const FALLBACK_RATIO = 0.8;
 const SWIPE_THRESHOLD = 50;
+// A short, fast flick should advance the slide even if it didn't travel past
+// SWIPE_THRESHOLD — matters most on mobile, where swipes are quick and small.
+const SWIPE_VELOCITY = 500;
 
 export function ProductGallery({ images, name }: { images: ProductImage[]; name: string }) {
   const [active, setActive] = React.useState(0);
@@ -66,13 +69,15 @@ export function ProductGallery({ images, name }: { images: ProductImage[]; name:
     });
   }
 
-  // Pan (not drag) so this never moves the frame itself — it only measures the gesture and
-  // decides whether to advance, leaving the actual slide motion to the enter/exit variants
-  // below. Framer's pan gesture has its own built-in movement threshold before it fires, so
-  // a plain click/tap (used to toggle zoom) is unaffected.
-  function handlePanEnd(_: unknown, info: PanInfo) {
-    if (info.offset.x < -SWIPE_THRESHOLD) goTo(1);
-    else if (info.offset.x > SWIPE_THRESHOLD) goTo(-1);
+  // Real drag (not just a pan listener) so the image visibly follows your finger on
+  // mobile instead of only reacting once you lift it — dragConstraints locks it back
+  // to center on release, and dragElastic gives it some give while you're still
+  // holding, which together is what makes it read as "sliding" rather than "swipe,
+  // then jump." Committing to the next/prev slide still plays through the existing
+  // enter/exit variants below, since goTo() swaps `active` and remounts this element.
+  function handleDragEnd(_: unknown, info: PanInfo) {
+    if (info.offset.x < -SWIPE_THRESHOLD || info.velocity.x < -SWIPE_VELOCITY) goTo(1);
+    else if (info.offset.x > SWIPE_THRESHOLD || info.velocity.x > SWIPE_VELOCITY) goTo(-1);
   }
 
   const slideVariants = {
@@ -94,7 +99,6 @@ export function ProductGallery({ images, name }: { images: ProductImage[]; name:
           className="group relative overflow-hidden rounded-3xl bg-beige shadow-[0_30px_60px_-25px_rgba(30,25,20,0.3)]"
           style={{ aspectRatio: ratio }}
           onMouseMove={handleMouseMove}
-          onPanEnd={handlePanEnd}
           role="img"
           aria-label={image.alt}
         >
@@ -109,6 +113,10 @@ export function ProductGallery({ images, name }: { images: ProductImage[]; name:
               transition={{ duration: DURATION.base, ease: EASE_PREMIUM }}
               className="absolute inset-0"
               onClick={() => setZoomed((z) => !z)}
+              drag={!zoomed && images.length > 1 ? "x" : false}
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.7}
+              onDragEnd={handleDragEnd}
             >
               <div
                 className={cn(
