@@ -49,6 +49,8 @@ export const paymentMethodEnum = pgEnum("payment_method", ["card", "upi", "cod",
 // signature-verified confirmation (client callback or webhook) arrives.
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "paid", "failed", "cod"]);
 
+export const discountTypeEnum = pgEnum("discount_type", ["percentage", "flat"]);
+
 // "direct" is every order placed through our own checkout (Razorpay/Fastrr/COD) — the
 // only channel that existed before this enum did, so it's the default. The other three
 // are imported from CSV exports of each marketplace's seller dashboard (see
@@ -278,6 +280,12 @@ export const orders = pgTable(
     // on historical rows predating this column.
     checkoutSource: text("checkout_source"),
     subtotal: integer("subtotal").notNull(),
+    // Denormalized snapshot, not a FK — the coupon row can be edited/deleted later
+    // without ever changing what a past order displays. discountAmount defaults to 0
+    // (not nullable) so `total = subtotal - discountAmount + shipping` always holds,
+    // including for every order placed before this feature existed.
+    couponCode: text("coupon_code"),
+    discountAmount: integer("discount_amount").notNull().default(0),
     shipping: integer("shipping").notNull(),
     total: integer("total").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -321,6 +329,42 @@ export const orderItems = pgTable("order_items", {
   imageIcon: text("image_icon").notNull(),
   imageTone: imageToneEnum("image_tone").notNull().default("beige"),
   quantity: integer("quantity").notNull(),
+});
+
+// discountValue is 1-100 for "percentage" or a flat rupee amount for "flat" (enforced in
+// validation/coupon.ts, not a DB constraint). maxUses null = unlimited. usedCount is only
+// ever incremented atomically inside the same transaction as the order it paid for (see
+// coupon-actions.ts's getValidCoupon + order-actions.ts) — never optimistic, so it can't
+// drift past maxUses under concurrent checkouts.
+export const coupons = pgTable("coupons", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  code: text("code").notNull().unique(),
+  discountType: discountTypeEnum("discount_type").notNull(),
+  discountValue: integer("discount_value").notNull(),
+  minOrderValue: integer("min_order_value").notNull().default(0),
+  maxUses: integer("max_uses"),
+  usedCount: integer("used_count").notNull().default(0),
+  oncePerCustomer: boolean("once_per_customer").notNull().default(true),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Exists purely to enforce oncePerCustomer — never read for display (orders.couponCode/
+// discountAmount already carry everything a receipt or admin screen needs). customerEmail
+// is stored lowercase so the check covers guest and registered checkouts uniformly, same
+// case-insensitive matching convention claimGuestOrders already uses in order-actions.ts.
+export const couponRedemptions = pgTable("coupon_redemptions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  couponId: uuid("coupon_id")
+    .notNull()
+    .references(() => coupons.id, { onDelete: "cascade" }),
+  orderId: uuid("order_id")
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  customerEmail: text("customer_email").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 // One row per Shiprocket tracking checkpoint (Shipped, In Transit, Out for Delivery,

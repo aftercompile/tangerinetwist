@@ -100,5 +100,6 @@ export const config = {
     "/orders/:path*",
     "/reports/:path*",
     "/tax/:path*",
+    "/coupons/:path*",
   ],
 };

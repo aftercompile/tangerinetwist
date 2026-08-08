@@ -1,15 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { requireAdminSession } from "@/lib/auth/guard";
 import { getCurrentCustomer } from "@/lib/auth/customer-guard";
 import { db } from "@/lib/db/index";
-import { orderItems, orders, products } from "@/lib/db/schema";
+import { coupons, couponRedemptions, orderItems, orders, products } from "@/lib/db/schema";
 import { calculateTotals, generateOrderNumber } from "@/lib/orders";
 import { placeOrderInputSchema, type PlaceOrderInput } from "@/lib/validation/order";
 import { cancelShiprocketShipment } from "@/lib/actions/shiprocket-actions";
+import { getValidCoupon } from "@/lib/actions/coupon-actions";
 import { getRazorpayClient, verifyPaymentSignature, mapRazorpayMethod } from "@/lib/razorpay/client";
+
+// A coupon just losing the maxUses race between the pre-check and the transaction's
+// atomic UPDATE — thrown inside db.transaction to roll it back, caught by the caller to
+// turn into a normal { error } result instead of an unhandled 500.
+class CouponRaceLostError extends Error {}
 
 const ORDER_STATUSES = ["pending", "confirmed", "in_production", "shipped", "delivered", "cancelled"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
@@ -64,7 +70,7 @@ export async function placeOrder(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid order details" };
   }
-  const { shipping, items } = parsed.data;
+  const { shipping, items, couponCode } = parsed.data;
   if (shipping.paymentMethod !== "cod") {
     return { error: "Use the online payment flow for this order." };
   }
@@ -73,7 +79,18 @@ export async function placeOrder(
   if ("error" in resolved) return { error: resolved.error };
   const { orderItemRows, subtotal } = resolved;
 
-  const { shipping: shippingCost, total } = calculateTotals(subtotal);
+  // Re-validated here regardless of what the checkout page's Apply preview showed —
+  // same "never trust the client" principle already applied to prices/customerId below.
+  let couponId: string | null = null;
+  let discountAmount = 0;
+  if (couponCode) {
+    const couponResult = await getValidCoupon(couponCode, subtotal, shipping.email);
+    if ("error" in couponResult) return { error: couponResult.error };
+    couponId = couponResult.coupon.id;
+    discountAmount = couponResult.discountAmount;
+  }
+
+  const { shipping: shippingCost, total } = calculateTotals(subtotal, discountAmount);
   const orderNumber = generateOrderNumber();
 
   // Derived from the verified session, never from client input — mirrors how prices
@@ -81,33 +98,57 @@ export async function placeOrder(
   // session) simply get customerId: null, identical to today's behavior.
   const customer = await getCurrentCustomer();
 
-  const orderId = await db.transaction(async (tx) => {
-    const [order] = await tx
-      .insert(orders)
-      .values({
-        orderNumber,
-        status: "pending",
-        customerId: customer?.id ?? null,
-        customerName: shipping.fullName,
-        customerEmail: shipping.email,
-        customerPhone: shipping.phone,
-        addressLine: shipping.address,
-        city: shipping.city,
-        state: shipping.state,
-        pin: shipping.pin,
-        paymentMethod: "cod",
-        paymentStatus: "cod",
-        checkoutSource: "razorpay",
-        subtotal,
-        shipping: shippingCost,
-        total,
-      })
-      .returning({ id: orders.id });
+  let orderId: string;
+  try {
+    orderId = await db.transaction(async (tx) => {
+      const [order] = await tx
+        .insert(orders)
+        .values({
+          orderNumber,
+          status: "pending",
+          customerId: customer?.id ?? null,
+          customerName: shipping.fullName,
+          customerEmail: shipping.email,
+          customerPhone: shipping.phone,
+          addressLine: shipping.address,
+          city: shipping.city,
+          state: shipping.state,
+          pin: shipping.pin,
+          paymentMethod: "cod",
+          paymentStatus: "cod",
+          checkoutSource: "razorpay",
+          subtotal,
+          couponCode: couponId ? couponCode!.trim().toUpperCase() : null,
+          discountAmount,
+          shipping: shippingCost,
+          total,
+        })
+        .returning({ id: orders.id });
 
-    await tx.insert(orderItems).values(orderItemRows.map((item) => ({ ...item, orderId: order.id })));
+      await tx.insert(orderItems).values(orderItemRows.map((item) => ({ ...item, orderId: order.id })));
 
-    return order.id;
-  });
+      if (couponId) {
+        const [updated] = await tx
+          .update(coupons)
+          .set({ usedCount: sql`${coupons.usedCount} + 1` })
+          .where(and(eq(coupons.id, couponId), or(isNull(coupons.maxUses), lt(coupons.usedCount, coupons.maxUses))))
+          .returning({ id: coupons.id });
+        if (!updated) throw new CouponRaceLostError();
+        await tx.insert(couponRedemptions).values({
+          couponId,
+          orderId: order.id,
+          customerEmail: shipping.email.trim().toLowerCase(),
+        });
+      }
+
+      return order.id;
+    });
+  } catch (err) {
+    if (err instanceof CouponRaceLostError) {
+      return { error: "This coupon just reached its usage limit." };
+    }
+    throw err;
+  }
 
   // /admin/orders and /admin are marked force-dynamic so the server always reruns
   // the query, but the client's Router Cache can still serve an already-visited
@@ -143,7 +184,7 @@ export async function createOrderForPayment(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid order details" };
   }
-  const { shipping, items } = parsed.data;
+  const { shipping, items, couponCode } = parsed.data;
   if (shipping.paymentMethod !== "online") {
     return { error: "Use the Cash on Delivery flow for this order." };
   }
@@ -152,7 +193,16 @@ export async function createOrderForPayment(
   if ("error" in resolved) return { error: resolved.error };
   const { orderItemRows, subtotal } = resolved;
 
-  const { shipping: shippingCost, total } = calculateTotals(subtotal);
+  let couponId: string | null = null;
+  let discountAmount = 0;
+  if (couponCode) {
+    const couponResult = await getValidCoupon(couponCode, subtotal, shipping.email);
+    if ("error" in couponResult) return { error: couponResult.error };
+    couponId = couponResult.coupon.id;
+    discountAmount = couponResult.discountAmount;
+  }
+
+  const { shipping: shippingCost, total } = calculateTotals(subtotal, discountAmount);
   const orderNumber = generateOrderNumber();
   const amountPaise = total * 100;
 
@@ -172,34 +222,58 @@ export async function createOrderForPayment(
 
   const customer = await getCurrentCustomer();
 
-  const orderId = await db.transaction(async (tx) => {
-    const [order] = await tx
-      .insert(orders)
-      .values({
-        orderNumber,
-        status: "pending",
-        customerId: customer?.id ?? null,
-        customerName: shipping.fullName,
-        customerEmail: shipping.email,
-        customerPhone: shipping.phone,
-        addressLine: shipping.address,
-        city: shipping.city,
-        state: shipping.state,
-        pin: shipping.pin,
-        paymentMethod: null,
-        paymentStatus: "pending",
-        razorpayOrderId,
-        checkoutSource: "razorpay",
-        subtotal,
-        shipping: shippingCost,
-        total,
-      })
-      .returning({ id: orders.id });
+  let orderId: string;
+  try {
+    orderId = await db.transaction(async (tx) => {
+      const [order] = await tx
+        .insert(orders)
+        .values({
+          orderNumber,
+          status: "pending",
+          customerId: customer?.id ?? null,
+          customerName: shipping.fullName,
+          customerEmail: shipping.email,
+          customerPhone: shipping.phone,
+          addressLine: shipping.address,
+          city: shipping.city,
+          state: shipping.state,
+          pin: shipping.pin,
+          paymentMethod: null,
+          paymentStatus: "pending",
+          razorpayOrderId,
+          checkoutSource: "razorpay",
+          subtotal,
+          couponCode: couponId ? couponCode!.trim().toUpperCase() : null,
+          discountAmount,
+          shipping: shippingCost,
+          total,
+        })
+        .returning({ id: orders.id });
 
-    await tx.insert(orderItems).values(orderItemRows.map((item) => ({ ...item, orderId: order.id })));
+      await tx.insert(orderItems).values(orderItemRows.map((item) => ({ ...item, orderId: order.id })));
 
-    return order.id;
-  });
+      if (couponId) {
+        const [updated] = await tx
+          .update(coupons)
+          .set({ usedCount: sql`${coupons.usedCount} + 1` })
+          .where(and(eq(coupons.id, couponId), or(isNull(coupons.maxUses), lt(coupons.usedCount, coupons.maxUses))))
+          .returning({ id: coupons.id });
+        if (!updated) throw new CouponRaceLostError();
+        await tx.insert(couponRedemptions).values({
+          couponId,
+          orderId: order.id,
+          customerEmail: shipping.email.trim().toLowerCase(),
+        });
+      }
+
+      return order.id;
+    });
+  } catch (err) {
+    if (err instanceof CouponRaceLostError) {
+      return { error: "This coupon just reached its usage limit." };
+    }
+    throw err;
+  }
 
   return { orderId, razorpayOrderId, amountPaise, keyId: process.env.RAZORPAY_KEY_ID };
 }

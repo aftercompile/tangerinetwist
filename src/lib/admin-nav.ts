@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, FolderTree, ShoppingCart, Users, FileBarChart, Receipt, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Package, FolderTree, ShoppingCart, Users, FileBarChart, Receipt, Tag, type LucideIcon } from "lucide-react";
 import { adminHref } from "@/lib/auth/admin-routes";
 
 export interface AdminNavLink {
@@ -16,6 +16,7 @@ export function getAdminNavLinks(isAdminHost: boolean): AdminNavLink[] {
     { href: adminHref(isAdminHost, "products"), label: "Products", icon: Package },
     { href: adminHref(isAdminHost, "categories"), label: "Categories", icon: FolderTree },
     { href: adminHref(isAdminHost, "orders"), label: "Orders", icon: ShoppingCart },
+    { href: adminHref(isAdminHost, "coupons"), label: "Coupons", icon: Tag },
     { href: adminHref(isAdminHost, "customers"), label: "Customers", icon: Users },
     { href: adminHref(isAdminHost, "reports"), label: "Reports", icon: FileBarChart },
     { href: adminHref(isAdminHost, "tax"), label: "Tax / GST", icon: Receipt },

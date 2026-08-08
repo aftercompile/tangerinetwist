@@ -2,6 +2,7 @@ import { desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "./index";
 import {
   categories as categoriesTable,
+  coupons as couponsTable,
   customers as customersTable,
   orderItems as orderItemsTable,
   orderTrackingEvents as orderTrackingEventsTable,
@@ -288,6 +289,8 @@ export interface AdminOrderDetail {
   fastrrOrderId: string | null;
   checkoutSource: string | null;
   subtotal: number;
+  couponCode: string | null;
+  discountAmount: number;
   shipping: number;
   total: number;
   createdAt: Date;
@@ -349,6 +352,8 @@ export async function getAdminOrderById(id: string): Promise<AdminOrderDetail | 
     fastrrOrderId: order.fastrrOrderId,
     checkoutSource: order.checkoutSource,
     subtotal: order.subtotal,
+    couponCode: order.couponCode,
+    discountAmount: order.discountAmount,
     shipping: order.shipping,
     total: order.total,
     createdAt: order.createdAt,
@@ -402,4 +407,35 @@ export async function getAdminCustomerRows(): Promise<AdminCustomerRow[]> {
     .orderBy(desc(customersTable.createdAt));
 
   return rows.map((r) => ({ ...r, orderCount: Number(r.orderCount), lifetimeValue: Number(r.lifetimeValue) }));
+}
+
+export interface AdminCouponRow {
+  id: string;
+  code: string;
+  discountType: "percentage" | "flat";
+  discountValue: number;
+  minOrderValue: number;
+  maxUses: number | null;
+  usedCount: number;
+  oncePerCustomer: boolean;
+  expiresAt: Date | null;
+  active: boolean;
+}
+
+export async function getAdminCouponRows(): Promise<AdminCouponRow[]> {
+  return db
+    .select({
+      id: couponsTable.id,
+      code: couponsTable.code,
+      discountType: couponsTable.discountType,
+      discountValue: couponsTable.discountValue,
+      minOrderValue: couponsTable.minOrderValue,
+      maxUses: couponsTable.maxUses,
+      usedCount: couponsTable.usedCount,
+      oncePerCustomer: couponsTable.oncePerCustomer,
+      expiresAt: couponsTable.expiresAt,
+      active: couponsTable.active,
+    })
+    .from(couponsTable)
+    .orderBy(desc(couponsTable.createdAt));
 }

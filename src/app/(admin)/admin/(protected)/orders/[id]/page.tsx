@@ -83,6 +83,12 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
                 <span>Subtotal</span>
                 <span className="text-charcoal">{formatINR(order.subtotal)}</span>
               </div>
+              {order.discountAmount > 0 && (
+                <div className="flex justify-between text-muted">
+                  <span>Discount{order.couponCode ? ` (${order.couponCode})` : ""}</span>
+                  <span className="text-tangerine-600">−{formatINR(order.discountAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-muted">
                 <span>Shipping</span>
                 <span className="text-charcoal">{order.shipping === 0 ? "Free" : formatINR(order.shipping)}</span>

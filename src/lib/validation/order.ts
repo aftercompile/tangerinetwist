@@ -32,6 +32,9 @@ export const placeOrderInputSchema = z.object({
       })
     )
     .min(1, "Your cart is empty"),
+  // Order-level, not per-item — re-validated authoritatively server-side in
+  // order-actions.ts regardless of what the client's checkout preview showed.
+  couponCode: z.string().trim().optional(),
 });
 
 export type PlaceOrderInput = z.infer<typeof placeOrderInputSchema>;

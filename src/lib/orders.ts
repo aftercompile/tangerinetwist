@@ -1,9 +1,12 @@
 export const FREE_SHIPPING_THRESHOLD = 799;
 export const FLAT_SHIPPING_RATE = 79;
 
-export function calculateTotals(subtotal: number) {
+// Shipping is always computed off the raw (pre-discount) subtotal — a coupon can't be
+// used to duck under the free-shipping threshold. discountAmount defaults to 0 so every
+// existing caller that only passes subtotal keeps getting today's exact numbers back.
+export function calculateTotals(subtotal: number, discountAmount = 0) {
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_RATE;
-  return { shipping, total: subtotal + shipping };
+  return { shipping, discount: discountAmount, total: subtotal - discountAmount + shipping };
 }
 
 // Only ever called server-side (order-actions.ts, order-import-actions.ts), but this
