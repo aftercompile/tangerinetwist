@@ -8,7 +8,7 @@ export const ADMIN_HOST = "admin.tangerinetwist.in";
 // the real /admin/<segment>/... route. Must be kept in sync with the literal entries in
 // middleware.ts's `config.matcher` — Next.js requires that array to be statically
 // analyzable, so it can't just import this constant.
-export const ADMIN_CLEAN_SEGMENTS = ["login", "products", "categories", "customers", "orders", "reports"];
+export const ADMIN_CLEAN_SEGMENTS = ["login", "products", "categories", "customers", "orders", "reports", "tax"];
 
 // Validates the login form's "from" redirect target against an open-redirect: accepts
 // either the clean admin.tangerinetwist.in shape ("/orders/123") or the raw "/admin/..."
