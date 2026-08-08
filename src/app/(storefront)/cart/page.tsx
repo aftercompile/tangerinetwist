@@ -36,7 +36,7 @@ export default function CartPage() {
       <div className="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-[1fr_360px]">
         <ul className="flex flex-col divide-y divide-border">
           {lines.map((line) => (
-            <li key={line.slug} className="flex gap-5 py-6 first:pt-0">
+            <li key={`${line.slug}-${line.variantId ?? ""}`} className="flex gap-5 py-6 first:pt-0">
               <Link href={`/product/${line.slug}`} className="shrink-0">
                 <ProductImagePlaceholder
                   icon={line.image.icon}
@@ -51,10 +51,10 @@ export default function CartPage() {
                     <Link href={`/product/${line.slug}`} className="text-base font-medium text-charcoal">
                       {line.name}
                     </Link>
-                    <p className="mt-1 text-xs text-muted">{line.material}</p>
+                    <p className="mt-1 text-xs text-muted">{line.variantLabel ?? line.material}</p>
                   </div>
                   <button
-                    onClick={() => removeItem(line.slug)}
+                    onClick={() => removeItem(line.slug, line.variantId)}
                     aria-label={`Remove ${line.name}`}
                     className="text-muted transition hover:text-charcoal"
                   >
@@ -65,7 +65,7 @@ export default function CartPage() {
                   <div className="flex items-center gap-3 rounded-full border border-border px-1">
                     <button
                       aria-label="Decrease quantity"
-                      onClick={() => updateQuantity(line.slug, line.quantity - 1)}
+                      onClick={() => updateQuantity(line.slug, line.quantity - 1, line.variantId)}
                       className="flex h-8 w-8 items-center justify-center text-charcoal"
                     >
                       <Minus className="h-3.5 w-3.5" />
@@ -73,7 +73,7 @@ export default function CartPage() {
                     <span className="w-5 text-center text-sm">{line.quantity}</span>
                     <button
                       aria-label="Increase quantity"
-                      onClick={() => updateQuantity(line.slug, line.quantity + 1)}
+                      onClick={() => updateQuantity(line.slug, line.quantity + 1, line.variantId)}
                       className="flex h-8 w-8 items-center justify-center text-charcoal"
                     >
                       <Plus className="h-3.5 w-3.5" />

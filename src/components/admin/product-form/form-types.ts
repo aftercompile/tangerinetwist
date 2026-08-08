@@ -61,5 +61,6 @@ export const emptyProductFormValues: ProductFormValues = {
   stock: "in-stock",
   isPersonalized: false,
   images: [],
+  variants: [],
   relatedProductIds: [],
 };

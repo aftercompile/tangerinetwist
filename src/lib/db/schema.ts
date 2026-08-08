@@ -126,11 +126,36 @@ export const products = pgTable("products", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// A product with zero variant rows behaves exactly as it always has (single price/stock/
+// image list) — variants are purely additive. When present, each row is one purchasable
+// size/color combination with its own optional price override (null = inherit
+// products.price) and its own stock status; its dedicated photos live in productImages via
+// variantId. externalId mirrors products.externalId — Fastrr's catalog sync uses it as that
+// variant's Shopify-style variant.id (see fastrr-queries.ts's toFastrrProduct).
+export const productVariants = pgTable("product_variants", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  externalId: bigserial("external_id", { mode: "number" }).notNull().unique(),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  // At least one of size/color must be set — enforced in validation/product.ts, not here.
+  size: text("size"),
+  color: text("color"),
+  sku: text("sku"),
+  price: integer("price"),
+  stock: stockStatusEnum("stock").notNull().default("in-stock"),
+  position: integer("position").notNull().default(0),
+});
+
 export const productImages = pgTable("product_images", {
   id: uuid("id").defaultRandom().primaryKey(),
   productId: uuid("product_id")
     .notNull()
     .references(() => products.id, { onDelete: "cascade" }),
+  // Null = shared/general product photo, shown regardless of (or before) variant
+  // selection. Set = dedicated to that one variant — the gallery prefers a selected
+  // variant's own photos and falls back to the shared ones when it has none.
+  variantId: uuid("variant_id").references(() => productVariants.id, { onDelete: "cascade" }),
   src: text("src").notNull(),
   alt: text("alt").notNull().default(""),
   tone: imageToneEnum("tone").notNull().default("beige"),
@@ -263,6 +288,12 @@ export const orderItems = pgTable("order_items", {
     .references(() => orders.id, { onDelete: "cascade" }),
   // set null (not cascade): deleting a product must not erase historical sales data
   productId: uuid("product_id").references(() => products.id, { onDelete: "set null" }),
+  // Same "set null" reasoning as productId — editing/removing a variant must never erase a
+  // historical order line. variantLabel (e.g. "Red / Large") is the denormalized snapshot
+  // that keeps the line readable even after the variant itself is gone, matching this
+  // table's existing snapshot-everything-at-order-time philosophy for name/price/material.
+  variantId: uuid("variant_id").references(() => productVariants.id, { onDelete: "set null" }),
+  variantLabel: text("variant_label"),
   name: text("name").notNull(),
   slug: text("slug").notNull(),
   price: integer("price").notNull(),
@@ -301,15 +332,28 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     references: [categories.id],
   }),
   images: many(productImages),
+  variants: many(productVariants),
   reviews: many(productReviews),
   relatedTo: many(productRelations, { relationName: "product" }),
   orderItems: many(orderItems),
+}));
+
+export const productVariantsRelations = relations(productVariants, ({ one, many }) => ({
+  product: one(products, {
+    fields: [productVariants.productId],
+    references: [products.id],
+  }),
+  images: many(productImages),
 }));
 
 export const productImagesRelations = relations(productImages, ({ one }) => ({
   product: one(products, {
     fields: [productImages.productId],
     references: [products.id],
+  }),
+  variant: one(productVariants, {
+    fields: [productImages.variantId],
+    references: [productVariants.id],
   }),
 }));
 
@@ -361,6 +405,10 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
   product: one(products, {
     fields: [orderItems.productId],
     references: [products.id],
+  }),
+  variant: one(productVariants, {
+    fields: [orderItems.variantId],
+    references: [productVariants.id],
   }),
 }));
 

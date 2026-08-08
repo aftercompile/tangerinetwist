@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { Product } from "@/lib/types";
+import { Product, ProductVariant } from "@/lib/types";
 
 export interface CartLine {
   slug: string;
@@ -11,15 +11,26 @@ export interface CartLine {
   image: { icon: string; tone: string; src?: string };
   material: string;
   quantity: number;
+  // Absent for a product with no variants. Two different variants of the same product are
+  // deliberately separate lines (see lineKey) rather than merging quantities together.
+  variantId?: string;
+  variantLabel?: string;
+}
+
+// Two variants of the same product must never collapse into one line the way two calls for
+// the same plain product do — this is the identity a line is matched/deduped by everywhere
+// below, not slug alone.
+function lineKey(slug: string, variantId?: string): string {
+  return `${slug}::${variantId ?? ""}`;
 }
 
 interface CartContextValue {
   lines: CartLine[];
   isOpen: boolean;
   setOpen: (open: boolean) => void;
-  addItem: (product: Product, quantity?: number) => void;
-  removeItem: (slug: string) => void;
-  updateQuantity: (slug: string, quantity: number) => void;
+  addItem: (product: Product, quantity?: number, variant?: ProductVariant) => void;
+  removeItem: (slug: string, variantId?: string) => void;
+  updateQuantity: (slug: string, quantity: number, variantId?: string) => void;
   clear: () => void;
   subtotal: number;
   itemCount: number;
@@ -47,27 +58,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
   }, [lines, hydrated]);
 
-  const addItem = React.useCallback((product: Product, quantity = 1) => {
+  const addItem = React.useCallback((product: Product, quantity = 1, variant?: ProductVariant) => {
     setLines((prev) => {
-      const existing = prev.find((l) => l.slug === product.slug);
+      const key = lineKey(product.slug, variant?.id);
+      const existing = prev.find((l) => lineKey(l.slug, l.variantId) === key);
       if (existing) {
         return prev.map((l) =>
-          l.slug === product.slug ? { ...l, quantity: l.quantity + quantity } : l
+          lineKey(l.slug, l.variantId) === key ? { ...l, quantity: l.quantity + quantity } : l
         );
       }
+      const variantImage = variant?.images[0];
+      const fallbackImage = product.images[0];
       return [
         ...prev,
         {
           slug: product.slug,
           name: product.name,
-          price: product.price,
+          price: variant?.price ?? product.price,
           image: {
             icon: product.icon,
-            tone: product.images[0]?.tone ?? "beige",
-            src: product.images[0]?.src,
+            tone: (variantImage ?? fallbackImage)?.tone ?? "beige",
+            src: (variantImage ?? fallbackImage)?.src,
           },
           material: product.material,
           quantity,
+          variantId: variant?.id,
+          variantLabel: variant ? [variant.size, variant.color].filter(Boolean).join(" / ") : undefined,
         },
       ];
     });
@@ -75,15 +91,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setOpen(true);
   }, []);
 
-  const removeItem = React.useCallback((slug: string) => {
-    setLines((prev) => prev.filter((l) => l.slug !== slug));
+  const removeItem = React.useCallback((slug: string, variantId?: string) => {
+    const key = lineKey(slug, variantId);
+    setLines((prev) => prev.filter((l) => lineKey(l.slug, l.variantId) !== key));
   }, []);
 
-  const updateQuantity = React.useCallback((slug: string, quantity: number) => {
+  const updateQuantity = React.useCallback((slug: string, quantity: number, variantId?: string) => {
+    const key = lineKey(slug, variantId);
     setLines((prev) =>
       quantity <= 0
-        ? prev.filter((l) => l.slug !== slug)
-        : prev.map((l) => (l.slug === slug ? { ...l, quantity } : l))
+        ? prev.filter((l) => lineKey(l.slug, l.variantId) !== key)
+        : prev.map((l) => (lineKey(l.slug, l.variantId) === key ? { ...l, quantity } : l))
     );
   }, []);
 

@@ -1,5 +1,17 @@
 import type { ProductBadge } from "@/lib/types";
 
+export interface BulkImportVariant {
+  tempId: string;
+  size: string;
+  color: string;
+  price?: number;
+  stock: "in-stock" | "made-to-order" | "low-stock";
+  // Same ordered-array-of-URLs convention as BulkImportRow.images, just scoped to this
+  // one variant instead of the whole product.
+  images: string[];
+  uploadingExtra?: boolean;
+}
+
 export interface BulkImportRow {
   tempId: string;
   fileName: string;
@@ -26,4 +38,5 @@ export interface BulkImportRow {
   dimensions: string;
   weight: string;
   badges: ProductBadge[];
+  variants: BulkImportVariant[];
 }

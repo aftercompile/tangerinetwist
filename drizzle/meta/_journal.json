@@ -71,6 +71,13 @@
       "when": 1785872623105,
       "tag": "0009_flowery_shooting_star",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786186317303,
+      "tag": "0010_workable_rogue",
+      "breakpoints": true
     }
   ]
 }

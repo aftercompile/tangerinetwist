@@ -23,6 +23,7 @@ async function resolveOrderItems(items: PlaceOrderInput["items"]) {
     where: inArray(products.slug, slugs),
     with: {
       images: { orderBy: (img, { asc }) => [asc(img.position)] },
+      variants: { with: { images: { orderBy: (img, { asc }) => [asc(img.position)] } } },
     },
   });
 
@@ -34,12 +35,15 @@ async function resolveOrderItems(items: PlaceOrderInput["items"]) {
 
   const orderItemRows = items.map((item) => {
     const product = bySlug.get(item.slug)!;
-    const primaryImage = product.images[0];
+    const variant = item.variantId ? product.variants.find((v) => v.id === item.variantId) : undefined;
+    const primaryImage = variant?.images[0] ?? product.images[0];
     return {
       productId: product.id,
+      variantId: variant?.id ?? null,
+      variantLabel: variant ? [variant.size, variant.color].filter(Boolean).join(" / ") : null,
       name: product.name,
       slug: product.slug,
-      price: product.price,
+      price: variant?.price ?? product.price,
       material: product.material,
       imageSrc: primaryImage?.src ?? null,
       imageIcon: primaryImage?.icon ?? product.icon,

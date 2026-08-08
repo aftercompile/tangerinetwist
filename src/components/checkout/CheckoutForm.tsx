@@ -71,7 +71,7 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
     setAlternativePaying(true);
     await openFastrrCheckout(
       e,
-      lines.map((l) => ({ slug: l.slug, quantity: l.quantity }))
+      lines.map((l) => ({ slug: l.slug, quantity: l.quantity, variantId: l.variantId }))
     );
     setAlternativePaying(false);
   }
@@ -83,7 +83,7 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
   async function handlePlaceOrder(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    const items = lines.map((l) => ({ slug: l.slug, quantity: l.quantity }));
+    const items = lines.map((l) => ({ slug: l.slug, quantity: l.quantity, variantId: l.variantId }));
 
     if (payment === "cod") {
       const result = await placeOrder({ shipping: { ...shipping, paymentMethod: "cod" }, items });
@@ -319,7 +319,7 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
           <h2 className="text-base font-medium text-charcoal">Order Summary</h2>
           <ul className="mt-5 flex flex-col gap-4">
             {lines.map((line) => (
-              <li key={line.slug} className="flex gap-3">
+              <li key={`${line.slug}-${line.variantId ?? ""}`} className="flex gap-3">
                 <ProductImagePlaceholder
                   icon={line.image.icon}
                   tone={line.image.tone as "warm" | "cool" | "charcoal" | "beige"}
@@ -329,6 +329,7 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
                 <div className="flex flex-1 justify-between text-sm">
                   <div>
                     <p className="font-medium text-charcoal">{line.name}</p>
+                    {line.variantLabel && <p className="text-xs text-muted">{line.variantLabel}</p>}
                     <p className="text-xs text-muted">Qty {line.quantity}</p>
                   </div>
                   <span className="font-medium text-charcoal">{formatINR(line.price * line.quantity)}</span>

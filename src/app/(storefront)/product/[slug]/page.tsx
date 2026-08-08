@@ -6,8 +6,7 @@ import {
   getProductBySlug,
   getRelatedProducts,
 } from "@/lib/db/queries";
-import { ProductGallery } from "@/components/product/ProductGallery";
-import { ProductInfo } from "@/components/product/ProductInfo";
+import { ProductDetail } from "@/components/product/ProductDetail";
 import { ProductTabs } from "@/components/product/ProductTabs";
 import { Reviews } from "@/components/product/Reviews";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
@@ -102,8 +101,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
       />
 
       <div className="mt-6 grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-start lg:gap-16">
-        <ProductGallery images={product.images} name={product.name} />
-        <ProductInfo product={product} />
+        <ProductDetail product={product} />
       </div>
 
       <ProductTabs product={product} />

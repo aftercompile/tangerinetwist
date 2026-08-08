@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { eq } from "drizzle-orm";
 import { requireAdminSession } from "@/lib/auth/guard";
 import { db } from "@/lib/db/index";
-import { productImages, productRelations, products } from "@/lib/db/schema";
+import { productImages, productRelations, productVariants, products } from "@/lib/db/schema";
 import { productFormSchema, type ProductFormValues } from "@/lib/validation/product";
 
 function isUniqueViolation(err: unknown): boolean {
@@ -76,6 +76,40 @@ export async function createProduct(
         }))
       );
 
+      // Variants first — their own generated id is the FK productImages.variantId needs,
+      // so each variant's dedicated images can only be inserted once its row exists.
+      if (data.variants.length > 0) {
+        const insertedVariants = await tx
+          .insert(productVariants)
+          .values(
+            data.variants.map((v, i) => ({
+              productId: row.id,
+              size: v.size || null,
+              color: v.color || null,
+              sku: v.sku || null,
+              price: v.price ?? null,
+              stock: v.stock,
+              position: i,
+            }))
+          )
+          .returning({ id: productVariants.id });
+
+        const variantImageRows = data.variants.flatMap((v, i) =>
+          v.images.map((img, j) => ({
+            productId: row.id,
+            variantId: insertedVariants[i].id,
+            src: img.src,
+            alt: img.alt,
+            tone: img.tone,
+            icon: img.icon,
+            position: j,
+          }))
+        );
+        if (variantImageRows.length > 0) {
+          await tx.insert(productImages).values(variantImageRows);
+        }
+      }
+
       if (data.relatedProductIds.length > 0) {
         await tx.insert(productRelations).values(
           data.relatedProductIds.map((relatedProductId, i) => ({
@@ -142,7 +176,12 @@ export async function updateProduct(values: ProductFormValues): Promise<{ error?
         })
         .where(eq(products.id, id));
 
+      // Images deleted before variants — variant-scoped image rows reference
+      // productVariants.id, so wiping them first means the variants delete right after
+      // has nothing left to cascade through.
       await tx.delete(productImages).where(eq(productImages.productId, id));
+      await tx.delete(productVariants).where(eq(productVariants.productId, id));
+
       await tx.insert(productImages).values(
         data.images.map((img, i) => ({
           productId: id,
@@ -153,6 +192,38 @@ export async function updateProduct(values: ProductFormValues): Promise<{ error?
           position: i,
         }))
       );
+
+      if (data.variants.length > 0) {
+        const insertedVariants = await tx
+          .insert(productVariants)
+          .values(
+            data.variants.map((v, i) => ({
+              productId: id,
+              size: v.size || null,
+              color: v.color || null,
+              sku: v.sku || null,
+              price: v.price ?? null,
+              stock: v.stock,
+              position: i,
+            }))
+          )
+          .returning({ id: productVariants.id });
+
+        const variantImageRows = data.variants.flatMap((v, i) =>
+          v.images.map((img, j) => ({
+            productId: id,
+            variantId: insertedVariants[i].id,
+            src: img.src,
+            alt: img.alt,
+            tone: img.tone,
+            icon: img.icon,
+            position: j,
+          }))
+        );
+        if (variantImageRows.length > 0) {
+          await tx.insert(productImages).values(variantImageRows);
+        }
+      }
 
       await tx.delete(productRelations).where(eq(productRelations.productId, id));
       if (data.relatedProductIds.length > 0) {

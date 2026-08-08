@@ -21,13 +21,14 @@ import type { AdminCategoryOption, AdminProductOption } from "@/lib/db/admin-que
 import { createProduct, updateProduct, deleteProduct } from "@/lib/actions/product-actions";
 import { StringListField } from "./StringListField";
 import { ImageListField } from "./ImageListField";
+import { VariantListField } from "./VariantListField";
 import { FaqListField } from "./FaqListField";
 import { RelatedProductsField } from "./RelatedProductsField";
 import { toInternal, fromInternal, emptyProductFormValues, type ProductFormInternal } from "./form-types";
 
 const iconNames = Object.keys(iconMap);
 
-const TABS = ["basics", "pricing", "specs", "media", "copy", "related"] as const;
+const TABS = ["basics", "pricing", "variants", "specs", "media", "copy", "related"] as const;
 
 // Maps a zod issue's top-level field name to the tab it's edited on, so a failed
 // submit can jump the user straight to the problem instead of leaving them to hunt
@@ -53,6 +54,7 @@ const FIELD_TAB: Record<string, (typeof TABS)[number]> = {
   icon: "specs",
   features: "specs",
   images: "media",
+  variants: "variants",
   careInstructions: "copy",
   shippingInfo: "copy",
   returnPolicy: "copy",
@@ -170,6 +172,7 @@ export function ProductForm({
           <TabsList>
             <TabsTrigger value="basics">Basics</TabsTrigger>
             <TabsTrigger value="pricing">Pricing &amp; Inventory</TabsTrigger>
+            <TabsTrigger value="variants">Variants</TabsTrigger>
             <TabsTrigger value="specs">Specs</TabsTrigger>
             <TabsTrigger value="media">Media</TabsTrigger>
             <TabsTrigger value="copy">Copy</TabsTrigger>
@@ -269,6 +272,10 @@ export function ProductForm({
               <Switch checked={isPersonalized} onCheckedChange={(v) => setValue("isPersonalized", v)} />
               <span className="text-sm text-charcoal">Allow personalization text at checkout</span>
             </label>
+          </TabsContent>
+
+          <TabsContent value="variants">
+            <VariantListField />
           </TabsContent>
 
           <TabsContent value="specs" className="flex flex-col gap-5">

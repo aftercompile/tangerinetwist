@@ -44,6 +44,21 @@ export default async function EditProductPage({ params }: { params: { id: string
       tone: img.tone,
       icon: img.icon,
     })),
+    variants: detail.variants.map((v) => ({
+      id: v.id,
+      size: v.size ?? "",
+      color: v.color ?? "",
+      sku: v.sku ?? "",
+      price: v.price ?? undefined,
+      stock: v.stock,
+      images: v.images.map((img) => ({
+        id: img.id,
+        src: img.src,
+        alt: img.alt,
+        tone: img.tone,
+        icon: img.icon,
+      })),
+    })),
     relatedProductIds: detail.relatedProductIds,
   };
 

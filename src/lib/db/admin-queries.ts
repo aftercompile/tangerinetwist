@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "./index";
 import {
   categories as categoriesTable,
@@ -6,6 +6,7 @@ import {
   orderItems as orderItemsTable,
   orderTrackingEvents as orderTrackingEventsTable,
   orders as ordersTable,
+  productImages as productImagesTable,
   productRelations as productRelationsTable,
   products as productsTable,
 } from "./schema";
@@ -97,14 +98,33 @@ export interface AdminProductDetail {
   stock: "in-stock" | "made-to-order" | "low-stock";
   isPersonalized: boolean;
   images: { id: string; src: string; alt: string; tone: "warm" | "cool" | "charcoal" | "beige"; icon: string; position: number }[];
+  variants: AdminProductVariant[];
   relatedProductIds: string[];
+}
+
+export interface AdminProductVariant {
+  id: string;
+  size: string | null;
+  color: string | null;
+  sku: string | null;
+  price: number | null;
+  stock: "in-stock" | "made-to-order" | "low-stock";
+  images: { id: string; src: string; alt: string; tone: "warm" | "cool" | "charcoal" | "beige"; icon: string; position: number }[];
 }
 
 export async function getAdminProductById(id: string): Promise<AdminProductDetail | undefined> {
   const row = await db.query.products.findFirst({
     where: eq(productsTable.id, id),
     with: {
-      images: { orderBy: (img, { asc }) => [asc(img.position)] },
+      // Shared/general photos only — variant-scoped ones come back nested under their own
+      // variant below, so a photo never appears in both places.
+      images: { where: isNull(productImagesTable.variantId), orderBy: (img, { asc }) => [asc(img.position)] },
+      variants: {
+        orderBy: (v, { asc }) => [asc(v.position)],
+        with: {
+          images: { orderBy: (img, { asc }) => [asc(img.position)] },
+        },
+      },
     },
   });
   if (!row) return undefined;
@@ -147,6 +167,22 @@ export async function getAdminProductById(id: string): Promise<AdminProductDetai
       tone: img.tone,
       icon: img.icon,
       position: img.position,
+    })),
+    variants: row.variants.map((v) => ({
+      id: v.id,
+      size: v.size,
+      color: v.color,
+      sku: v.sku,
+      price: v.price,
+      stock: v.stock,
+      images: v.images.map((img) => ({
+        id: img.id,
+        src: img.src,
+        alt: img.alt,
+        tone: img.tone,
+        icon: img.icon,
+        position: img.position,
+      })),
     })),
     relatedProductIds: relations.map((r) => r.relatedProductId),
   };

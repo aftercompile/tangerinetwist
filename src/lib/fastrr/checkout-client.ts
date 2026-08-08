@@ -51,7 +51,7 @@ function loadFastrrScript(): Promise<boolean> {
 // COD) end-to-end, then redirects to /checkout with the result.
 export async function openFastrrCheckout(
   event: React.MouseEvent,
-  items: { slug: string; quantity: number }[]
+  items: { slug: string; quantity: number; variantId?: string }[]
 ): Promise<void> {
   const result = await createFastrrCheckoutToken(items);
   if (result.error || !result.token) {

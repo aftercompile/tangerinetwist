@@ -11,7 +11,7 @@ import { runWithLimit } from "@/lib/concurrency";
 import { slugify } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { DraftCard } from "./DraftCard";
-import type { BulkImportRow } from "./types";
+import type { BulkImportRow, BulkImportVariant } from "./types";
 import type { AdminCategoryOption, AdminProductRow } from "@/lib/db/admin-queries";
 import type { ProductBadge } from "@/lib/types";
 
@@ -50,6 +50,7 @@ function emptyRow(fileName: string, defaultCategorySlug: string): BulkImportRow 
     dimensions: "",
     weight: "",
     badges: [],
+    variants: [],
   };
 }
 
@@ -126,6 +127,38 @@ export function BulkImportClient({
     setRows((prev) => prev.map((r) => (r.tempId === tempId ? { ...r, ...patch } : r)));
   }
 
+  function updateVariant(tempId: string, variantIndex: number, patch: Partial<BulkImportVariant>) {
+    setRows((prev) =>
+      prev.map((r) =>
+        r.tempId === tempId
+          ? { ...r, variants: r.variants.map((v, i) => (i === variantIndex ? { ...v, ...patch } : v)) }
+          : r
+      )
+    );
+  }
+
+  function addVariant(tempId: string) {
+    setRows((prev) =>
+      prev.map((r) =>
+        r.tempId === tempId
+          ? {
+              ...r,
+              variants: [
+                ...r.variants,
+                { tempId: randomId(), size: "", color: "", price: undefined, stock: "in-stock", images: [] },
+              ],
+            }
+          : r
+      )
+    );
+  }
+
+  function removeVariant(tempId: string, variantIndex: number) {
+    setRows((prev) =>
+      prev.map((r) => (r.tempId === tempId ? { ...r, variants: r.variants.filter((_, i) => i !== variantIndex) } : r))
+    );
+  }
+
   async function draftFor(tempId: string, imageUrl: string) {
     updateRow(tempId, { status: "generating", error: undefined });
     const result = await generateDraftFromImage(imageUrl);
@@ -179,10 +212,13 @@ export function BulkImportClient({
     setProcessing(false);
   }
 
-  // Attaches an additional photo to an already-drafted row — uses its own `uploadingExtra`
-  // flag rather than `status` so it doesn't reset the drafted copy back into a loading view.
-  async function addPhotoToRow(tempId: string, file: File) {
-    updateRow(tempId, { uploadingExtra: true });
+  // Attaches an additional photo to an already-drafted row, or (when variantIndex is
+  // given) to one specific variant's own photo strip instead — uses `uploadingExtra`
+  // rather than `status` so it doesn't reset the drafted copy back into a loading view.
+  async function addPhotoToRow(tempId: string, file: File, variantIndex?: number) {
+    if (variantIndex === undefined) updateRow(tempId, { uploadingExtra: true });
+    else updateVariant(tempId, variantIndex, { uploadingExtra: true });
+
     try {
       const compressed = await compressImageFile(file);
       const formData = new FormData();
@@ -193,18 +229,30 @@ export function BulkImportClient({
         throw new Error(uploadData?.error ?? "Upload failed");
       }
       const row = rows.find((r) => r.tempId === tempId);
-      updateRow(tempId, { images: [...(row?.images ?? []), uploadData.url] });
+      if (!row) return;
+      if (variantIndex === undefined) {
+        updateRow(tempId, { images: [...row.images, uploadData.url] });
+      } else {
+        const variant = row.variants[variantIndex];
+        if (variant) updateVariant(tempId, variantIndex, { images: [...variant.images, uploadData.url] });
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to add photo");
     } finally {
-      updateRow(tempId, { uploadingExtra: false });
+      if (variantIndex === undefined) updateRow(tempId, { uploadingExtra: false });
+      else updateVariant(tempId, variantIndex, { uploadingExtra: false });
     }
   }
 
-  function removePhotoFromRow(tempId: string, index: number) {
+  function removePhotoFromRow(tempId: string, index: number, variantIndex?: number) {
     const row = rows.find((r) => r.tempId === tempId);
     if (!row) return;
-    updateRow(tempId, { images: row.images.filter((_, i) => i !== index) });
+    if (variantIndex === undefined) {
+      updateRow(tempId, { images: row.images.filter((_, i) => i !== index) });
+    } else {
+      const variant = row.variants[variantIndex];
+      if (variant) updateVariant(tempId, variantIndex, { images: variant.images.filter((_, i) => i !== index) });
+    }
   }
 
   function retryRow(tempId: string) {
@@ -258,6 +306,14 @@ export function BulkImportClient({
         stock: "in-stock",
         isPersonalized: false,
         images: row.images.map((src) => ({ src, alt: row.name, tone, icon: row.suggestedIcon })),
+        variants: row.variants.map((v) => ({
+          size: v.size,
+          color: v.color,
+          sku: "",
+          price: v.price,
+          stock: v.stock,
+          images: v.images.map((src) => ({ src, alt: row.name, tone, icon: row.suggestedIcon })),
+        })),
         relatedProductIds: [],
       });
 
@@ -339,8 +395,11 @@ export function BulkImportClient({
               onChange={(patch) => updateRow(row.tempId, patch)}
               onPublish={() => publishRow(row.tempId)}
               onRetry={() => retryRow(row.tempId)}
-              onAddPhoto={(file) => addPhotoToRow(row.tempId, file)}
-              onRemovePhoto={(index) => removePhotoFromRow(row.tempId, index)}
+              onAddPhoto={(file, variantIndex) => addPhotoToRow(row.tempId, file, variantIndex)}
+              onRemovePhoto={(index, variantIndex) => removePhotoFromRow(row.tempId, index, variantIndex)}
+              onAddVariant={() => addVariant(row.tempId)}
+              onRemoveVariant={(variantIndex) => removeVariant(row.tempId, variantIndex)}
+              onChangeVariant={(variantIndex, patch) => updateVariant(row.tempId, variantIndex, patch)}
             />
           ))}
         </div>

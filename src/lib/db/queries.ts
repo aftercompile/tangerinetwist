@@ -1,10 +1,11 @@
 import { unstable_cache } from "next/cache";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "./index";
 import {
   categories as categoriesTable,
   products as productsTable,
   productImages as productImagesTable,
+  productVariants as productVariantsTable,
   productReviews as productReviewsTable,
   productRelations as productRelationsTable,
 } from "./schema";
@@ -15,6 +16,10 @@ type ProductRow = typeof productsTable.$inferSelect & {
   category: typeof categoriesTable.$inferSelect;
   images: (typeof productImagesTable.$inferSelect)[];
   reviews: (typeof productReviewsTable.$inferSelect)[];
+  // Only populated by getProductBySlug (the PDP query) — every other list query here
+  // doesn't fetch variants and mapProductRow defaults this to [], matching Product.variants'
+  // "empty = no variants, unchanged behavior" contract.
+  variants?: (typeof productVariantsTable.$inferSelect & { images: (typeof productImagesTable.$inferSelect)[] })[];
 };
 
 function mapProductRow(row: ProductRow, relatedSlugs: string[] = []): Product {
@@ -41,6 +46,21 @@ function mapProductRow(row: ProductRow, relatedSlugs: string[] = []): Product {
       tone: img.tone,
       icon: img.icon,
       src: img.src || undefined,
+    })),
+    variants: (row.variants ?? []).map((v) => ({
+      id: v.id,
+      size: v.size ?? undefined,
+      color: v.color ?? undefined,
+      sku: v.sku ?? undefined,
+      price: v.price ?? undefined,
+      stock: v.stock,
+      images: v.images.map((img) => ({
+        id: img.id,
+        alt: img.alt,
+        tone: img.tone,
+        icon: img.icon,
+        src: img.src || undefined,
+      })),
     })),
     icon: row.icon,
     rating: Number(row.rating),
@@ -87,7 +107,15 @@ export const getProductBySlug = unstable_cache(
       where: eq(productsTable.slug, slug),
       with: {
         category: true,
-        images: { orderBy: (img, { asc }) => [asc(img.position)] },
+        // Shared/general photos only — variant-scoped ones are fetched below, nested
+        // under their own variant, so a photo never appears in both places.
+        images: { where: isNull(productImagesTable.variantId), orderBy: (img, { asc }) => [asc(img.position)] },
+        variants: {
+          orderBy: (v, { asc }) => [asc(v.position)],
+          with: {
+            images: { orderBy: (img, { asc }) => [asc(img.position)] },
+          },
+        },
         reviews: { orderBy: (rev, { desc }) => [desc(rev.createdAt)] },
       },
     });

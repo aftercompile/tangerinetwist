@@ -2,10 +2,12 @@
 // resolve product/price/image for a cart line at checkout time. Deliberately uncached
 // (unlike src/lib/db/queries.ts) — same reasoning as admin-queries.ts, this must always
 // reflect the live price/stock, not a stale cached snapshot.
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { db } from "./index";
-import { categories, products, productImages } from "./schema";
+import { categories, products, productImages, productVariants } from "./schema";
 import { toFastrrImageUrl } from "@/lib/fastrr/images";
+
+type CatalogVariant = typeof productVariants.$inferSelect;
 
 const DEFAULT_LIMIT = 100;
 
@@ -35,7 +37,10 @@ export interface FastrrProduct {
   images: { src: string }[];
 }
 
-function toFastrrProduct(row: typeof products.$inferSelect & { categorySlug: string; imageSrc: string | null }): FastrrProduct {
+function toFastrrProduct(
+  row: typeof products.$inferSelect & { categorySlug: string; imageSrc: string | null },
+  variants: CatalogVariant[]
+): FastrrProduct {
   return {
     id: row.externalId,
     title: row.name,
@@ -46,16 +51,29 @@ function toFastrrProduct(row: typeof products.$inferSelect & { categorySlug: str
     updated_at: row.updatedAt.toISOString(),
     handle: row.slug,
     status: "active",
-    variants: [
-      {
-        id: row.externalId,
-        product_id: row.externalId,
-        title: "Default Title",
-        price: row.price,
-        sku: row.slug,
-        available: row.stock !== "low-stock",
-      },
-    ],
+    // Real size/color variants when the product has any, else the same single synthetic
+    // "Default Title" entry this always sent before variants existed — zero behavior
+    // change for variant-less products.
+    variants:
+      variants.length > 0
+        ? variants.map((v) => ({
+            id: v.externalId,
+            product_id: row.externalId,
+            title: [v.size, v.color].filter(Boolean).join(" / ") || "Default Title",
+            price: v.price ?? row.price,
+            sku: v.sku || row.slug,
+            available: v.stock !== "low-stock",
+          }))
+        : [
+            {
+              id: row.externalId,
+              product_id: row.externalId,
+              title: "Default Title",
+              price: row.price,
+              sku: row.slug,
+              available: row.stock !== "low-stock",
+            },
+          ],
     images: row.imageSrc ? [{ src: toFastrrImageUrl(row.imageSrc) }] : [],
   };
 }
@@ -79,9 +97,33 @@ async function fetchProductPage(whereClause: ReturnType<typeof eq> | undefined, 
   const countQuery = db.select({ value: count() }).from(products);
   const [{ value: total }] = whereClause ? await countQuery.where(whereClause) : await countQuery;
 
+  // Fetched separately (not joined into `base` above) so a product with N variants
+  // doesn't multiply into N rows and break the pagination/count above, which assume one
+  // row per product.
+  const productIds = rows.map((r) => r.product.id);
+  const variantRows =
+    productIds.length > 0
+      ? await db
+          .select()
+          .from(productVariants)
+          .where(inArray(productVariants.productId, productIds))
+          .orderBy(asc(productVariants.position))
+      : [];
+  const variantsByProduct = new Map<string, CatalogVariant[]>();
+  for (const v of variantRows) {
+    const list = variantsByProduct.get(v.productId) ?? [];
+    list.push(v);
+    variantsByProduct.set(v.productId, list);
+  }
+
   return {
     total,
-    products: rows.map((r) => toFastrrProduct({ ...r.product, categorySlug: r.categorySlug, imageSrc: r.imageSrc })),
+    products: rows.map((r) =>
+      toFastrrProduct(
+        { ...r.product, categorySlug: r.categorySlug, imageSrc: r.imageSrc },
+        variantsByProduct.get(r.product.id) ?? []
+      )
+    ),
   };
 }
 

@@ -34,6 +34,30 @@ export const productFaqSchema = z.object({
   answer: z.string().trim().min(1, "Answer is required"),
 });
 
+// price is optional here (unlike the required productFormSchema.price) — undefined means
+// "inherit the parent product's price", resolved at read/checkout time, not defaulted here.
+const optionalPriceSchema = z.preprocess(
+  (v) => (v === "" || v === undefined || v === 0 ? undefined : v),
+  priceSchema("Variant price must be greater than 0").optional()
+);
+
+export const productVariantSchema = z
+  .object({
+    id: z.string().optional(),
+    size: z.string().trim().default(""),
+    color: z.string().trim().default(""),
+    sku: z.string().trim().default(""),
+    price: optionalPriceSchema,
+    stock: z.enum(["in-stock", "made-to-order", "low-stock"], "Choose a stock status"),
+    // Falls back to the product's shared images when empty — not required to have its own
+    // photo, same "empty src is a real state" reasoning productImageSchema already uses.
+    images: z.array(productImageSchema).default([]),
+  })
+  .refine((v) => v.size.length > 0 || v.color.length > 0, {
+    message: "Set a size or a color for each variant",
+    path: ["size"],
+  });
+
 export const productFormSchema = z.object({
   id: z.string().optional(),
   slug: z
@@ -85,6 +109,7 @@ export const productFormSchema = z.object({
   // At least one image slot must exist — ProductGallery indexes images[0] directly and
   // would crash on an empty array — but each slot's src may be empty (placeholder art).
   images: z.array(productImageSchema).min(1, "Add at least one image"),
+  variants: z.array(productVariantSchema).default([]),
   relatedProductIds: z.array(z.string()).default([]),
 });
 

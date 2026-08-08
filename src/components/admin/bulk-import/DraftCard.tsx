@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { badgeOptions } from "@/lib/badges";
 import type { AdminCategoryOption } from "@/lib/db/admin-queries";
 import type { ProductBadge } from "@/lib/types";
-import type { BulkImportRow } from "./types";
+import type { BulkImportRow, BulkImportVariant } from "./types";
 
 export function DraftCard({
   row,
@@ -23,6 +23,9 @@ export function DraftCard({
   onRetry,
   onAddPhoto,
   onRemovePhoto,
+  onAddVariant,
+  onRemoveVariant,
+  onChangeVariant,
 }: {
   row: BulkImportRow;
   categories: AdminCategoryOption[];
@@ -30,8 +33,12 @@ export function DraftCard({
   onChange: (patch: Partial<BulkImportRow>) => void;
   onPublish: () => void;
   onRetry: () => void;
-  onAddPhoto: (file: File) => void;
-  onRemovePhoto: (index: number) => void;
+  // variantIndex omitted targets the row's own photos; given, targets that one variant's.
+  onAddPhoto: (file: File, variantIndex?: number) => void;
+  onRemovePhoto: (index: number, variantIndex?: number) => void;
+  onAddVariant: () => void;
+  onRemoveVariant: (variantIndex: number) => void;
+  onChangeVariant: (variantIndex: number, patch: Partial<BulkImportVariant>) => void;
 }) {
   const range = row.categorySlug ? priceRanges[row.categorySlug] : undefined;
   const editable = row.status === "ready" || row.status === "publishing";
@@ -216,6 +223,29 @@ export function DraftCard({
                 </div>
               </div>
 
+              <div>
+                <Label>Variants (optional)</Label>
+                <p className="mb-2 text-xs text-muted">
+                  Add a size and/or color option, each with its own photo. Leave price blank to
+                  use the price above.
+                </p>
+                <div className="flex flex-col gap-3">
+                  {row.variants.map((variant, i) => (
+                    <VariantRow
+                      key={variant.tempId}
+                      variant={variant}
+                      onChange={(patch) => onChangeVariant(i, patch)}
+                      onRemove={() => onRemoveVariant(i)}
+                      onAddPhoto={(file) => onAddPhoto(file, i)}
+                      onRemovePhoto={(index) => onRemovePhoto(index, i)}
+                    />
+                  ))}
+                </div>
+                <Button type="button" variant="outline" size="sm" className="mt-2" onClick={onAddVariant}>
+                  <Plus className="h-3.5 w-3.5" /> Add variant
+                </Button>
+              </div>
+
               <div className="flex items-center justify-between border-t border-border pt-3">
                 <p className="flex items-center gap-1.5 text-xs text-muted">
                   <Sparkles className="h-3.5 w-3.5" /> Drafted — review before publishing
@@ -240,5 +270,85 @@ export function DraftCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function VariantRow({
+  variant,
+  onChange,
+  onRemove,
+  onAddPhoto,
+  onRemovePhoto,
+}: {
+  variant: BulkImportVariant;
+  onChange: (patch: Partial<BulkImportVariant>) => void;
+  onRemove: () => void;
+  onAddPhoto: (file: File) => void;
+  onRemovePhoto: (index: number) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-border p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
+          <Input placeholder="Size" value={variant.size} onChange={(e) => onChange({ size: e.target.value })} />
+          <Input placeholder="Color" value={variant.color} onChange={(e) => onChange({ color: e.target.value })} />
+          <Input
+            type="number"
+            min={1}
+            placeholder="Price override"
+            value={variant.price ?? ""}
+            onChange={(e) => onChange({ price: e.target.value === "" ? undefined : Number(e.target.value) })}
+          />
+          <Select value={variant.stock} onValueChange={(v) => onChange({ stock: v as BulkImportVariant["stock"] })}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="in-stock">In Stock</SelectItem>
+              <SelectItem value="made-to-order">Made to Order</SelectItem>
+              <SelectItem value="low-stock">Low Stock</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label="Remove variant"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-beige hover:text-charcoal"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+        {variant.images.map((src, i) => (
+          <div key={src} className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-beige">
+            <Image src={src} alt="" fill sizes="48px" className="object-cover" />
+            <button
+              type="button"
+              onClick={() => onRemovePhoto(i)}
+              aria-label="Remove photo"
+              className="absolute inset-0 flex items-center justify-center bg-charcoal/60 opacity-0 transition-opacity group-hover:opacity-100"
+            >
+              <X className="h-3.5 w-3.5 text-white" />
+            </button>
+          </div>
+        ))}
+        <label className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-dashed border-border text-muted transition hover:border-charcoal hover:text-charcoal">
+          {variant.uploadingExtra ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif"
+            className="hidden"
+            disabled={variant.uploadingExtra}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onAddPhoto(file);
+              e.target.value = "";
+            }}
+          />
+        </label>
+      </div>
+    </div>
   );
 }

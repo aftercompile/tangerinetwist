@@ -64,6 +64,19 @@ export type ProductBadge =
   | "signature"
   | "premium-finish";
 
+// A purchasable size/color option. price/stock are per-variant; price undefined means
+// "use the parent product's price". images are this variant's own dedicated photos —
+// falls back to the product's shared images when empty (see ProductGallery usage).
+export interface ProductVariant {
+  id: string;
+  size?: string;
+  color?: string;
+  sku?: string;
+  price?: number;
+  stock: "in-stock" | "made-to-order" | "low-stock";
+  images: ProductImage[];
+}
+
 export interface Product {
   id: string;
   slug: string;
@@ -81,7 +94,13 @@ export interface Product {
   weight: string;
   colorway: string;
   finishTime: string;
+  // Shared/general photos only — a variant's own dedicated photos live on variants[].images.
   images: ProductImage[];
+  // Empty/absent = no variants; every other layer (cart/checkout/admin) treats that as
+  // today's single-price/single-stock behavior, unchanged. Optional (like isPersonalized
+  // below) because the static seed fixture in src/data/products.ts doesn't set it — the DB
+  // query layer always does.
+  variants?: ProductVariant[];
   icon: string;
   rating: number;
   reviewCount: number;

@@ -15,7 +15,7 @@ import {
   Ruler,
   Weight,
 } from "lucide-react";
-import { Product } from "@/lib/types";
+import { Product, ProductVariant } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +28,18 @@ import { useWishlist } from "@/context/WishlistContext";
 import { cn, formatINR } from "@/lib/utils";
 import { DURATION, EASE_PREMIUM } from "@/lib/motion";
 
-export function ProductInfo({ product }: { product: Product }) {
+export function ProductInfo({
+  product,
+  selectedVariant,
+  onSelectVariant,
+}: {
+  product: Product;
+  // Undefined when the product has no variants at all — ProductDetail defaults this to
+  // variants[0] whenever variants exist, so "has variants" and "one is selected" always
+  // move together; there's no empty "please pick one" state to handle here.
+  selectedVariant?: ProductVariant;
+  onSelectVariant?: (variant: ProductVariant) => void;
+}) {
   const [quantity, setQuantity] = React.useState(1);
   const [personalization, setPersonalization] = React.useState("");
   const [ctaVisible, setCtaVisible] = React.useState(true);
@@ -39,9 +50,18 @@ export function ProductInfo({ product }: { product: Product }) {
   const reduced = useReducedMotion();
   const wished = has(product.slug);
   const isPersonalized = product.isPersonalized ?? false;
+  const effectivePrice = selectedVariant?.price ?? product.price;
+
+  function variantLabel(v: ProductVariant): string {
+    return [v.size, v.color].filter(Boolean).join(" / ") || "Default";
+  }
+
+  function handleAddToCart() {
+    addItem(product, quantity, selectedVariant);
+  }
 
   function handleBuyNow() {
-    addItem(product, quantity);
+    addItem(product, quantity, selectedVariant);
     router.push("/checkout");
   }
 
@@ -87,9 +107,35 @@ export function ProductInfo({ product }: { product: Product }) {
       </motion.div>
 
       <motion.div {...reveal(0.2)} className="mt-6">
-        <Price price={product.price} compareAtPrice={product.compareAtPrice} size="lg" />
+        <Price price={effectivePrice} compareAtPrice={product.compareAtPrice} size="lg" />
         <p className="mt-1 text-xs text-muted">Inclusive of all taxes. Shipping calculated at checkout.</p>
       </motion.div>
+
+      {product.variants && product.variants.length > 0 && (
+        <motion.div {...reveal(0.22)} className="mt-5">
+          <Label>Choose an option</Label>
+          <div className="flex flex-wrap gap-2">
+            {product.variants.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => onSelectVariant?.(v)}
+                aria-pressed={selectedVariant?.id === v.id}
+                className={cn(
+                  "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                  selectedVariant?.id === v.id
+                    ? "border-charcoal bg-charcoal text-cream"
+                    : "border-border text-charcoal hover:border-charcoal"
+                )}
+              >
+                {variantLabel(v)}
+                {v.stock === "low-stock" && <span className="ml-1.5 text-xs opacity-70">(low stock)</span>}
+                {v.stock === "made-to-order" && <span className="ml-1.5 text-xs opacity-70">(made to order)</span>}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       <motion.p {...reveal(0.25)} className="mt-6 max-w-lg text-sm leading-relaxed text-muted">
         {product.description}
@@ -148,7 +194,7 @@ export function ProductInfo({ product }: { product: Product }) {
 
       <div ref={ctaRef}>
         <Magnetic strength={0.15} className="mt-3 w-full">
-          <Button variant="accent" size="lg" className="w-full" onClick={() => addItem(product, quantity)}>
+          <Button variant="accent" size="lg" className="w-full" onClick={handleAddToCart}>
             <ShoppingBag className="h-4 w-4" /> Add to Cart
           </Button>
         </Magnetic>
@@ -178,13 +224,13 @@ export function ProductInfo({ product }: { product: Product }) {
             <div className="flex items-center gap-3">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-charcoal">{product.name}</p>
-                <p className="text-sm font-semibold text-tangerine-600">{formatINR(product.price)}</p>
+                <p className="text-sm font-semibold text-tangerine-600">{formatINR(effectivePrice)}</p>
               </div>
               <Button
                 variant="accent"
                 size="lg"
                 className="shrink-0"
-                onClick={() => addItem(product, quantity)}
+                onClick={handleAddToCart}
               >
                 <ShoppingBag className="h-4 w-4" /> Add to Cart
               </Button>

@@ -26,6 +26,9 @@ export const placeOrderInputSchema = z.object({
       z.object({
         slug: z.string().min(1),
         quantity: z.number().int().positive(),
+        // Absent for products with no variants — resolveOrderItems (order-actions.ts)
+        // falls back to the product's own price when this isn't set.
+        variantId: z.string().optional(),
       })
     )
     .min(1, "Your cart is empty"),
