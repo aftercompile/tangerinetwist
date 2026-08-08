@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { CheckCircle2, Truck, CreditCard, ClipboardCheck } from "lucide-react";
+import { CheckCircle2, Truck, CreditCard, ClipboardCheck, Tag, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,8 +13,9 @@ import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceho
 import { formatINR } from "@/lib/utils";
 import { calculateTotals } from "@/lib/orders";
 import { placeOrder, createOrderForPayment, verifyRazorpayPayment } from "@/lib/actions/order-actions";
-import { openFastrrCheckout } from "@/lib/fastrr/checkout-client";
+import { validateCoupon } from "@/lib/actions/coupon-actions";
 import { INDIAN_STATES } from "@/lib/data/indian-states";
+import { lookupPincode } from "@/lib/pincode";
 import { cn } from "@/lib/utils";
 
 const paymentOptions = [
@@ -60,33 +61,82 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
   const [payment, setPayment] = React.useState<"online" | "cod">("online");
   const [shipping, setShipping] = React.useState<ShippingForm>({ ...emptyShipping, ...initialShipping });
   const [submitting, setSubmitting] = React.useState(false);
-  const [alternativePaying, setAlternativePaying] = React.useState(false);
   const [placedOrderNumber, setPlacedOrderNumber] = React.useState<string | null>(null);
-  const { shipping: shippingCost, total } = calculateTotals(subtotal);
-
-  // Escape hatch to Fastrr's hosted overlay for customers who'd rather not use this form —
-  // doesn't require the shipping fields above to be filled in, since Fastrr's overlay
-  // collects its own address. Reuses the same cart lines already bound via useCart().
-  async function handleAlternativePayment(e: React.MouseEvent) {
-    setAlternativePaying(true);
-    await openFastrrCheckout(
-      e,
-      lines.map((l) => ({ slug: l.slug, quantity: l.quantity, variantId: l.variantId }))
-    );
-    setAlternativePaying(false);
-  }
+  const [couponInput, setCouponInput] = React.useState("");
+  const [appliedCoupon, setAppliedCoupon] = React.useState<{ code: string; discountAmount: number } | null>(null);
+  const [couponError, setCouponError] = React.useState<string | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = React.useState(false);
+  const { shipping: shippingCost, discount, total } = calculateTotals(subtotal, appliedCoupon?.discountAmount ?? 0);
 
   function updateField<K extends keyof ShippingForm>(key: K, value: ShippingForm[K]) {
     setShipping((prev) => ({ ...prev, [key]: value }));
+  }
+
+  // Auto-fills city/state from the PIN code so the customer only has to type it
+  // once — debounced so it fires after they finish typing, not on every keystroke,
+  // and aborted if the PIN changes again before a lookup resolves (fixing a typo
+  // shouldn't let a stale response overwrite the correction).
+  const [pinLookupStatus, setPinLookupStatus] = React.useState<"idle" | "loading" | "notfound">("idle");
+  React.useEffect(() => {
+    if (!/^\d{6}$/.test(shipping.pin)) {
+      setPinLookupStatus("idle");
+      return;
+    }
+    const controller = new AbortController();
+    setPinLookupStatus("loading");
+    const timer = setTimeout(async () => {
+      const location = await lookupPincode(shipping.pin, controller.signal);
+      if (controller.signal.aborted) return;
+      if (!location) {
+        setPinLookupStatus("notfound");
+        return;
+      }
+      setPinLookupStatus("idle");
+      setShipping((prev) => ({ ...prev, city: location.city, state: location.state || prev.state }));
+    }, 400);
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only the PIN itself should retrigger this
+  }, [shipping.pin]);
+
+  async function handleApplyCoupon() {
+    if (!couponInput.trim()) return;
+    if (!shipping.email.trim()) {
+      setCouponError("Enter your email above first — coupons are checked per customer.");
+      return;
+    }
+    setApplyingCoupon(true);
+    setCouponError(null);
+    try {
+      const result = await validateCoupon(couponInput.trim(), subtotal, shipping.email);
+      if (result.error || result.discountAmount === undefined) {
+        setCouponError(result.error ?? "That coupon isn't valid.");
+        return;
+      }
+      setAppliedCoupon({ code: couponInput.trim().toUpperCase(), discountAmount: result.discountAmount });
+      setCouponInput("");
+    } catch (err) {
+      setCouponError(err instanceof Error ? err.message : "Couldn't check that coupon. Try again.");
+    } finally {
+      setApplyingCoupon(false);
+    }
+  }
+
+  function handleRemoveCoupon() {
+    setAppliedCoupon(null);
+    setCouponError(null);
   }
 
   async function handlePlaceOrder(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     const items = lines.map((l) => ({ slug: l.slug, quantity: l.quantity, variantId: l.variantId }));
+    const couponCode = appliedCoupon?.code;
 
     if (payment === "cod") {
-      const result = await placeOrder({ shipping: { ...shipping, paymentMethod: "cod" }, items });
+      const result = await placeOrder({ shipping: { ...shipping, paymentMethod: "cod" }, items, couponCode });
       setSubmitting(false);
       if (result.error || !result.orderNumber) {
         toast.error(result.error ?? "Something went wrong placing your order.");
@@ -101,7 +151,7 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
     // never trust the client's own claim that payment succeeded, so the success handler
     // hands the result to verifyRazorpayPayment for server-side signature verification
     // rather than treating Razorpay's callback as fact.
-    const created = await createOrderForPayment({ shipping: { ...shipping, paymentMethod: "online" }, items });
+    const created = await createOrderForPayment({ shipping: { ...shipping, paymentMethod: "online" }, items, couponCode });
     if (created.error || !created.orderId || !created.razorpayOrderId || !created.keyId) {
       setSubmitting(false);
       toast.error(created.error ?? "Could not start payment.");
@@ -226,6 +276,25 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
                 required
                 className="sm:col-span-2"
               />
+              <div>
+                <Field
+                  label="PIN Code"
+                  id="pin"
+                  value={shipping.pin}
+                  onChange={(v) => updateField("pin", v)}
+                  required
+                  inputMode="numeric"
+                  maxLength={6}
+                />
+                {pinLookupStatus === "loading" && (
+                  <p className="mt-1.5 text-xs text-muted">Looking up city &amp; state...</p>
+                )}
+                {pinLookupStatus === "notfound" && (
+                  <p className="mt-1.5 text-xs text-muted">
+                    Couldn&apos;t find that PIN — enter city and state below.
+                  </p>
+                )}
+              </div>
               <Field
                 label="City"
                 id="city"
@@ -248,13 +317,6 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
                   </SelectContent>
                 </Select>
               </div>
-              <Field
-                label="PIN Code"
-                id="pin"
-                value={shipping.pin}
-                onChange={(v) => updateField("pin", v)}
-                required
-              />
             </div>
           </Step>
 
@@ -294,23 +356,13 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
               variant="accent"
               size="lg"
               className="mt-5 w-full sm:w-auto"
-              disabled={submitting || alternativePaying}
+              disabled={submitting}
             >
               {submitting
                 ? "Please wait..."
                 : payment === "online"
                   ? `Pay — ${formatINR(total)}`
                   : `Place Order — ${formatINR(total)}`}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="md"
-              className="mt-2 w-full sm:w-auto"
-              disabled={submitting || alternativePaying}
-              onClick={handleAlternativePayment}
-            >
-              {alternativePaying ? "Please wait..." : "Or pay another way"}
             </Button>
           </Step>
         </div>
@@ -337,11 +389,62 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
               </li>
             ))}
           </ul>
-          <div className="mt-5 flex flex-col gap-2 border-t border-border pt-4 text-sm">
+
+          <div className="mt-5 border-t border-border pt-4">
+            {appliedCoupon ? (
+              <div className="flex items-center justify-between rounded-xl bg-beige px-3.5 py-2.5 text-sm">
+                <span className="flex items-center gap-1.5 font-medium text-charcoal">
+                  <Tag className="h-3.5 w-3.5" /> {appliedCoupon.code}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRemoveCoupon}
+                  aria-label="Remove coupon"
+                  className="text-muted transition-colors hover:text-charcoal"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Have a coupon?"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleApplyCoupon();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="md"
+                    disabled={applyingCoupon || !couponInput.trim()}
+                    onClick={handleApplyCoupon}
+                  >
+                    {applyingCoupon ? "..." : "Apply"}
+                  </Button>
+                </div>
+                {couponError && <p className="mt-1.5 text-xs text-tangerine-600">{couponError}</p>}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-col gap-2 text-sm">
             <div className="flex justify-between text-muted">
               <span>Subtotal</span>
               <span className="text-charcoal">{formatINR(subtotal)}</span>
             </div>
+            {discount > 0 && (
+              <div className="flex justify-between text-muted">
+                <span>Discount</span>
+                <span className="text-tangerine-600">−{formatINR(discount)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-muted">
               <span>Shipping</span>
               <span className="text-charcoal">{shippingCost === 0 ? "Free" : formatINR(shippingCost)}</span>
@@ -392,6 +495,8 @@ function Field({
   className,
   value,
   onChange,
+  inputMode,
+  maxLength,
 }: {
   label: string;
   id: string;
@@ -400,6 +505,8 @@ function Field({
   className?: string;
   value: string;
   onChange: (value: string) => void;
+  inputMode?: React.InputHTMLAttributes<HTMLInputElement>["inputMode"];
+  maxLength?: number;
 }) {
   return (
     <div className={className}>
@@ -411,6 +518,8 @@ function Field({
         required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        inputMode={inputMode}
+        maxLength={maxLength}
       />
     </div>
   );
