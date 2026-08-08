@@ -236,6 +236,7 @@ export interface AdminOrderRow {
   orderNumber: string;
   status: "pending" | "confirmed" | "in_production" | "shipped" | "delivered" | "cancelled";
   paymentStatus: "pending" | "paid" | "failed" | "cod";
+  channel: "direct" | "amazon" | "flipkart" | "meesho";
   customerId: string | null;
   customerName: string;
   customerEmail: string;
@@ -251,6 +252,7 @@ export async function getAdminOrderRows(): Promise<AdminOrderRow[]> {
       orderNumber: ordersTable.orderNumber,
       status: ordersTable.status,
       paymentStatus: ordersTable.paymentStatus,
+      channel: ordersTable.channel,
       customerId: ordersTable.customerId,
       customerName: ordersTable.customerName,
       customerEmail: ordersTable.customerEmail,
@@ -270,6 +272,8 @@ export interface AdminOrderDetail {
   id: string;
   orderNumber: string;
   status: "pending" | "confirmed" | "in_production" | "shipped" | "delivered" | "cancelled";
+  channel: "direct" | "amazon" | "flipkart" | "meesho";
+  externalOrderId: string | null;
   customerId: string | null;
   customerName: string;
   customerEmail: string;
@@ -329,6 +333,8 @@ export async function getAdminOrderById(id: string): Promise<AdminOrderDetail | 
     id: order.id,
     orderNumber: order.orderNumber,
     status: order.status,
+    channel: order.channel,
+    externalOrderId: order.externalOrderId,
     customerId: order.customerId,
     customerName: order.customerName,
     customerEmail: order.customerEmail,

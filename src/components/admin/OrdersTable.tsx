@@ -36,9 +36,17 @@ const paymentBadgeLabel: Record<AdminOrderRow["paymentStatus"], string> = {
   cod: "COD",
 };
 
+const channelLabel: Record<AdminOrderRow["channel"], string> = {
+  direct: "Direct",
+  amazon: "Amazon",
+  flipkart: "Flipkart",
+  meesho: "Meesho",
+};
+
 export function OrdersTable({ orders }: { orders: AdminOrderRow[] }) {
   const [search, setSearch] = React.useState("");
   const [status, setStatus] = React.useState("all");
+  const [channel, setChannel] = React.useState("all");
   const [page, setPage] = React.useState(1);
 
   const filtered = React.useMemo(() => {
@@ -52,11 +60,12 @@ export function OrdersTable({ orders }: { orders: AdminOrderRow[] }) {
       )
         return false;
       if (status !== "all" && o.status !== status) return false;
+      if (channel !== "all" && o.channel !== channel) return false;
       return true;
     });
-  }, [orders, search, status]);
+  }, [orders, search, status, channel]);
 
-  React.useEffect(() => setPage(1), [search, status]);
+  React.useEffect(() => setPage(1), [search, status, channel]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -87,6 +96,18 @@ export function OrdersTable({ orders }: { orders: AdminOrderRow[] }) {
             <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={channel} onValueChange={setChannel}>
+          <SelectTrigger className="w-full sm:w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Channels</SelectItem>
+            <SelectItem value="direct">Direct</SelectItem>
+            <SelectItem value="amazon">Amazon</SelectItem>
+            <SelectItem value="flipkart">Flipkart</SelectItem>
+            <SelectItem value="meesho">Meesho</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-2xl border border-border bg-warm-white">
@@ -94,6 +115,7 @@ export function OrdersTable({ orders }: { orders: AdminOrderRow[] }) {
           <TableHeader>
             <TableRow>
               <TableHead>Order</TableHead>
+              <TableHead>Channel</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Items</TableHead>
               <TableHead>Total</TableHead>
@@ -104,7 +126,7 @@ export function OrdersTable({ orders }: { orders: AdminOrderRow[] }) {
           <TableBody>
             {pageItems.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-sm text-muted">
+                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted">
                   No orders match these filters.
                 </TableCell>
               </TableRow>
@@ -115,6 +137,9 @@ export function OrdersTable({ orders }: { orders: AdminOrderRow[] }) {
                   <Link href={`/admin/orders/${o.id}`} className="font-medium text-charcoal hover:underline">
                     {o.orderNumber}
                   </Link>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="soft">{channelLabel[o.channel]}</Badge>
                 </TableCell>
                 <TableCell>
                   <p>{o.customerName}</p>

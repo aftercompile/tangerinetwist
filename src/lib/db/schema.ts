@@ -49,6 +49,12 @@ export const paymentMethodEnum = pgEnum("payment_method", ["card", "upi", "cod",
 // signature-verified confirmation (client callback or webhook) arrives.
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "paid", "failed", "cod"]);
 
+// "direct" is every order placed through our own checkout (Razorpay/Fastrr/COD) — the
+// only channel that existed before this enum did, so it's the default. The other three
+// are imported from CSV exports of each marketplace's seller dashboard (see
+// order-import-actions.ts) — never written by our own checkout.
+export const salesChannelEnum = pgEnum("sales_channel", ["direct", "amazon", "flipkart", "meesho"]);
+
 export const categories = pgTable("categories", {
   id: uuid("id").defaultRandom().primaryKey(),
   // Same reasoning as products.externalId — Fastrr's catalog sync expects a unique
@@ -232,54 +238,67 @@ export const customerAddresses = pgTable("customer_addresses", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const orders = pgTable("orders", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  orderNumber: text("order_number").notNull().unique(),
-  status: orderStatusEnum("status").notNull().default("pending"),
-  // Null for guest checkout — never required, never client-supplied (see placeOrder).
-  customerId: uuid("customer_id").references(() => customers.id, { onDelete: "set null" }),
-  customerName: text("customer_name").notNull(),
-  customerEmail: text("customer_email").notNull(),
-  customerPhone: text("customer_phone").notNull(),
-  addressLine: text("address_line").notNull(),
-  city: text("city").notNull(),
-  // Nullable: orders placed before the Shiprocket integration won't have it. Required by
-  // Shiprocket's order-create API (billing_state), so enforced going forward in
-  // shippingDetailsSchema instead of at the column level.
-  state: text("state"),
-  pin: text("pin").notNull(),
-  // Nullable: for an online-payment order this isn't known until Razorpay reports which
-  // method the customer actually used (card/upi/netbanking/wallet) — "cod" is set
-  // immediately since there's nothing to wait for.
-  paymentMethod: paymentMethodEnum("payment_method"),
-  paymentStatus: paymentStatusEnum("payment_status").notNull().default("pending"),
-  // Set for orders placed through the primary Razorpay-based checkout (CheckoutForm.tsx).
-  razorpayOrderId: text("razorpay_order_id"),
-  razorpayPaymentId: text("razorpay_payment_id"),
-  razorpaySignature: text("razorpay_signature"),
-  // Set for orders placed through the alternative Fastrr checkout button instead — the
-  // "oid" in its redirect_url and webhook payload, used to fetch authoritative order/
-  // payment details and to de-dupe webhook retries.
-  fastrrOrderId: text("fastrr_order_id").unique(),
-  // "razorpay" or "fastrr" depending on which checkout path the order came through; null
-  // on historical rows predating this column.
-  checkoutSource: text("checkout_source"),
-  subtotal: integer("subtotal").notNull(),
-  shipping: integer("shipping").notNull(),
-  total: integer("total").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  // All null until an admin pushes the order to Shiprocket via ShiprocketPanel.
-  shiprocketOrderId: text("shiprocket_order_id"),
-  shiprocketShipmentId: text("shiprocket_shipment_id"),
-  awbCode: text("awb_code"),
-  courierName: text("courier_name"),
-  trackingUrl: text("tracking_url"),
-  shiprocketStatus: text("shiprocket_status"),
-  // Generated automatically at ship time (see shipOrderViaShiprocket) — null only if
-  // that generation call itself failed, in which case the admin panel falls back to
-  // generating (and persisting) it on demand.
-  invoiceUrl: text("invoice_url"),
-});
+export const orders = pgTable(
+  "orders",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    orderNumber: text("order_number").notNull().unique(),
+    status: orderStatusEnum("status").notNull().default("pending"),
+    // "direct" (default) covers every order placed through our own checkout, unchanged.
+    // The marketplace's own order id lives in externalOrderId, used to skip re-importing
+    // a CSV row that's already in the DB — see the composite unique index below.
+    channel: salesChannelEnum("channel").notNull().default("direct"),
+    externalOrderId: text("external_order_id"),
+    // Null for guest checkout — never required, never client-supplied (see placeOrder).
+    customerId: uuid("customer_id").references(() => customers.id, { onDelete: "set null" }),
+    customerName: text("customer_name").notNull(),
+    customerEmail: text("customer_email").notNull(),
+    customerPhone: text("customer_phone").notNull(),
+    addressLine: text("address_line").notNull(),
+    city: text("city").notNull(),
+    // Nullable: orders placed before the Shiprocket integration won't have it. Required by
+    // Shiprocket's order-create API (billing_state), so enforced going forward in
+    // shippingDetailsSchema instead of at the column level.
+    state: text("state"),
+    pin: text("pin").notNull(),
+    // Nullable: for an online-payment order this isn't known until Razorpay reports which
+    // method the customer actually used (card/upi/netbanking/wallet) — "cod" is set
+    // immediately since there's nothing to wait for.
+    paymentMethod: paymentMethodEnum("payment_method"),
+    paymentStatus: paymentStatusEnum("payment_status").notNull().default("pending"),
+    // Set for orders placed through the primary Razorpay-based checkout (CheckoutForm.tsx).
+    razorpayOrderId: text("razorpay_order_id"),
+    razorpayPaymentId: text("razorpay_payment_id"),
+    razorpaySignature: text("razorpay_signature"),
+    // Set for orders placed through the alternative Fastrr checkout button instead — the
+    // "oid" in its redirect_url and webhook payload, used to fetch authoritative order/
+    // payment details and to de-dupe webhook retries.
+    fastrrOrderId: text("fastrr_order_id").unique(),
+    // "razorpay" or "fastrr" depending on which checkout path the order came through; null
+    // on historical rows predating this column.
+    checkoutSource: text("checkout_source"),
+    subtotal: integer("subtotal").notNull(),
+    shipping: integer("shipping").notNull(),
+    total: integer("total").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    // All null until an admin pushes the order to Shiprocket via ShiprocketPanel.
+    shiprocketOrderId: text("shiprocket_order_id"),
+    shiprocketShipmentId: text("shiprocket_shipment_id"),
+    awbCode: text("awb_code"),
+    courierName: text("courier_name"),
+    trackingUrl: text("tracking_url"),
+    shiprocketStatus: text("shiprocket_status"),
+    // Generated automatically at ship time (see shipOrderViaShiprocket) — null only if
+    // that generation call itself failed, in which case the admin panel falls back to
+    // generating (and persisting) it on demand.
+    invoiceUrl: text("invoice_url"),
+  },
+  (table) => ({
+    // Nulls (every "direct" order) are each treated as distinct by Postgres, so this only
+    // constrains real imports — the same row can't be imported twice from the same channel.
+    oneExternalOrderPerChannel: unique().on(table.channel, table.externalOrderId),
+  })
+);
 
 export const orderItems = pgTable("order_items", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -320,6 +339,19 @@ export const orderTrackingEvents = pgTable("order_tracking_events", {
   // "webhook" | "manual_refresh" | "ship" — which path recorded this, for debugging.
   source: text("source").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Singleton row (id is always 1, enforced in application code via settings-queries.ts/
+// settings-actions.ts, not a DB constraint) holding the store's GST configuration — one
+// flat rate and one HSN code for the whole catalog, per the admin's own call on scope.
+// Every field starts null; the Tax page gates its reports on all three being set rather
+// than silently computing against a 0% default.
+export const storeSettings = pgTable("store_settings", {
+  id: integer("id").primaryKey(),
+  gstState: text("gst_state"),
+  gstRatePercent: numeric("gst_rate_percent", { precision: 5, scale: 2 }),
+  defaultHsnCode: text("default_hsn_code"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const categoriesRelations = relations(categories, ({ many }) => ({

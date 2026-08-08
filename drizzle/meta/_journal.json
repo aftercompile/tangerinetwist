@@ -78,6 +78,13 @@
       "when": 1786186317303,
       "tag": "0010_workable_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786191313311,
+      "tag": "0011_early_miracleman",
+      "breakpoints": true
     }
   ]
 }

@@ -20,6 +20,13 @@ const paymentStatusBadge = {
   cod: { variant: "soft", label: "Cash on Delivery" },
 } as const;
 
+const channelLabel = {
+  direct: "Direct",
+  amazon: "Amazon",
+  flipkart: "Flipkart",
+  meesho: "Meesho",
+} as const;
+
 export default async function AdminOrderDetailPage({ params }: { params: { id: string } }) {
   const order = await getAdminOrderById(params.id);
   if (!order) notFound();
@@ -34,6 +41,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
           <h2 className="mt-2 h-display text-2xl">{order.orderNumber}</h2>
           <p className="text-sm text-muted">
             Placed {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(order.createdAt)}
+            {order.channel !== "direct" && <> · Imported from {channelLabel[order.channel]}</>}
           </p>
         </div>
         <OrderStatusSelect orderId={order.id} status={order.status} />
@@ -124,7 +132,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
                   </Badge>
                 </div>
                 <p className="mt-2 text-sm capitalize text-charcoal">
-                  {order.paymentMethod ?? "Awaiting payment"}
+                  {order.paymentMethod ?? (order.channel !== "direct" ? "Marketplace order" : "Awaiting payment")}
                 </p>
                 {order.fastrrOrderId && (
                   <p className="text-xs text-muted">Fastrr order: {order.fastrrOrderId}</p>
@@ -136,7 +144,22 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
             </CardContent>
           </Card>
 
-          <ShiprocketPanel order={order} />
+          {order.channel === "direct" ? (
+            <ShiprocketPanel order={order} />
+          ) : (
+            <Card className="h-fit">
+              <CardContent className="flex flex-col gap-1 p-6">
+                <h3 className="font-display text-lg text-charcoal">Fulfillment</h3>
+                <p className="text-sm text-charcoal">Fulfilled via {channelLabel[order.channel]}</p>
+                {order.externalOrderId && (
+                  <p className="text-xs text-muted">{channelLabel[order.channel]} order ID: {order.externalOrderId}</p>
+                )}
+                <p className="mt-1 text-xs text-muted">
+                  Shipping and tracking for this order are handled entirely by {channelLabel[order.channel]}.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

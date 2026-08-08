@@ -1,13 +1,12 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { requireAdminSession } from "@/lib/auth/guard";
 import { getCurrentCustomer } from "@/lib/auth/customer-guard";
 import { db } from "@/lib/db/index";
 import { orderItems, orders, products } from "@/lib/db/schema";
-import { calculateTotals } from "@/lib/orders";
+import { calculateTotals, generateOrderNumber } from "@/lib/orders";
 import { placeOrderInputSchema, type PlaceOrderInput } from "@/lib/validation/order";
 import { cancelShiprocketShipment } from "@/lib/actions/shiprocket-actions";
 import { getRazorpayClient, verifyPaymentSignature, mapRazorpayMethod } from "@/lib/razorpay/client";
@@ -54,10 +53,6 @@ async function resolveOrderItems(items: PlaceOrderInput["items"]) {
 
   const subtotal = orderItemRows.reduce((sum, item) => sum + item.price * item.quantity, 0);
   return { orderItemRows, subtotal } as const;
-}
-
-function generateOrderNumber(): string {
-  return `TT-${new Date().toISOString().slice(2, 7).replace("-", "")}-${randomUUID().split("-")[0].toUpperCase()}`;
 }
 
 // Cash on Delivery only — nothing to verify, the order is placed directly exactly as it
