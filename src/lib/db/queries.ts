@@ -200,6 +200,24 @@ export const getTopRated = unstable_cache(
   { tags: ["products"] }
 );
 
+// Powers /products, the whole-catalogue listing the homepage's "View all
+// products" points at. Newest first so recent additions surface at the top.
+export const getAllProducts = unstable_cache(
+  async (): Promise<Product[]> => {
+    const rows = await db.query.products.findMany({
+      with: {
+        category: true,
+        images: { orderBy: (img, { asc }) => [asc(img.position)] },
+        reviews: { orderBy: (rev, { desc }) => [desc(rev.createdAt)] },
+      },
+      orderBy: [desc(productsTable.createdAt)],
+    });
+    return rows.map((row) => mapProductRow(row));
+  },
+  ["all-products"],
+  { tags: ["products"] }
+);
+
 export async function getRelatedProducts(product: Product): Promise<Product[]> {
   const relatedIds = await db
     .select({ id: productsTable.id })

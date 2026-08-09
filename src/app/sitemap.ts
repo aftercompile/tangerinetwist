@@ -13,6 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // them here would be self-contradictory and waste crawl budget.
   const staticRoutes = [
     "",
+    "/products",
     "/about",
     "/contact",
     "/privacy",

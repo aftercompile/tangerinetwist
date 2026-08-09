@@ -3,11 +3,10 @@ import { SmoothScroll } from "@/components/shared/SmoothScroll";
 import { Hero } from "@/components/home/Hero";
 import { CollectionsSection } from "@/components/home/CollectionsSection";
 import { FeaturedProducts } from "@/components/home/FeaturedProducts";
-import { WhyTangerineTwist } from "@/components/home/WhyTangerineTwist";
-import { Testimonials } from "@/components/home/Testimonials";
-import { InstagramBanner } from "@/components/home/InstagramBanner";
+import { BrandStatement } from "@/components/home/BrandStatement";
 import { getAllCategories, getBestSellers, getNewArrivals, getTopRated } from "@/lib/db/queries";
 import { buildMetadata, siteConfig } from "@/lib/seo";
+import type { Product } from "@/lib/types";
 
 // Without this, "/" just inherited the root layout's generic default title
 // and had no explicit canonical tag — the homepage is the single
@@ -19,13 +18,31 @@ export const metadata: Metadata = buildMetadata({
   path: "/",
 });
 
+// Exactly four featured pieces, chosen by the store's existing merchandising
+// signals in priority order — bestseller badge, then the "new" badge, then
+// rating — rather than a hand-picked list that would go stale.
+function pickFeatured(...pools: Product[][]): Product[] {
+  const seen = new Set<string>();
+  const picked: Product[] = [];
+  for (const pool of pools) {
+    for (const product of pool) {
+      if (picked.length === 4) return picked;
+      if (seen.has(product.id)) continue;
+      seen.add(product.id);
+      picked.push(product);
+    }
+  }
+  return picked;
+}
+
 export default async function HomePage() {
-  const [categories, bestSellers, newArrivals, favorites] = await Promise.all([
+  const [categories, bestSellers, newArrivals, topRated] = await Promise.all([
     getAllCategories(),
-    getBestSellers(8),
-    getNewArrivals(8),
-    getTopRated(8),
+    getBestSellers(4),
+    getNewArrivals(4),
+    getTopRated(4),
   ]);
+  const featured = pickFeatured(bestSellers, newArrivals, topRated);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -43,10 +60,8 @@ export default async function HomePage() {
       <SmoothScroll />
       <Hero />
       <CollectionsSection categories={categories} />
-      <FeaturedProducts bestSellers={bestSellers} newArrivals={newArrivals} favorites={favorites} />
-      <WhyTangerineTwist />
-      <Testimonials />
-      <InstagramBanner />
+      <FeaturedProducts products={featured} />
+      <BrandStatement />
     </>
   );
 }

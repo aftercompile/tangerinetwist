@@ -26,7 +26,7 @@ export default async function StorefrontLayout({ children }: { children: React.R
       <main id="main-content" className="flex-1">
         {children}
       </main>
-      <Footer />
+      <Footer categories={categories} />
       <CartDrawer />
     </Providers>
   );

@@ -6,14 +6,8 @@ import { Instagram, Facebook, Youtube, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/lib/seo";
+import { CategoryMeta } from "@/lib/types";
 import { toast } from "sonner";
-
-const shopLinks = [
-  { href: "/lamps", label: "Designer Lamps" },
-  { href: "/idols", label: "Decorative Idols" },
-  { href: "/desk-organizers", label: "Desk Organizers" },
-  { href: "/wishlist", label: "Wishlist" },
-];
 
 const companyLinks = [
   { href: "/about", label: "Our Story" },
@@ -28,7 +22,14 @@ const helpLinks = [
   { href: "/contact", label: "FAQs" },
 ];
 
-export function Footer() {
+export function Footer({ categories }: { categories: CategoryMeta[] }) {
+  // Built from the live category list (same as the nav) — the old hardcoded
+  // version silently omitted any category added after it was written.
+  const shopLinks = [
+    { href: "/products", label: "All Products" },
+    ...categories.map((c) => ({ href: `/${c.slug}`, label: c.name })),
+    { href: "/wishlist", label: "Wishlist" },
+  ];
   const [email, setEmail] = React.useState("");
 
   function handleSubmit(e: React.FormEvent) {
@@ -39,7 +40,7 @@ export function Footer() {
   }
 
   return (
-    <footer className="mt-32 border-t border-border bg-warm-white">
+    <footer className="mt-16 border-t border-border bg-warm-white lg:mt-20">
       <div className="container-wide py-16">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
@@ -110,10 +111,7 @@ export function Footer() {
               Terms of Service
             </Link>
           </div>
-          <div className="flex gap-6">
-            <span>Made with precision in India</span>
-            <span>Premium PLA · 8K Resin</span>
-          </div>
+          <span>Made in India, one piece at a time.</span>
         </div>
       </div>
     </footer>
