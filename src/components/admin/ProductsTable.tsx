@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination } from "@/components/ui/pagination";
 import type { AdminProductRow } from "@/lib/db/admin-queries";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 export function ProductsTable({
   products,
@@ -30,6 +30,7 @@ export function ProductsTable({
   const [category, setCategory] = React.useState("all");
   const [stock, setStock] = React.useState("all");
   const [page, setPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState<number>(PAGE_SIZE_OPTIONS[0]);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
   const filtered = React.useMemo(() => {
@@ -42,10 +43,10 @@ export function ProductsTable({
     });
   }, [products, search, category, stock]);
 
-  React.useEffect(() => setPage(1), [search, category, stock]);
+  React.useEffect(() => setPage(1), [search, category, stock, pageSize]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
@@ -175,7 +176,28 @@ export function ProductsTable({
         </Table>
       </div>
 
-      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+      <div className="flex flex-col-reverse items-center justify-between gap-3 sm:flex-row">
+        <div className="flex items-center gap-2 text-sm text-muted">
+          <span>Show</span>
+          <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span>
+            of {filtered.length} product{filtered.length === 1 ? "" : "s"}
+          </span>
+        </div>
+
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+      </div>
     </div>
   );
 }
