@@ -1,5 +1,6 @@
-import { desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "./index";
+import { PAID_PAYMENT_STATUSES } from "@/lib/orders";
 import {
   categories as categoriesTable,
   coupons as couponsTable,
@@ -402,7 +403,13 @@ export async function getAdminCustomerRows(): Promise<AdminCustomerRow[]> {
       lifetimeValue: sql<number>`coalesce(sum(${ordersTable.total}), 0)`,
     })
     .from(customersTable)
-    .leftJoin(ordersTable, eq(ordersTable.customerId, customersTable.id))
+    // Paid-only filter belongs in the JOIN's ON clause, not a WHERE — a customer whose
+    // only order is still payment-pending must still appear (0 orders, ₹0 LTV), not
+    // disappear from the customer list entirely.
+    .leftJoin(
+      ordersTable,
+      and(eq(ordersTable.customerId, customersTable.id), inArray(ordersTable.paymentStatus, PAID_PAYMENT_STATUSES))
+    )
     .groupBy(customersTable.id)
     .orderBy(desc(customersTable.createdAt));
 

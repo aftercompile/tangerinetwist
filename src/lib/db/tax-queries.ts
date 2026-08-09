@@ -6,6 +6,7 @@ import { and, desc, gte, inArray, lt, sql } from "drizzle-orm";
 import { db } from "./index";
 import { orders } from "./schema";
 import { computeGst } from "@/lib/gst";
+import { PAID_PAYMENT_STATUSES } from "@/lib/orders";
 import type { DateRange } from "./report-queries";
 
 export interface ConfiguredGstSettings {
@@ -27,11 +28,6 @@ export interface GstSalesRegisterRow {
   total: number;
 }
 
-// Only orders where money has actually moved (paid online, or COD — collected on
-// delivery, treated as a completed sale for filing purposes) count as taxable supply;
-// "pending"/"failed" orders are excluded.
-const TAXABLE_PAYMENT_STATUSES = ["paid", "cod"] as const;
-
 export async function getGstSalesRegister(range: DateRange, settings: ConfiguredGstSettings): Promise<GstSalesRegisterRow[]> {
   const rows = await db
     .select({
@@ -47,7 +43,7 @@ export async function getGstSalesRegister(range: DateRange, settings: Configured
       and(
         gte(orders.createdAt, range.start),
         lt(orders.createdAt, range.end),
-        inArray(orders.paymentStatus, TAXABLE_PAYMENT_STATUSES)
+        inArray(orders.paymentStatus, PAID_PAYMENT_STATUSES)
       )
     )
     .orderBy(orders.createdAt);
@@ -117,7 +113,7 @@ export async function getChannelBreakdown(range: DateRange): Promise<ChannelBrea
       and(
         gte(orders.createdAt, range.start),
         lt(orders.createdAt, range.end),
-        inArray(orders.paymentStatus, TAXABLE_PAYMENT_STATUSES)
+        inArray(orders.paymentStatus, PAID_PAYMENT_STATUSES)
       )
     )
     .groupBy(orders.channel)

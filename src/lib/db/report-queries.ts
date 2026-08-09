@@ -2,9 +2,10 @@
 // (admin data must always be live, never a stale storefront-style cache). Unlike
 // metrics-queries.ts's trailing `days: number` window, every function here takes an
 // explicit { start, end } range so the Reports page's date picker can select any period.
-import { and, asc, desc, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, lt, sql } from "drizzle-orm";
 import { db } from "./index";
 import { categories, customers, orderItems, orders, productReviews, products } from "./schema";
+import { PAID_PAYMENT_STATUSES } from "@/lib/orders";
 
 export interface DateRange {
   start: Date;
@@ -28,7 +29,7 @@ export async function getCheckoutSourceBreakdown({ start, end }: DateRange): Pro
       revenue: sql<number>`coalesce(sum(${orders.total}), 0)`,
     })
     .from(orders)
-    .where(and(gte(orders.createdAt, start), lt(orders.createdAt, end)))
+    .where(and(gte(orders.createdAt, start), lt(orders.createdAt, end), inArray(orders.paymentStatus, PAID_PAYMENT_STATUSES)))
     .groupBy(sql`coalesce(${orders.checkoutSource}, 'unknown')`)
     .orderBy(desc(sql`sum(${orders.total})`));
 
@@ -45,6 +46,11 @@ export interface PaymentMethodBreakdown {
 // set immediately) and are distinguished by paymentStatus: "cod" instead, so this can't
 // just group on paymentMethod directly or every COD order would land in one "null" bucket
 // indistinguishable from a still-pending online payment.
+//
+// Deliberately NOT filtered to PAID_PAYMENT_STATUSES like every other report here — this
+// is the one place a "Pending" bucket is the point (it's how an admin sees how much is
+// stuck in abandoned/incomplete checkouts), not a revenue figure to be trusted at face
+// value the way the KPI cards are.
 export async function getPaymentMethodBreakdown({ start, end }: DateRange): Promise<PaymentMethodBreakdown[]> {
   // paymentMethod is a Postgres enum column — coalesce(...) against a plain string literal
   // like 'Pending' fails at the DB level ("invalid input value for enum payment_method")
@@ -86,7 +92,7 @@ export async function getCustomerRetention({ start, end }: DateRange): Promise<C
         firstOrderAt: sql<Date>`min(${orders.createdAt})`.as("first_order_at"),
       })
       .from(orders)
-      .where(isNotNull(orders.customerId))
+      .where(and(isNotNull(orders.customerId), inArray(orders.paymentStatus, PAID_PAYMENT_STATUSES)))
       .groupBy(orders.customerId)
   );
 
@@ -102,7 +108,14 @@ export async function getCustomerRetention({ start, end }: DateRange): Promise<C
     })
     .from(orders)
     .innerJoin(firstOrder, eq(firstOrder.customerId, orders.customerId))
-    .where(and(gte(orders.createdAt, start), lt(orders.createdAt, end), isNotNull(orders.customerId)));
+    .where(
+      and(
+        gte(orders.createdAt, start),
+        lt(orders.createdAt, end),
+        isNotNull(orders.customerId),
+        inArray(orders.paymentStatus, PAID_PAYMENT_STATUSES)
+      )
+    );
 
   const newCustomers = rows.filter((r) => r.isNew).length;
   const returningCustomers = rows.length - newCustomers;
@@ -136,7 +149,10 @@ export async function getTopCustomersByLtv(limit = 10): Promise<TopCustomerByLtv
       lifetimeValue: sql<number>`coalesce(sum(${orders.total}), 0)`,
     })
     .from(customers)
-    .leftJoin(orders, eq(orders.customerId, customers.id))
+    // The paid-only filter belongs in the JOIN's ON clause, not a WHERE — a customer whose
+    // only order is still payment-pending must still appear (with ₹0 LTV), not disappear
+    // from the list entirely the way a WHERE filter on the joined table would cause.
+    .leftJoin(orders, and(eq(orders.customerId, customers.id), inArray(orders.paymentStatus, PAID_PAYMENT_STATUSES)))
     .groupBy(customers.id)
     .orderBy(desc(sql`coalesce(sum(${orders.total}), 0)`))
     .limit(limit);
@@ -214,7 +230,7 @@ export async function getCategoryMaterialSellThrough({ start, end }: DateRange):
     .innerJoin(orders, eq(orders.id, orderItems.orderId))
     .innerJoin(products, eq(products.id, orderItems.productId))
     .innerJoin(categories, eq(categories.id, products.categoryId))
-    .where(and(gte(orders.createdAt, start), lt(orders.createdAt, end)))
+    .where(and(gte(orders.createdAt, start), lt(orders.createdAt, end), inArray(orders.paymentStatus, PAID_PAYMENT_STATUSES)))
     .groupBy(categories.id, categories.name, orderItems.material)
     .orderBy(desc(sql`sum(${orderItems.price} * ${orderItems.quantity})`));
 

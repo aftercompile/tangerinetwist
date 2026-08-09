@@ -1,7 +1,8 @@
-import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { eachDayOfInterval, format, subDays } from "date-fns";
 import { db } from "./index";
 import { categories, orderItems, orders, products } from "./schema";
+import { PAID_PAYMENT_STATUSES } from "@/lib/orders";
 
 export interface PeriodKpis {
   revenue: number;
@@ -32,7 +33,7 @@ async function computePeriodKpis(start: Date, end: Date): Promise<PeriodKpis> {
       orderCount: sql<number>`count(*)`,
     })
     .from(orders)
-    .where(and(gte(orders.createdAt, start), lt(orders.createdAt, end)));
+    .where(and(gte(orders.createdAt, start), lt(orders.createdAt, end), inArray(orders.paymentStatus, PAID_PAYMENT_STATUSES)));
 
   const [unitStats] = await db
     .select({
@@ -40,7 +41,7 @@ async function computePeriodKpis(start: Date, end: Date): Promise<PeriodKpis> {
     })
     .from(orderItems)
     .innerJoin(orders, eq(orders.id, orderItems.orderId))
-    .where(and(gte(orders.createdAt, start), lt(orders.createdAt, end)));
+    .where(and(gte(orders.createdAt, start), lt(orders.createdAt, end), inArray(orders.paymentStatus, PAID_PAYMENT_STATUSES)));
 
   const revenue = Number(orderStats.revenue);
   const orderCount = Number(orderStats.orderCount);
@@ -89,7 +90,7 @@ export async function getRevenueOverTime(days: number): Promise<RevenuePoint[]> 
       orderCount: sql<number>`count(*)`,
     })
     .from(orders)
-    .where(gte(orders.createdAt, start))
+    .where(and(gte(orders.createdAt, start), inArray(orders.paymentStatus, PAID_PAYMENT_STATUSES)))
     .groupBy(sql`date_trunc('day', ${orders.createdAt})`);
 
   const byDay = new Map(rows.map((r) => [r.day, { revenue: Number(r.revenue), orders: Number(r.orderCount) }]));
@@ -120,7 +121,7 @@ export async function getRevenueByCategory(days: number): Promise<CategoryRevenu
     .innerJoin(orders, eq(orders.id, orderItems.orderId))
     .innerJoin(products, eq(products.id, orderItems.productId))
     .innerJoin(categories, eq(categories.id, products.categoryId))
-    .where(gte(orders.createdAt, start))
+    .where(and(gte(orders.createdAt, start), inArray(orders.paymentStatus, PAID_PAYMENT_STATUSES)))
     .groupBy(categories.id, categories.name)
     .orderBy(desc(sql`sum(${orderItems.price} * ${orderItems.quantity})`));
 
@@ -132,6 +133,11 @@ export interface StatusBreakdown {
   count: number;
 }
 
+// Filtered to real (paid/cod) orders — otherwise a payment-abandoned checkout, which
+// sits at status "pending" forever, would be indistinguishable from a COD order that's
+// simply awaiting fulfillment, muddying this chart's "pending" bucket with two very
+// different meanings. Abandoned checkouts get their own visibility via the Orders page's
+// Pending tab instead.
 export async function getOrderStatusBreakdown(days: number): Promise<StatusBreakdown[]> {
   const start = subDays(new Date(), days);
 
@@ -141,7 +147,7 @@ export async function getOrderStatusBreakdown(days: number): Promise<StatusBreak
       count: sql<number>`count(*)`,
     })
     .from(orders)
-    .where(gte(orders.createdAt, start))
+    .where(and(gte(orders.createdAt, start), inArray(orders.paymentStatus, PAID_PAYMENT_STATUSES)))
     .groupBy(orders.status);
 
   return rows.map((r) => ({ status: r.status, count: Number(r.count) }));
@@ -168,7 +174,7 @@ export async function getTopProducts(days: number, limit = 6): Promise<TopProduc
     })
     .from(orderItems)
     .innerJoin(orders, eq(orders.id, orderItems.orderId))
-    .where(gte(orders.createdAt, start))
+    .where(and(gte(orders.createdAt, start), inArray(orders.paymentStatus, PAID_PAYMENT_STATUSES)))
     .groupBy(orderItems.productId, orderItems.name, orderItems.slug)
     .orderBy(desc(sql`sum(${orderItems.price} * ${orderItems.quantity})`))
     .limit(limit);
@@ -200,6 +206,8 @@ export interface RecentOrder {
   createdAt: Date;
 }
 
+// Filtered to real (paid/cod) orders so this "what's happening" dashboard widget can't
+// show a payment-abandoned checkout as if it were a sale needing fulfillment.
 export async function getRecentOrders(limit = 10): Promise<RecentOrder[]> {
   return db
     .select({
@@ -211,6 +219,7 @@ export async function getRecentOrders(limit = 10): Promise<RecentOrder[]> {
       createdAt: orders.createdAt,
     })
     .from(orders)
+    .where(inArray(orders.paymentStatus, PAID_PAYMENT_STATUSES))
     .orderBy(desc(orders.createdAt))
     .limit(limit);
 }

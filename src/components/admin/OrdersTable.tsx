@@ -3,13 +3,22 @@
 import * as React from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
-import { formatINR } from "@/lib/utils";
+import { formatINR, cn } from "@/lib/utils";
+import { PAID_PAYMENT_STATUSES } from "@/lib/orders";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination } from "@/components/ui/pagination";
 import type { AdminOrderRow } from "@/lib/db/admin-queries";
+
+// Whether an order represents money actually committed — see PAID_PAYMENT_STATUSES'
+// own doc comment for why "pending"/"failed" don't count. Cast needed because
+// Array.prototype.includes on a readonly literal tuple won't accept the wider
+// paymentStatus union without it.
+function isRealOrder(o: AdminOrderRow): boolean {
+  return (PAID_PAYMENT_STATUSES as readonly string[]).includes(o.paymentStatus);
+}
 
 const PAGE_SIZE = 15;
 
@@ -44,14 +53,22 @@ const channelLabel: Record<AdminOrderRow["channel"], string> = {
 };
 
 export function OrdersTable({ orders }: { orders: AdminOrderRow[] }) {
+  const [tab, setTab] = React.useState<"orders" | "pending">("orders");
   const [search, setSearch] = React.useState("");
   const [status, setStatus] = React.useState("all");
   const [channel, setChannel] = React.useState("all");
   const [page, setPage] = React.useState(1);
 
+  // Payment-pending/failed orders (mostly abandoned online checkouts — a Razorpay order
+  // was opened but never confirmed) are split into their own tab rather than mixed into
+  // the main list, matching how every revenue/order-count query now excludes them too.
+  const realOrders = React.useMemo(() => orders.filter(isRealOrder), [orders]);
+  const pendingOrders = React.useMemo(() => orders.filter((o) => !isRealOrder(o)), [orders]);
+  const scoped = tab === "orders" ? realOrders : pendingOrders;
+
   const filtered = React.useMemo(() => {
     const q = search.trim().toLowerCase();
-    return orders.filter((o) => {
+    return scoped.filter((o) => {
       if (
         q &&
         !o.orderNumber.toLowerCase().includes(q) &&
@@ -63,15 +80,45 @@ export function OrdersTable({ orders }: { orders: AdminOrderRow[] }) {
       if (channel !== "all" && o.channel !== channel) return false;
       return true;
     });
-  }, [orders, search, status, channel]);
+  }, [scoped, search, status, channel]);
 
-  React.useEffect(() => setPage(1), [search, status, channel]);
+  React.useEffect(() => setPage(1), [search, status, channel, tab]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2 border-b border-border">
+        <button
+          type="button"
+          onClick={() => setTab("orders")}
+          className={cn(
+            "border-b-2 px-1 pb-3 text-sm font-medium transition-colors",
+            tab === "orders" ? "border-tangerine-500 text-charcoal" : "border-transparent text-muted hover:text-charcoal"
+          )}
+        >
+          Orders <span className="text-xs text-muted">({realOrders.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("pending")}
+          className={cn(
+            "border-b-2 px-1 pb-3 text-sm font-medium transition-colors",
+            tab === "pending" ? "border-tangerine-500 text-charcoal" : "border-transparent text-muted hover:text-charcoal"
+          )}
+        >
+          Pending <span className="text-xs text-muted">({pendingOrders.length})</span>
+        </button>
+      </div>
+
+      {tab === "pending" && (
+        <p className="text-xs text-muted">
+          Payment never completed — mostly abandoned online checkouts. Not counted toward revenue or order stats
+          anywhere in the admin.
+        </p>
+      )}
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
@@ -127,7 +174,7 @@ export function OrdersTable({ orders }: { orders: AdminOrderRow[] }) {
             {pageItems.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} className="py-10 text-center text-sm text-muted">
-                  No orders match these filters.
+                  {tab === "pending" ? "No pending orders." : "No orders match these filters."}
                 </TableCell>
               </TableRow>
             )}
