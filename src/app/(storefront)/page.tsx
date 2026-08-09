@@ -5,7 +5,7 @@ import { CollectionsSection } from "@/components/home/CollectionsSection";
 import { FeaturedProducts } from "@/components/home/FeaturedProducts";
 import { WhyTangerineTwist } from "@/components/home/WhyTangerineTwist";
 import { Testimonials } from "@/components/home/Testimonials";
-import { InstagramGallery } from "@/components/home/InstagramGallery";
+import { InstagramBanner } from "@/components/home/InstagramBanner";
 import { getAllCategories, getBestSellers, getNewArrivals, getTopRated } from "@/lib/db/queries";
 import { buildMetadata, siteConfig } from "@/lib/seo";
 
@@ -46,7 +46,7 @@ export default async function HomePage() {
       <FeaturedProducts bestSellers={bestSellers} newArrivals={newArrivals} favorites={favorites} />
       <WhyTangerineTwist />
       <Testimonials />
-      <InstagramGallery />
+      <InstagramBanner />
     </>
   );
 }

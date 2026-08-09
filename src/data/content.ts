@@ -33,15 +33,6 @@ export const testimonials = [
   },
 ];
 
-export const instagramPosts = [
-  { id: "ig1", caption: "Dune Lamp, golden hour.", icon: "Lamp" },
-  { id: "ig2", caption: "8K resin, up close.", icon: "Sparkles" },
-  { id: "ig3", caption: "Desk reset, Sunday edition.", icon: "LayoutGrid" },
-  { id: "ig4", caption: "New: Watch & Wallet Stand.", icon: "Watch" },
-  { id: "ig5", caption: "Studio floor, work in progress.", icon: "Layers" },
-  { id: "ig6", caption: "Ekadanta Ganesha, unboxed.", icon: "Gift" },
-];
-
 export const whyTangerineTwist = [
   {
     title: "Precision Printing",
