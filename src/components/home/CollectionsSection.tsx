@@ -52,7 +52,7 @@ export function CollectionsSection({ categories }: { categories: CategoryMeta[] 
         </p>
       </AnimatedReveal>
 
-      <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 lg:mt-14 lg:grid-cols-10 lg:gap-5">
+      <div className="mt-10 grid grid-cols-2 gap-4 sm:gap-5 lg:mt-14 lg:grid-cols-10 lg:gap-6">
         <AnimatedReveal className="col-span-2 lg:col-span-6 lg:row-span-2">
           <CollectionCard
             category={feature}
@@ -122,17 +122,24 @@ function CollectionCard({
       {/* Just enough scrim for the copy — the photograph carries the card. */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-gradient-to-t from-charcoal/65 via-charcoal/10 to-transparent"
+        className="absolute inset-0 bg-gradient-to-t from-charcoal/60 via-charcoal/5 to-transparent"
       />
 
       <div className={cn("absolute inset-x-0 bottom-0", compact ? "p-4 sm:p-5" : "p-6 sm:p-7")}>
-        <h3 className={cn("font-display text-white", compact ? "text-lg" : "text-2xl")}>
+        <h3
+          className={cn(
+            "font-display text-white",
+            compact ? "text-lg sm:text-xl" : "text-2xl sm:text-3xl"
+          )}
+        >
           {category.name}
         </h3>
-        {tagline && <p className="mt-1.5 hidden text-sm text-white/80 sm:block">{category.tagline}</p>}
+        {tagline && <p className="mt-1.5 hidden text-sm text-white/75 sm:block">{category.tagline}</p>}
+        {/* Kept deliberately quiet — the card itself is the link; this is a cue,
+            not a button. Brightens and nudges on hover. */}
         <span
           className={cn(
-            "mt-2.5 inline-flex items-center gap-1 font-medium text-white/90",
+            "mt-2.5 inline-flex items-center gap-1 font-medium text-white/70 transition-colors duration-300 ease-premium group-hover:text-white",
             compact ? "text-xs" : "text-sm"
           )}
         >

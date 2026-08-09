@@ -10,15 +10,16 @@ import { AnimatedReveal } from "@/components/shared/AnimatedReveal";
  */
 export function BrandStatement() {
   return (
-    <section className="container-wide pt-20 lg:pt-28">
-      <AnimatedReveal className="max-w-2xl border-t border-border pt-14 lg:pt-16">
+    <section className="container-wide pt-16 lg:pt-20">
+      <AnimatedReveal className="max-w-2xl border-t border-border pt-12 lg:pt-14">
         <h2 className="h-display text-3xl leading-[1.1] md:text-4xl lg:text-[2.75rem]">
-          Made differently.
+          From a screen to your space.
         </h2>
-        <div className="mt-6 flex flex-col gap-4 text-base leading-relaxed text-muted lg:text-lg">
-          <p>We don&apos;t mass-produce everything.</p>
-          <p>Each TangerineTwist piece is designed, printed and finished in small batches.</p>
-          <p className="text-charcoal">Designed in India. Made one piece at a time.</p>
+        {/* A stanza, not paragraphs — three short lines that read as one thought. */}
+        <div className="mt-6 flex flex-col gap-1 text-lg leading-relaxed text-muted lg:text-xl">
+          <p>Designed digitally.</p>
+          <p>3D printed in small batches.</p>
+          <p>Made to be lived with.</p>
         </div>
         <Link
           href="/about"

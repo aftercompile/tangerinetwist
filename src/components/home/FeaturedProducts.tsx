@@ -21,22 +21,22 @@ export function FeaturedProducts({ products }: { products: Product[] }) {
   const [first, second, ...smalls] = products;
 
   return (
-    <section className="container-wide pt-16 lg:pt-24">
+    <section className="container-wide pt-16 lg:pt-20">
       <AnimatedReveal className="flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-xl">
           <h2 className="h-display text-3xl leading-[1.1] md:text-4xl lg:text-[2.75rem]">
-            A few favourites.
+            Selected pieces.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted">
-            A small selection of pieces we&apos;re making right now.
+            A few of our favourites, made in small batches.
           </p>
         </div>
         <Link
           href="/products"
-          className="link-underline hidden items-center gap-1.5 text-sm font-medium text-charcoal sm:inline-flex"
+          className="link-underline hidden items-center gap-1.5 text-base font-medium text-charcoal sm:inline-flex"
         >
           View all products
-          <ArrowRight className="h-3.5 w-3.5" />
+          <ArrowRight className="h-4 w-4" />
         </Link>
       </AnimatedReveal>
 
@@ -78,10 +78,10 @@ export function FeaturedProducts({ products }: { products: Product[] }) {
       <div className="mt-10 sm:hidden">
         <Link
           href="/products"
-          className="link-underline inline-flex items-center gap-1.5 text-sm font-medium text-charcoal"
+          className="link-underline inline-flex items-center gap-1.5 text-base font-medium text-charcoal"
         >
           View all products
-          <ArrowRight className="h-3.5 w-3.5" />
+          <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
     </section>

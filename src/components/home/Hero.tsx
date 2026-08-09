@@ -97,7 +97,7 @@ export function Hero() {
           <motion.div {...fade(0.52)} className="mt-9 flex flex-wrap items-center gap-4">
             <Button variant="accent" size="lg" asChild>
               <Link href="/products" className="group">
-                Shop collection
+                Shop all
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-premium group-hover:translate-x-1" />
               </Link>
             </Button>

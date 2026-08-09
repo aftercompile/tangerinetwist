@@ -50,13 +50,13 @@ export function Navbar({ categories, customer }: { categories: CategoryMeta[]; c
           <span className="h-display text-xl tracking-tight">TangerineTwist</span>
         </Link>
 
-        <nav className="hidden items-center gap-9 lg:flex">
+        <nav className="hidden items-center gap-10 lg:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                "link-underline text-sm font-medium text-charcoal/80 transition-colors hover:text-charcoal",
+                "link-underline text-[15px] font-medium text-charcoal/80 transition-colors hover:text-charcoal",
                 pathname === link.href && "text-charcoal after:w-full"
               )}
             >
