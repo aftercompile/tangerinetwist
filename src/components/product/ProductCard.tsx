@@ -61,8 +61,19 @@ export function ProductCard({ product, className }: { product: Product; classNam
 
         {visibleBadges.length > 0 && (
           <div className="absolute left-4 right-14 top-4 flex flex-col items-start gap-1.5">
-            {visibleBadges.map((b) => (
-              <Badge key={b} variant={b} className="whitespace-normal text-left">
+            {/* whitespace-normal previously let a long label ("Premium Finish", "Signature
+                Collection") wrap to two lines inside a rounded-full pill on a narrow
+                2-up mobile card — a stadium shape stretched around a near-square block of
+                text renders as a lopsided oval, not a badge. Truncating to one line (with
+                max-w-full so the flex item actually has a width to truncate against) fixes
+                that outright; only showing the single top-priority badge below `sm` cuts
+                the remaining clutter a cramped mobile card doesn't have room for anyway. */}
+            {visibleBadges.map((b, i) => (
+              <Badge
+                key={b}
+                variant={b}
+                className={cn("max-w-full truncate", i > 0 && "hidden sm:inline-flex")}
+              >
                 {BADGE_LABELS[b]}
               </Badge>
             ))}
