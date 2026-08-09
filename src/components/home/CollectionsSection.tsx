@@ -29,7 +29,7 @@ const heroIconToLucide: Record<string, string> = {
 
 export function CollectionsSection({ categories }: { categories: CategoryMeta[] }) {
   return (
-    <section className="container-wide py-24">
+    <section id="collections" className="container-wide py-24">
       <SectionHeading
         eyebrow="Shop by Collection"
         title="Three collections. One philosophy."

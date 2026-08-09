@@ -1,12 +1,11 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 import { TextReveal } from "@/components/shared/TextReveal";
-import { TiltCard } from "@/components/shared/TiltCard";
 import { Magnetic } from "@/components/shared/Magnetic";
 import { CountUp } from "@/components/shared/CountUp";
 import { DURATION, EASE_PREMIUM } from "@/lib/motion";
@@ -19,9 +18,30 @@ const stats = [
 
 export function Hero() {
   const reduced = useReducedMotion();
+  const videoRef = React.useRef<HTMLVideoElement>(null);
 
-  // One shared timeline so copy, CTAs and imagery feel like a single entrance
-  // rather than four components that happen to animate at once.
+  // No `autoPlay` attribute on the element itself — useReducedMotion() can
+  // report false during SSR and flip true on the client's first render, so
+  // baking a reduced-motion decision straight into an attribute risks a
+  // hydration mismatch (the same trap every other motion primitive here
+  // avoids by keeping the DOM identical and neutralizing behavior instead).
+  // This effect is the one place playback is decided, after mount.
+  React.useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (reduced) {
+      video.pause();
+    } else {
+      video.play().catch(() => {
+        // Autoplay can still be blocked (data-saver mode, etc.) — the dark
+        // scrim plus the video's own first frame still read fine as a
+        // static hero if playback never starts.
+      });
+    }
+  }, [reduced]);
+
+  // One shared timeline so copy, CTAs and stats feel like a single entrance
+  // rather than components that happen to animate at once.
   const fade = (delay: number) => ({
     initial: reduced ? { opacity: 0 } : { opacity: 0, y: 18 },
     animate: { opacity: 1, y: 0 },
@@ -29,13 +49,43 @@ export function Hero() {
   });
 
   return (
-    <section className="relative overflow-hidden bg-cream">
-      <AmbientField />
+    <section className="relative flex min-h-[80dvh] items-center overflow-hidden bg-charcoal sm:min-h-[85dvh] lg:min-h-[92vh]">
+      {/* Video layer fades in on mount (the "subtle fade" the background asks
+          for) instead of popping in the instant it's decoded. bg-charcoal on
+          the section behind it is the fallback for the moment before the
+          first frame paints, or if playback is ever blocked entirely. */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: DURATION.cinematic, ease: EASE_PREMIUM }}
+        className="absolute inset-0"
+      >
+        <video
+          ref={videoRef}
+          muted
+          loop
+          playsInline
+          preload="auto"
+          className="h-full w-full object-cover"
+        >
+          <source src="/videos/hero-background.mp4" type="video/mp4" />
+        </video>
+      </motion.div>
 
-      <div className="container-wide relative grid grid-cols-1 items-center gap-8 py-12 sm:gap-10 lg:grid-cols-[1.05fr_1fr] lg:items-start lg:gap-16 lg:py-20">
-        <div>
+      {/* Two scrim layers: a flat wash so text contrast holds no matter what
+          the footage is doing at any given moment, plus a left-to-right
+          gradient that goes darkest behind the text column and eases off
+          toward the right so the video itself still reads through there. */}
+      <div aria-hidden className="absolute inset-0 bg-charcoal/45" />
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-gradient-to-r from-charcoal/85 via-charcoal/40 to-transparent lg:via-charcoal/25"
+      />
+
+      <div className="container-wide relative z-[1] py-16 sm:py-20">
+        <div className="max-w-xl">
           <motion.p {...fade(0)} className="eyebrow mb-5 flex items-center gap-3">
-            <span className="inline-block h-px w-8 bg-tangerine-500" />
+            <span className="inline-block h-px w-8 bg-tangerine-400" />
             Premium 3D-Printed Design Studio
           </motion.p>
 
@@ -43,12 +93,12 @@ export function Hero() {
             immediate
             text={"Everyday living,\nbeautifully engineered."}
             delay={0.12}
-            className="h-display text-[2.75rem] leading-[1.05] sm:text-6xl lg:text-[4.25rem]"
+            className="h-display text-[2.75rem] leading-[1.05] text-white sm:text-6xl lg:text-[4.25rem]"
           />
 
           <motion.p
             {...fade(0.45)}
-            className="mt-6 max-w-md text-base leading-relaxed text-muted lg:text-lg"
+            className="mt-6 max-w-md text-base leading-relaxed text-white/75 lg:text-lg"
           >
             Designer lamps, decorative idols and desk essentials — precision 3D printed and
             hand-finished in India, made for homes and workspaces that pay attention to detail.
@@ -63,14 +113,14 @@ export function Hero() {
                 </Link>
               </Button>
             </Magnetic>
-            <Button variant="outline" size="lg" asChild>
+            <Button variant="light" size="lg" asChild>
               <Link href="/about">Our Story</Link>
             </Button>
           </motion.div>
 
           <motion.dl
             {...fade(0.7)}
-            className="mt-10 hidden items-center gap-8 border-t border-border pt-8 sm:flex sm:gap-12 lg:mt-14"
+            className="mt-10 hidden items-center gap-8 border-t border-white/20 pt-8 sm:flex sm:gap-12 lg:mt-14"
           >
             {stats.map((stat) => (
               <div key={stat.label}>
@@ -80,103 +130,18 @@ export function Hero() {
                     value={stat.value}
                     decimals={stat.decimals}
                     suffix={stat.suffix}
-                    className="h-display block text-xl tabular-nums sm:text-2xl"
+                    className="h-display block text-xl tabular-nums text-white sm:text-2xl"
                   />
-                  <span className="mt-0.5 block text-xs text-muted">{stat.label}</span>
+                  <span className="mt-0.5 block text-xs text-white/65">{stat.label}</span>
                 </dd>
               </div>
             ))}
           </motion.dl>
         </div>
-
-        <ProductStack reduced={!!reduced} />
       </div>
 
       <ScrollCue />
     </section>
-  );
-}
-
-/**
- * Three product plates that drift in on a shared timeline, then respond
- * individually to the cursor. The staggered vertical offsets give the cluster
- * an arranged, editorial feel rather than a rigid grid.
- */
-function ProductStack({ reduced }: { reduced: boolean }) {
-  const plate = (delay: number) => ({
-    initial: reduced ? { opacity: 0 } : { opacity: 0, y: 28, scale: 0.96 },
-    animate: { opacity: 1, y: 0, scale: 1 },
-    transition: { duration: DURATION.cinematic, delay: reduced ? 0 : delay, ease: EASE_PREMIUM },
-  });
-
-  return (
-    <div className="relative grid grid-cols-2 gap-4 sm:gap-5">
-      <motion.div {...plate(0.25)} className="col-span-2">
-        <TiltCard>
-          <ProductImagePlaceholder
-            icon="Lamp"
-            tone="warm"
-            src="/images/hero/hero-lamp.jpg"
-            alt="A ribbed, dome-shaded 3D-printed table lamp glowing warmly on a shelf"
-            className="aspect-[16/10] w-full rounded-3xl shadow-lift"
-            objectPosition="center 10%"
-          />
-        </TiltCard>
-      </motion.div>
-
-      <motion.div {...plate(0.38)} className="hidden sm:block lg:-mt-2">
-        <TiltCard>
-          <ProductImagePlaceholder
-            icon="Sparkles"
-            tone="charcoal"
-            src="/images/hero/hero-idol.jpg"
-            alt="A finely detailed sculptural bust lit dramatically against a dark background"
-            className="aspect-square w-full rounded-3xl shadow-lift"
-          />
-        </TiltCard>
-      </motion.div>
-
-      <motion.div {...plate(0.5)} className="hidden sm:block lg:mt-6">
-        <TiltCard>
-          <ProductImagePlaceholder
-            icon="LayoutGrid"
-            tone="cool"
-            src="/images/hero/hero-desk.jpg"
-            alt="A minimalist desk organizer tray with a notebook and pen"
-            className="aspect-square w-full rounded-3xl shadow-lift"
-          />
-        </TiltCard>
-      </motion.div>
-    </div>
-  );
-}
-
-/**
- * Two very large, very slow tangerine washes behind the hero. Long durations
- * and low opacity keep this below conscious notice — it reads as the page
- * breathing, not as an animation.
- */
-function AmbientField() {
-  const reduced = useReducedMotion();
-  // The washes still render when motion is reduced (they're part of the visual
-  // design, not the animation) — only the drift is dropped. Rendering the same
-  // DOM either way also keeps hydration consistent.
-  const drift = (x: number[], y: number[], duration: number) =>
-    reduced ? {} : { animate: { x, y }, transition: { duration, repeat: Infinity, ease: "easeInOut" as const } };
-
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <motion.div
-        className="absolute -left-32 -top-40 h-[34rem] w-[34rem] rounded-full opacity-[0.18] blur-3xl"
-        style={{ background: "radial-gradient(circle, #F0A164 0%, transparent 70%)" }}
-        {...drift([0, 40, 0], [0, 28, 0], 26)}
-      />
-      <motion.div
-        className="absolute -bottom-56 right-[-10rem] h-[38rem] w-[38rem] rounded-full opacity-[0.14] blur-3xl"
-        style={{ background: "radial-gradient(circle, #E86A2C 0%, transparent 70%)" }}
-        {...drift([0, -34, 0], [0, -22, 0], 32)}
-      />
-    </div>
   );
 }
 
@@ -185,18 +150,18 @@ function ScrollCue() {
 
   return (
     <motion.a
-      href="#craftsmanship"
+      href="#collections"
       aria-label="Scroll to explore"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: DURATION.slow, delay: reduced ? 0 : 1 }}
-      className="group absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-muted transition-colors hover:text-charcoal lg:flex"
+      className="group absolute bottom-6 left-1/2 z-[1] hidden -translate-x-1/2 flex-col items-center gap-2 text-white/70 transition-colors hover:text-white lg:flex"
     >
       <span className="text-[10px] font-semibold uppercase tracking-[0.22em]">Explore</span>
       <motion.span
         animate={reduced ? undefined : { y: [0, 5, 0] }}
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-warm-white/70 backdrop-blur transition-colors group-hover:border-charcoal"
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/30 bg-white/10 backdrop-blur transition-colors group-hover:border-white/60"
       >
         <ArrowDown className="h-3.5 w-3.5" />
       </motion.span>
