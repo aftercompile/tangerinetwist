@@ -99,7 +99,7 @@ export function CategoryExplorer({ products, category }: { products: Product[]; 
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-x-8 gap-y-16 md:grid-cols-2">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:gap-x-8 md:gap-y-16">
           {loading
             ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)
             : firstBatch.map((product) => <ProductCard key={product.id} product={product} />)}
@@ -123,7 +123,7 @@ export function CategoryExplorer({ products, category }: { products: Product[]; 
             />
           </div>
           <div className="container-wide">
-            <div className="grid grid-cols-1 gap-x-8 gap-y-16 md:grid-cols-2">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:gap-x-8 md:gap-y-16">
               {secondBatch.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
