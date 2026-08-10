@@ -10,12 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
+import { AddressAutocomplete } from "@/components/shared/AddressAutocomplete";
 import { formatINR } from "@/lib/utils";
 import { calculateTotals } from "@/lib/orders";
 import { placeOrder, createOrderForPayment, verifyRazorpayPayment } from "@/lib/actions/order-actions";
 import { validateCoupon } from "@/lib/actions/coupon-actions";
 import { INDIAN_STATES } from "@/lib/data/indian-states";
 import { lookupPincode } from "@/lib/pincode";
+import type { RetrievedAddress } from "@/lib/google-places";
 import { cn } from "@/lib/utils";
 
 const paymentOptions = [
@@ -70,6 +72,20 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
 
   function updateField<K extends keyof ShippingForm>(key: K, value: ShippingForm[K]) {
     setShipping((prev) => ({ ...prev, [key]: value }));
+  }
+
+  // Google's address components don't always include every field (a route-level
+  // result can come back with no postal_code, for instance) — only overwrite what
+  // actually came back, same "fill what we can, leave the rest editable" approach
+  // the PIN lookup below already uses.
+  function handleAddressSelect(address: RetrievedAddress) {
+    setShipping((prev) => ({
+      ...prev,
+      address: address.addressLine || prev.address,
+      city: address.city || prev.city,
+      state: address.state || prev.state,
+      pin: address.pin || prev.pin,
+    }));
   }
 
   // Auto-fills city/state from the PIN code so the customer only has to type it
@@ -268,11 +284,12 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
                 required
                 className="sm:col-span-2"
               />
-              <Field
-                label="Address"
+              <AddressAutocomplete
                 id="address"
+                label="Address"
                 value={shipping.address}
                 onChange={(v) => updateField("address", v)}
+                onSelect={handleAddressSelect}
                 required
                 className="sm:col-span-2"
               />

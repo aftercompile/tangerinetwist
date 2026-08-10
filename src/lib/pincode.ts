@@ -49,8 +49,10 @@ const STATE_ALIASES: Record<string, string> = {
 
 // The API's state names are usually exact matches for INDIAN_STATES, but not always
 // (casing varies, "&" vs "and", stray whitespace, the aliases above) — normalize
-// rather than pass through a value the checkout's <Select> won't recognize.
-function normalizeIndianState(raw: string | undefined): string | undefined {
+// rather than pass through a value the checkout's <Select> won't recognize. Exported
+// since google-places.ts's address autocomplete needs the identical normalization for
+// the same reason, against a different (but overlapping) source of quirky state names.
+export function normalizeIndianState(raw: string | undefined): string | undefined {
   if (!raw) return undefined;
   const cleaned = raw.trim().replace(/&/g, "and").replace(/\s+/g, " ").toLowerCase();
   return INDIAN_STATES.find((s) => s.toLowerCase() === cleaned) ?? STATE_ALIASES[cleaned];

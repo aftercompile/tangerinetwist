@@ -12,8 +12,10 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { AddressAutocomplete } from "@/components/shared/AddressAutocomplete";
 import { INDIAN_STATES } from "@/lib/data/indian-states";
 import { lookupPincode } from "@/lib/pincode";
+import type { RetrievedAddress } from "@/lib/google-places";
 
 export function AddressDialog({
   open,
@@ -29,8 +31,9 @@ export function AddressDialog({
   const [isDefault, setIsDefault] = React.useState(address?.isDefault ?? false);
   const [state, setState] = React.useState(address?.state ?? "");
   // Controlled (not left as defaultValue/FormData like the other fields) so a PIN
-  // lookup can fill them in — same reasoning as `state` above, just extended to
-  // the two fields autofill actually touches.
+  // lookup or an address autocomplete selection can fill them in — same reasoning
+  // as `state` above, just extended to every field autofill can touch.
+  const [addressLine, setAddressLine] = React.useState(address?.addressLine ?? "");
   const [city, setCity] = React.useState(address?.city ?? "");
   const [pin, setPin] = React.useState(address?.pin ?? "");
   const [pinLookupStatus, setPinLookupStatus] = React.useState<"idle" | "loading" | "notfound">("idle");
@@ -42,11 +45,19 @@ export function AddressDialog({
     if (open) {
       setIsDefault(address?.isDefault ?? false);
       setState(address?.state ?? "");
+      setAddressLine(address?.addressLine ?? "");
       setCity(address?.city ?? "");
       setPin(address?.pin ?? "");
       setPinLookupStatus("idle");
     }
   }, [open, address]);
+
+  function handleAddressSelect(selected: RetrievedAddress) {
+    if (selected.addressLine) setAddressLine(selected.addressLine);
+    if (selected.city) setCity(selected.city);
+    if (selected.state) setState(selected.state);
+    if (selected.pin) setPin(selected.pin);
+  }
 
   // Auto-fills city/state from the PIN so the customer only has to type it once —
   // debounced, and aborted if the PIN changes again before a lookup resolves.
@@ -83,7 +94,7 @@ export function AddressDialog({
       label: String(formData.get("label") ?? ""),
       fullName: String(formData.get("fullName") ?? ""),
       phone: String(formData.get("phone") ?? ""),
-      addressLine: String(formData.get("addressLine") ?? ""),
+      addressLine,
       city,
       state,
       pin,
@@ -128,10 +139,14 @@ export function AddressDialog({
             <Label htmlFor="fullName">Full name</Label>
             <Input id="fullName" name="fullName" defaultValue={address?.fullName} required />
           </div>
-          <div>
-            <Label htmlFor="addressLine">Address</Label>
-            <Input id="addressLine" name="addressLine" defaultValue={address?.addressLine} required />
-          </div>
+          <AddressAutocomplete
+            id="addressLine"
+            label="Address"
+            value={addressLine}
+            onChange={setAddressLine}
+            onSelect={handleAddressSelect}
+            required
+          />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="pin">PIN code</Label>
