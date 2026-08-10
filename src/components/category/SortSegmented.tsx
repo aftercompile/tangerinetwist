@@ -21,10 +21,18 @@ export function SortSegmented<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
+    // flex-wrap previously let this fall to a second row on narrow screens —
+    // a rounded-full pill only reads correctly as one line, so two rows
+    // rendered as a distorted, overflowing blob (same class of bug as the
+    // product-card badges). Kept as one row and made horizontally
+    // scrollable instead, with min-w-0 so it can actually shrink below its
+    // content width inside the flex row above it — without that, a flex
+    // item never shrinks past its content size and the whole row would
+    // overflow the viewport rather than this control scrolling internally.
     <div
       role="radiogroup"
       aria-label="Sort products"
-      className="flex flex-wrap gap-1 rounded-full border border-border bg-warm-white p-1"
+      className="flex min-w-0 flex-nowrap gap-1 overflow-x-auto rounded-full border border-border bg-warm-white p-1 scrollbar-none"
     >
       {options.map((opt) => {
         const isActive = opt.value === value;
@@ -36,7 +44,7 @@ export function SortSegmented<T extends string>({
             aria-checked={isActive}
             onClick={() => onChange(opt.value)}
             className={cn(
-              "relative rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors sm:text-sm",
+              "relative shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors sm:text-sm",
               isActive ? "text-cream" : "text-charcoal/70 hover:text-charcoal"
             )}
           >
