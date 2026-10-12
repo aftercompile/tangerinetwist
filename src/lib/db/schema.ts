@@ -372,6 +372,40 @@ export const couponRedemptions = pgTable("coupon_redemptions", {
 // Delivered, ...). Ingestion is always replace-all for an order — both the webhook and
 // the manual refresh button delete this order's rows and re-insert Shiprocket's current
 // full history, rather than trying to append/dedupe against what's already stored.
+// One row per Razorpay Magic Checkout attempt. Magic collects the address and picks
+// shipping/coupons inside Razorpay's own modal, so unlike our other checkouts there is no
+// order row to reconcile against up front (orders.address is NOT NULL). Instead this holds
+// the server-resolved cart snapshot (prices re-read from the DB, stock-checked) under an
+// unguessable `token`, which is also the Razorpay order's `receipt`. Razorpay's three
+// public callbacks (shipping, promotions, apply-promotion) identify the cart by that token,
+// and the real `orders` row is only created once Razorpay confirms payment — see
+// src/lib/razorpay/magic-checkout.ts. `orderId` being set is what makes finalization
+// idempotent across the client callback and the webhook.
+export interface MagicSessionItem {
+  productId: string;
+  variantId: string | null;
+  variantLabel: string | null;
+  name: string;
+  slug: string;
+  price: number;
+  material: string;
+  imageSrc: string | null;
+  imageIcon: string;
+  imageTone: "warm" | "cool" | "charcoal" | "beige";
+  quantity: number;
+}
+
+export const magicCheckoutSessions = pgTable("magic_checkout_sessions", {
+  token: text("token").primaryKey(),
+  razorpayOrderId: text("razorpay_order_id").unique(),
+  customerId: uuid("customer_id").references(() => customers.id, { onDelete: "set null" }),
+  items: jsonb("items").$type<MagicSessionItem[]>().notNull(),
+  // Rupees, pre-discount, pre-shipping — the same basis calculateTotals() uses.
+  subtotal: integer("subtotal").notNull(),
+  orderId: uuid("order_id").references(() => orders.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const orderTrackingEvents = pgTable("order_tracking_events", {
   id: uuid("id").defaultRandom().primaryKey(),
   orderId: uuid("order_id")

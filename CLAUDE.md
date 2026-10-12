@@ -259,6 +259,39 @@ idempotently. Both paths can fire for the same order safely; the second one is a
 re-read-prices-from-DB logic rather than duplicating it — `placeOrder` stays the COD-only path,
 essentially unchanged from before this integration.
 
+### Razorpay Magic Checkout: primary checkout behind `MAGIC_CHECKOUT_ENABLED`
+
+Razorpay's one-click checkout collects the address, picks shipping, applies coupons and takes
+prepaid/COD inside *its own* modal, so — unlike our other checkouts — there is nothing to put in
+`orders` up front (`orders.address*` is NOT NULL). Instead `magic_checkout_sessions` holds the
+cart snapshot (prices re-read from the DB and stock-checked by `resolveOrderItems()` in
+`src/lib/checkout/resolve-items.ts`, shared with every checkout path) under an unguessable
+`token`, which is also the Razorpay order's `receipt`. `createMagicCheckout` (server action) builds
+the order via `buildMagicOrderPayload()` — `line_items_total` is what makes Razorpay treat it as
+Magic rather than Standard — and `MagicCheckoutPanel.tsx` opens the modal. `/checkout` renders the
+panel only when `MAGIC_CHECKOUT_ENABLED=true`; otherwise (or with `?standard=1`, linked from the
+panel as a fallback) the original `CheckoutForm` is unchanged.
+
+Razorpay calls three **public, unauthenticated** endpoints on us (configured in its dashboard —
+see `.env.example`): `/api/magic/shipping`, `/api/magic/promotions`, `/api/magic/promotions/apply`.
+The session token is the only thing gating them, they return fees/discounts and never personal
+data, and they price from the stored session, never the request. Razorpay's docs label them GET but
+show JSON bodies; Next.js drops GET bodies, so `readCallbackPayload()` reads body-or-query and logs
+the shape (names only) if an order id is missing — check that log on the first real call.
+`/api/magic/promotions` returns an empty list on purpose: coupons have no public/private flag, so
+listing active codes would leak private ones.
+
+The real `orders` row is created by `finalizeMagicOrder()` from **either** the browser's success
+callback (`confirmMagicCheckout`, signature-verified) **or** the existing `/api/webhooks/razorpay`
+(`order.paid`/`order.placed`/`payment.*`), whichever lands first. It never trusts its trigger: it
+re-fetches the order and payments with our secret key, then `recordMagicOrder()` locks the session
+row (`SELECT … FOR UPDATE`) so a race creates exactly one order and consumes the coupon once. Razorpay
+documents the fee/promotion fields but *not* the `customer_details.shipping_address` sub-fields, so
+`extractMagicOrderDetails()` accepts the plausible spellings and, if anything is missing, still
+records the paid order with a visible placeholder and logs which field names were present — don't
+"fix" that into a throw, money has already moved by then. Shipping is the same flat rule as
+everywhere else (`calculateTotals`, no COD fee), serviceable = any well-formed Indian PIN.
+
 ### Server actions and revalidation
 
 `src/lib/actions/{product,category,order}-actions.ts` are the only way data is mutated. Product and

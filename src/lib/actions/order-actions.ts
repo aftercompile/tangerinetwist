@@ -1,6 +1,6 @@
 "use server";
 
-import { isLineSoldOut, soldOutCartMessage } from "@/lib/stock";
+import { resolveOrderItems } from "@/lib/checkout/resolve-items";
 import { revalidatePath } from "next/cache";
 import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { requireAdminSession } from "@/lib/auth/guard";
@@ -20,59 +20,6 @@ class CouponRaceLostError extends Error {}
 
 const ORDER_STATUSES = ["pending", "confirmed", "in_production", "shipped", "delivered", "cancelled"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
-
-// Shared by both checkout paths (COD and online) — never trust client-sent prices; cart
-// lines are a denormalized localStorage snapshot that can go stale or be tampered with.
-async function resolveOrderItems(items: PlaceOrderInput["items"]) {
-  const slugs = items.map((i) => i.slug);
-  const rows = await db.query.products.findMany({
-    where: inArray(products.slug, slugs),
-    with: {
-      images: { orderBy: (img, { asc }) => [asc(img.position)] },
-      variants: { with: { images: { orderBy: (img, { asc }) => [asc(img.position)] } } },
-    },
-  });
-
-  const bySlug = new Map(rows.map((r) => [r.slug, r]));
-  const missing = slugs.filter((s) => !bySlug.has(s));
-  if (missing.length > 0) {
-    return { error: "Some items in your cart are no longer available." } as const;
-  }
-
-  // Stock is checked here, against the DB, on every path that places an order (COD and
-  // online) — a cart in someone's localStorage can be days old, and the client could send
-  // anything, so nothing the browser believes about availability is trusted.
-  const soldOutMessage = soldOutCartMessage(
-    items.flatMap((item) => {
-      const product = bySlug.get(item.slug)!;
-      const variant = item.variantId ? product.variants.find((v) => v.id === item.variantId) : undefined;
-      return isLineSoldOut(product, variant) ? [product.name] : [];
-    })
-  );
-  if (soldOutMessage) return { error: soldOutMessage } as const;
-
-  const orderItemRows = items.map((item) => {
-    const product = bySlug.get(item.slug)!;
-    const variant = item.variantId ? product.variants.find((v) => v.id === item.variantId) : undefined;
-    const primaryImage = variant?.images[0] ?? product.images[0];
-    return {
-      productId: product.id,
-      variantId: variant?.id ?? null,
-      variantLabel: variant ? [variant.size, variant.color].filter(Boolean).join(" / ") : null,
-      name: product.name,
-      slug: product.slug,
-      price: variant?.price ?? product.price,
-      material: product.material,
-      imageSrc: primaryImage?.src ?? null,
-      imageIcon: primaryImage?.icon ?? product.icon,
-      imageTone: primaryImage?.tone ?? "beige",
-      quantity: item.quantity,
-    };
-  });
-
-  const subtotal = orderItemRows.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  return { orderItemRows, subtotal } as const;
-}
 
 // Cash on Delivery only — nothing to verify, the order is placed directly exactly as it
 // always has been. Online payment goes through createOrderForPayment instead.
