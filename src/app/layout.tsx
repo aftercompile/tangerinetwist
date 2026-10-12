@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Plus_Jakarta_Sans } from "next/font/google";
+import { Manrope, Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { siteConfig } from "@/lib/seo";
+import { ogImage, siteConfig } from "@/lib/seo";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -16,6 +16,15 @@ const jakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
+// Wordmark only (see components/shared/Logo.tsx) — closest Google Font to the
+// supplied TangerineTwist logo lettering. Variable, so the light 300 weight
+// used on large lockups and the slightly heavier nav weight share one file.
+const outfit = Outfit({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-logo",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
@@ -24,7 +33,15 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   keywords: siteConfig.keywords,
-  icons: { icon: "/favicon.svg" },
+  // Declared explicitly: a `icons` config here replaces any file-based icon.png /
+  // apple-icon.png, so those would never be linked from the page head.
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/brand/icon-96.png", sizes: "96x96", type: "image/png" },
+    ],
+    apple: [{ url: "/brand/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   openGraph: {
     title: siteConfig.name,
     description: siteConfig.description,
@@ -32,11 +49,13 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     locale: "en_IN",
     type: "website",
+    images: [ogImage],
   },
   twitter: {
     card: "summary_large_image",
     title: siteConfig.name,
     description: siteConfig.description,
+    images: [ogImage.url],
   },
 };
 
@@ -46,7 +65,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${manrope.variable} ${jakarta.variable}`}>
+    <html lang="en" className={`${manrope.variable} ${jakarta.variable} ${outfit.variable}`}>
       <body className="flex min-h-screen flex-col font-sans">
         {/* Organization + LocalBusiness combined on one entity (schema.org allows a
             type array) rather than two separate script tags that could read as
@@ -59,6 +78,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "@type": ["Organization", "LocalBusiness"],
               name: siteConfig.name,
               url: siteConfig.url,
+              logo: `${siteConfig.url}/brand/logo-512.png`,
+              image: `${siteConfig.url}/brand/logo-512.png`,
               description: siteConfig.description,
               email: "hello@tangerinetwist.in",
               telephone: "+91-63539-08104",

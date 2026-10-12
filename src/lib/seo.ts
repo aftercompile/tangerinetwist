@@ -26,6 +26,16 @@ export const siteConfig = {
   },
 };
 
+// Shared social-share card. Declared explicitly because a page that sets its own
+// `openGraph` (as buildMetadata does) replaces any file-based opengraph-image
+// inherited from the root layout, so the card would silently go missing.
+export const ogImage = {
+  url: "/brand/og-image.png",
+  width: 1200,
+  height: 630,
+  alt: "TangerineTwist Studio — Premium 3D-Printed Home Décor & Workspace Essentials",
+};
+
 export function buildMetadata({
   title,
   description,
@@ -50,11 +60,13 @@ export function buildMetadata({
       siteName: siteConfig.name,
       locale: "en_IN",
       type: "website",
+      images: [ogImage],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [ogImage.url],
     },
   };
 }

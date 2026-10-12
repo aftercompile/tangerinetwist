@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Instagram, Facebook, Youtube, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/shared/Logo";
 import { siteConfig } from "@/lib/seo";
 import { CategoryMeta } from "@/lib/types";
 import { toast } from "sonner";
@@ -44,9 +45,8 @@ export function Footer({ categories }: { categories: CategoryMeta[] }) {
       <div className="container-wide py-16">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-tangerine-500" />
-              <span className="h-display text-xl">TangerineTwist</span>
+            <Link href="/" className="inline-block" aria-label="TangerineTwist home">
+              <Logo variant="stacked" />
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted">
               A modern design studio crafting premium 3D-printed home décor and workspace

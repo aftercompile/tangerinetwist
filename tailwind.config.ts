@@ -36,6 +36,7 @@ const config: Config = {
       },
       fontFamily: {
         display: ["var(--font-manrope)", "sans-serif"],
+        logo: ["var(--font-logo)", "sans-serif"],
         sans: ["var(--font-jakarta)", "sans-serif"],
       },
       letterSpacing: {

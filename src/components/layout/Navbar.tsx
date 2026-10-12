@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, Search, Heart, ShoppingBag, User, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/shared/Logo";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { CategoryMeta } from "@/lib/types";
@@ -45,9 +46,8 @@ export function Navbar({ categories, customer }: { categories: CategoryMeta[]; c
       )}
     >
       <div className="container-wide flex h-20 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2" aria-label="TangerineTwist home">
-          <span className="h-2 w-2 rounded-full bg-tangerine-500" />
-          <span className="h-display text-xl tracking-tight">TangerineTwist</span>
+        <Link href="/" className="flex items-center" aria-label="TangerineTwist home">
+          <Logo priority compact />
         </Link>
 
         <nav className="hidden items-center gap-10 lg:flex">

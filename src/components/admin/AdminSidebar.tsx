@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/shared/Logo";
 import { getAdminNavLinks } from "@/lib/admin-nav";
 
 export function AdminSidebar({ isAdminHost }: { isAdminHost: boolean }) {
@@ -11,9 +12,8 @@ export function AdminSidebar({ isAdminHost }: { isAdminHost: boolean }) {
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-white/10 bg-charcoal lg:flex">
-      <div className="flex h-20 shrink-0 items-center gap-2 px-6">
-        <span className="h-2 w-2 rounded-full bg-tangerine-500" />
-        <span className="h-display text-lg tracking-tight text-cream">TangerineTwist</span>
+      <div className="flex h-20 shrink-0 items-center px-6">
+        <Logo tone="light" markClassName="h-9 sm:h-9" wordmarkClassName="text-[1.2rem] sm:text-[1.2rem]" />
       </div>
       <nav className="flex flex-col gap-1 px-4">
         {navLinks.map((link) => {

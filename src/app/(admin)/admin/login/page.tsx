@@ -7,6 +7,7 @@ import { loginAction } from "@/lib/actions/auth-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/shared/Logo";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -39,9 +40,11 @@ export default function AdminLoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-charcoal px-5">
       <div className="w-full max-w-sm rounded-3xl bg-warm-white p-8 shadow-lift">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-tangerine-500" />
-          <span className="h-display text-lg tracking-tight">TangerineTwist Admin</span>
+        <div className="flex items-center gap-3">
+          <Logo markClassName="h-9 sm:h-9" wordmarkClassName="text-[1.2rem] sm:text-[1.2rem]" />
+          <span className="rounded-full bg-beige px-2.5 py-1 text-[0.65rem] font-medium uppercase tracking-[0.18em] text-muted">
+            Admin
+          </span>
         </div>
         <p className="mt-2 text-sm text-muted">Sign in to manage products and orders.</p>
 
