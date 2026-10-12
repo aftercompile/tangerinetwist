@@ -1,5 +1,6 @@
 "use client";
 
+import { isProductSoldOut } from "@/lib/stock";
 import { motion, useReducedMotion } from "framer-motion";
 import { Product } from "@/lib/types";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -50,7 +51,7 @@ export function ProductTabs({ product }: { product: Product }) {
           <SpecRow label="Dimensions" value={product.dimensions} />
           <SpecRow label="Weight" value={product.weight} />
           <SpecRow label="Finish" value={product.finishTime} />
-          <SpecRow label="Availability" value={product.stock.replace("-", " ")} />
+          <SpecRow label="Availability" value={isProductSoldOut(product) ? "out of stock" : product.stock.replace(/-/g, " ")} />
         </motion.dl>
       </TabsContent>
 

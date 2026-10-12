@@ -1,5 +1,6 @@
 "use client";
 
+import type { StockStatus } from "@/lib/stock";
 import * as React from "react";
 import Image from "next/image";
 import { useFieldArray, useFormContext } from "react-hook-form";
@@ -107,7 +108,7 @@ function VariantCard({ index, onRemove }: { index: number; onRemove: () => void 
             <Label htmlFor={`variant-${index}-stock`}>Stock</Label>
             <Select
               value={stock}
-              onValueChange={(v) => setValue(`variants.${index}.stock`, v as "in-stock" | "made-to-order" | "low-stock")}
+              onValueChange={(v) => setValue(`variants.${index}.stock`, v as StockStatus)}
             >
               <SelectTrigger id={`variant-${index}-stock`}>
                 <SelectValue />
@@ -116,6 +117,7 @@ function VariantCard({ index, onRemove }: { index: number; onRemove: () => void 
                 <SelectItem value="in-stock">In Stock</SelectItem>
                 <SelectItem value="made-to-order">Made to Order</SelectItem>
                 <SelectItem value="low-stock">Low Stock</SelectItem>
+                <SelectItem value="out-of-stock">Out of Stock</SelectItem>
               </SelectContent>
             </Select>
           </div>

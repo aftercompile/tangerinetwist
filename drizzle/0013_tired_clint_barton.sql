@@ -1,0 +1,1 @@
+ALTER TYPE "public"."stock_status" ADD VALUE 'out-of-stock';

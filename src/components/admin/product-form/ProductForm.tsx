@@ -251,8 +251,14 @@ export function ProductForm({
                   <SelectItem value="in-stock">In Stock</SelectItem>
                   <SelectItem value="made-to-order">Made to Order</SelectItem>
                   <SelectItem value="low-stock">Low Stock</SelectItem>
+                  <SelectItem value="out-of-stock">Out of Stock</SelectItem>
                 </SelectContent>
               </Select>
+              {stock === "out-of-stock" && (
+                <p className="mt-1.5 text-xs text-muted">
+                  Customers can&apos;t add this product to their cart, including any of its variants.
+                </p>
+              )}
             </div>
             <div>
               <Label>Badges</Label>

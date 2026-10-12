@@ -1,11 +1,12 @@
 import type { ProductBadge } from "@/lib/types";
+import type { StockStatus } from "@/lib/stock";
 
 export interface BulkImportVariant {
   tempId: string;
   size: string;
   color: string;
   price?: number;
-  stock: "in-stock" | "made-to-order" | "low-stock";
+  stock: StockStatus;
   // Same ordered-array-of-URLs convention as BulkImportRow.images, just scoped to this
   // one variant instead of the whole product.
   images: string[];

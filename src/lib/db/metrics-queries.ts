@@ -1,4 +1,5 @@
 import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import type { StockStatus } from "@/lib/stock";
 import { eachDayOfInterval, format, subDays } from "date-fns";
 import { db } from "./index";
 import { categories, orderItems, orders, products } from "./schema";
@@ -186,14 +187,14 @@ export interface LowStockProduct {
   id: string;
   slug: string;
   name: string;
-  stock: "in-stock" | "made-to-order" | "low-stock";
+  stock: StockStatus;
 }
 
 export async function getLowStockProducts(): Promise<LowStockProduct[]> {
   const rows = await db
     .select({ id: products.id, slug: products.slug, name: products.name, stock: products.stock })
     .from(products)
-    .where(eq(products.stock, "low-stock"));
+    .where(inArray(products.stock, ["low-stock", "out-of-stock"]));
   return rows;
 }
 

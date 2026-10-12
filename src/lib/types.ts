@@ -1,3 +1,4 @@
+import type { StockStatus } from "@/lib/stock";
 // Widened from a closed union now that categories are DB rows an admin can add to.
 export type CategorySlug = string;
 
@@ -73,7 +74,7 @@ export interface ProductVariant {
   color?: string;
   sku?: string;
   price?: number;
-  stock: "in-stock" | "made-to-order" | "low-stock";
+  stock: StockStatus;
   images: ProductImage[];
 }
 
@@ -117,7 +118,7 @@ export interface Product {
   faqs: ProductFaq[];
   reviews: ProductReview[];
   relatedSlugs: string[];
-  stock: "in-stock" | "made-to-order" | "low-stock";
+  stock: StockStatus;
   createdAt: string;
   // Optional: absent on the static seed fixture in src/data/products.ts, always set by the DB query layer.
   isPersonalized?: boolean;

@@ -1,5 +1,6 @@
 "use server";
 
+import { isLineSoldOut, soldOutCartMessage } from "@/lib/stock";
 import { revalidatePath } from "next/cache";
 import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { requireAdminSession } from "@/lib/auth/guard";
@@ -37,6 +38,18 @@ async function resolveOrderItems(items: PlaceOrderInput["items"]) {
   if (missing.length > 0) {
     return { error: "Some items in your cart are no longer available." } as const;
   }
+
+  // Stock is checked here, against the DB, on every path that places an order (COD and
+  // online) — a cart in someone's localStorage can be days old, and the client could send
+  // anything, so nothing the browser believes about availability is trusted.
+  const soldOutMessage = soldOutCartMessage(
+    items.flatMap((item) => {
+      const product = bySlug.get(item.slug)!;
+      const variant = item.variantId ? product.variants.find((v) => v.id === item.variantId) : undefined;
+      return isLineSoldOut(product, variant) ? [product.name] : [];
+    })
+  );
+  if (soldOutMessage) return { error: soldOutMessage } as const;
 
   const orderItemRows = items.map((item) => {
     const product = bySlug.get(item.slug)!;

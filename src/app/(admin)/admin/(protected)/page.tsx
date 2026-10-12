@@ -61,19 +61,28 @@ export default async function AdminDashboardPage({
       </div>
 
       {lowStock.length > 0 && (
-        <div className="flex items-center gap-3 rounded-2xl border border-tangerine-200 bg-tangerine-50 px-5 py-3 text-sm text-tangerine-700">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          <p>
-            {lowStock.length} product{lowStock.length > 1 ? "s are" : " is"} low on stock:{" "}
-            {lowStock.map((p, i) => (
-              <span key={p.id}>
-                <Link href={`/admin/products/${p.id}/edit`} className="font-medium underline">
-                  {p.name}
-                </Link>
-                {i < lowStock.length - 1 ? ", " : ""}
-              </span>
+        <div className="flex flex-col gap-2 rounded-2xl border border-tangerine-200 bg-tangerine-50 px-5 py-3 text-sm text-tangerine-700">
+          {[
+            { label: "out of stock", items: lowStock.filter((p) => p.stock === "out-of-stock") },
+            { label: "low on stock", items: lowStock.filter((p) => p.stock === "low-stock") },
+          ]
+            .filter((group) => group.items.length > 0)
+            .map((group) => (
+              <div key={group.label} className="flex items-center gap-3">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <p>
+                  {group.items.length} product{group.items.length > 1 ? "s are" : " is"} {group.label}:{" "}
+                  {group.items.map((p, i) => (
+                    <span key={p.id}>
+                      <Link href={`/admin/products/${p.id}/edit`} className="font-medium underline">
+                        {p.name}
+                      </Link>
+                      {i < group.items.length - 1 ? ", " : ""}
+                    </span>
+                  ))}
+                </p>
+              </div>
             ))}
-          </p>
         </div>
       )}
 

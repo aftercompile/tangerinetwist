@@ -13,7 +13,9 @@ import { ProductInfo } from "./ProductInfo";
 // still applies directly to these two children, unchanged from before this component existed.
 export function ProductDetail({ product }: { product: Product }) {
   const [selectedVariant, setSelectedVariant] = React.useState<ProductVariant | undefined>(
-    product.variants?.[0]
+    // Prefer the first variant that's actually purchasable, so the page doesn't open on a
+    // sold-out option when another is available.
+    product.variants?.find((v) => v.stock !== "out-of-stock") ?? product.variants?.[0]
   );
 
   const galleryImages =

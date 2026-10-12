@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import type { StockStatus } from "@/lib/stock";
 import { db } from "./index";
 import { PAID_PAYMENT_STATUSES } from "@/lib/orders";
 import {
@@ -23,7 +24,7 @@ export interface AdminProductRow {
   name: string;
   price: number;
   compareAtPrice: number | null;
-  stock: "in-stock" | "made-to-order" | "low-stock";
+  stock: StockStatus;
   badges: string[];
   categorySlug: string;
   categoryName: string;
@@ -97,7 +98,7 @@ export interface AdminProductDetail {
   shippingInfo: string[];
   returnPolicy: string[];
   faqs: { question: string; answer: string }[];
-  stock: "in-stock" | "made-to-order" | "low-stock";
+  stock: StockStatus;
   isPersonalized: boolean;
   images: { id: string; src: string; alt: string; tone: "warm" | "cool" | "charcoal" | "beige"; icon: string; position: number }[];
   variants: AdminProductVariant[];
@@ -110,7 +111,7 @@ export interface AdminProductVariant {
   color: string | null;
   sku: string | null;
   price: number | null;
-  stock: "in-stock" | "made-to-order" | "low-stock";
+  stock: StockStatus;
   images: { id: string; src: string; alt: string; tone: "warm" | "cool" | "charcoal" | "beige"; icon: string; position: number }[];
 }
 

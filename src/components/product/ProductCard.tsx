@@ -9,6 +9,7 @@ import { Price } from "@/components/shared/Price";
 import { TiltCard } from "@/components/shared/TiltCard";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { isProductSoldOut } from "@/lib/stock";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
@@ -38,6 +39,10 @@ export function ProductCard({ product, className }: { product: Product; classNam
   const wished = has(product.slug);
   const visibleBadges = BADGE_PRIORITY.filter((b) => product.badges.includes(b)).slice(0, 2);
   const topBadge = visibleBadges[0];
+  const soldOut = isProductSoldOut(product);
+  // Sold-out pieces stay visible (and linkable) but read as unavailable: dimmed photo, a
+  // single "Sold out" tag in place of the marketing badges, and no add-to-cart.
+  const imageDim = soldOut ? "opacity-60 saturate-50" : "";
 
   return (
     <div className={cn("group relative flex flex-col", className)}>
@@ -50,7 +55,7 @@ export function ProductCard({ product, className }: { product: Product; classNam
               tone={product.images[0]?.tone ?? "beige"}
               src={product.images[0]?.src}
               alt={product.images[0]?.alt}
-              className="h-full w-full transition-transform duration-1000 ease-premium group-hover:scale-[1.08]"
+              className={cn("h-full w-full transition-transform duration-1000 ease-premium group-hover:scale-[1.08]", imageDim)}
             />
           </Link>
 
@@ -59,7 +64,13 @@ export function ProductCard({ product, className }: { product: Product; classNam
             className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-charcoal/85 via-charcoal/25 to-transparent"
           />
 
-          {visibleBadges.length > 0 && (
+          {soldOut && (
+            <span className="absolute left-4 top-4 rounded-full bg-charcoal px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-cream">
+              Sold out
+            </span>
+          )}
+
+          {!soldOut && visibleBadges.length > 0 && (
             <div className="absolute left-4 right-14 top-4 flex flex-col items-start gap-1.5">
               {visibleBadges.map((b) => (
                 <Badge key={b} variant={b} className="max-w-full truncate">
@@ -95,14 +106,16 @@ export function ProductCard({ product, className }: { product: Product; classNam
               <RatingStars rating={product.rating} tone="light" />
             </div>
 
-            <div className="mt-3 flex max-h-0 gap-2 overflow-hidden opacity-0 transition-all duration-300 ease-premium group-hover:max-h-14 group-hover:opacity-100 group-focus-within:max-h-14 group-focus-within:opacity-100">
-              <button
-                onClick={() => addItem(product, 1)}
-                className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full bg-tangerine-500 text-xs font-medium text-white shadow-soft transition hover:bg-tangerine-600"
-              >
-                <ShoppingBag className="h-3.5 w-3.5" /> Add to Cart
-              </button>
-            </div>
+            {!soldOut && (
+              <div className="mt-3 flex max-h-0 gap-2 overflow-hidden opacity-0 transition-all duration-300 ease-premium group-hover:max-h-14 group-hover:opacity-100 group-focus-within:max-h-14 group-focus-within:opacity-100">
+                <button
+                  onClick={() => addItem(product, 1)}
+                  className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full bg-tangerine-500 text-xs font-medium text-white shadow-soft transition hover:bg-tangerine-600"
+                >
+                  <ShoppingBag className="h-3.5 w-3.5" /> Add to Cart
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </TiltCard>
@@ -116,12 +129,18 @@ export function ProductCard({ product, className }: { product: Product; classNam
               tone={product.images[0]?.tone ?? "beige"}
               src={product.images[0]?.src}
               alt={product.images[0]?.alt}
-              className="h-full w-full"
+              className={cn("h-full w-full", imageDim)}
               sizes="50vw"
             />
           </Link>
 
-          {topBadge && (
+          {soldOut && (
+            <span className="absolute left-2.5 top-2.5 rounded-full bg-charcoal px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-cream">
+              Sold out
+            </span>
+          )}
+
+          {!soldOut && topBadge && (
             <Badge
               variant={topBadge}
               className="absolute left-2.5 top-2.5 max-w-[calc(100%-3rem)] truncate px-2 py-0.5 text-[9px]"

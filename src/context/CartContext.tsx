@@ -1,5 +1,6 @@
 "use client";
 
+import { isLineSoldOut } from "@/lib/stock";
 import * as React from "react";
 import { toast } from "sonner";
 import { Product, ProductVariant } from "@/lib/types";
@@ -59,6 +60,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [lines, hydrated]);
 
   const addItem = React.useCallback((product: Product, quantity = 1, variant?: ProductVariant) => {
+    // The buttons are already hidden/disabled for sold-out pieces; this just guarantees no
+    // other call path can put one in the cart. Checkout re-checks on the server regardless.
+    if (isLineSoldOut(product, variant)) return;
     setLines((prev) => {
       const key = lineKey(product.slug, variant?.id);
       const existing = prev.find((l) => lineKey(l.slug, l.variantId) === key);

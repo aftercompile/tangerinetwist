@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { STOCK_STATUSES } from "@/lib/stock";
 import { iconMap } from "@/components/shared/icon-map";
 
 const iconNames = Object.keys(iconMap) as [string, ...string[]];
@@ -48,7 +49,7 @@ export const productVariantSchema = z
     color: z.string().trim().default(""),
     sku: z.string().trim().default(""),
     price: optionalPriceSchema,
-    stock: z.enum(["in-stock", "made-to-order", "low-stock"], "Choose a stock status"),
+    stock: z.enum(STOCK_STATUSES, "Choose a stock status"),
     // Falls back to the product's shared images when empty — not required to have its own
     // photo, same "empty src is a real state" reasoning productImageSchema already uses.
     images: z.array(productImageSchema).default([]),
@@ -104,7 +105,7 @@ export const productFormSchema = z.object({
   shippingInfo: nonEmptyStringList,
   returnPolicy: nonEmptyStringList,
   faqs: z.array(productFaqSchema).default([]),
-  stock: z.enum(["in-stock", "made-to-order", "low-stock"], "Choose a stock status"),
+  stock: z.enum(STOCK_STATUSES, "Choose a stock status"),
   isPersonalized: z.boolean().default(false),
   // At least one image slot must exist — ProductGallery indexes images[0] directly and
   // would crash on an empty array — but each slot's src may be empty (placeholder art).

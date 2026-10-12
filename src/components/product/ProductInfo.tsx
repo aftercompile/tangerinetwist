@@ -26,6 +26,7 @@ import { Magnetic } from "@/components/shared/Magnetic";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { cn, formatINR } from "@/lib/utils";
+import { isLineSoldOut } from "@/lib/stock";
 import { DURATION, EASE_PREMIUM } from "@/lib/motion";
 
 export function ProductInfo({
@@ -51,16 +52,20 @@ export function ProductInfo({
   const wished = has(product.slug);
   const isPersonalized = product.isPersonalized ?? false;
   const effectivePrice = selectedVariant?.price ?? product.price;
+  // A sold-out product blocks every variant; otherwise it's the selected variant's own status.
+  const soldOut = isLineSoldOut(product, selectedVariant);
 
   function variantLabel(v: ProductVariant): string {
     return [v.size, v.color].filter(Boolean).join(" / ") || "Default";
   }
 
   function handleAddToCart() {
+    if (soldOut) return;
     addItem(product, quantity, selectedVariant);
   }
 
   function handleBuyNow() {
+    if (soldOut) return;
     addItem(product, quantity, selectedVariant);
     router.push("/checkout");
   }
@@ -68,15 +73,22 @@ export function ProductInfo({
   // Mobile sticky bar mirrors the real CTA row's on-screen state via IntersectionObserver
   // rather than a scroll-position guess, so it appears exactly when the actual buttons
   // scroll out of view regardless of how tall the content above them is.
+  //
+  // Re-runs when `soldOut` flips: the CTA row only exists while the item is purchasable, so
+  // switching between a sold-out and an available variant mounts/unmounts the element this
+  // observes. With no row there's nothing to scroll past, so the sticky bar stays hidden.
   React.useEffect(() => {
     const el = ctaRef.current;
-    if (!el) return;
+    if (!el) {
+      setCtaVisible(true);
+      return;
+    }
     const observer = new IntersectionObserver(([entry]) => setCtaVisible(entry.isIntersecting), {
       rootMargin: "0px 0px -10% 0px",
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [soldOut]);
 
   // One shared entrance rhythm for the info column — each block settles in slightly
   // after the last, so the page reads as one considered reveal rather than everything
@@ -86,6 +98,17 @@ export function ProductInfo({
     animate: { opacity: 1, y: 0 },
     transition: { duration: DURATION.slow, delay: reduced ? 0 : delay, ease: EASE_PREMIUM },
   });
+
+  const wishlistButton = (
+    <button
+      onClick={() => toggle(product.slug, product.name)}
+      aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
+      aria-pressed={wished}
+      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-border text-charcoal transition hover:border-charcoal active:scale-90"
+    >
+      <Heart className={cn("h-5 w-5 transition-colors", wished && "fill-tangerine-500 text-tangerine-500")} />
+    </button>
+  );
 
   return (
     <div>
@@ -125,10 +148,12 @@ export function ProductInfo({
                   "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
                   selectedVariant?.id === v.id
                     ? "border-charcoal bg-charcoal text-cream"
-                    : "border-border text-charcoal hover:border-charcoal"
+                    : "border-border text-charcoal hover:border-charcoal",
+                  v.stock === "out-of-stock" && selectedVariant?.id !== v.id && "text-charcoal/50"
                 )}
               >
-                {variantLabel(v)}
+                <span className={cn(v.stock === "out-of-stock" && "line-through decoration-1")}>{variantLabel(v)}</span>
+                {v.stock === "out-of-stock" && <span className="ml-1.5 text-xs opacity-80">(sold out)</span>}
                 {v.stock === "low-stock" && <span className="ml-1.5 text-xs opacity-70">(low stock)</span>}
                 {v.stock === "made-to-order" && <span className="ml-1.5 text-xs opacity-70">(made to order)</span>}
               </button>
@@ -160,48 +185,60 @@ export function ProductInfo({
         </div>
       )}
 
-      {/* Quantity and wishlist are compact, fixed-width controls — kept in their own row
-          with w-fit so they never inherit flex-col's default full-width stretch on mobile,
-          which previously blew the quantity pill out to the full row width. */}
-      <div className="mt-7 flex items-center justify-between gap-3">
-        <div className="flex h-14 w-fit items-center rounded-full border border-border px-1.5">
-          <button
-            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-            aria-label="Decrease quantity"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-charcoal transition-colors hover:bg-beige active:scale-90"
-          >
-            <Minus className="h-4 w-4" />
-          </button>
-          <span className="w-9 text-center text-sm font-medium tabular-nums">{quantity}</span>
-          <button
-            onClick={() => setQuantity((q) => q + 1)}
-            aria-label="Increase quantity"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-charcoal transition-colors hover:bg-beige active:scale-90"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
+      {soldOut ? (
+        // Sold out: no quantity or checkout controls — a disabled state plus the wishlist,
+        // so someone who loves the piece can still save it for when it's back.
+        <div className="mt-7">
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="lg" className="flex-1" disabled>
+              Out of Stock
+            </Button>
+            {wishlistButton}
+          </div>
+          <p className="mt-3 text-sm text-muted">
+            This piece is currently out of stock. Save it to your wishlist and check back soon.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Quantity and wishlist are compact, fixed-width controls — kept in their own row
+              with w-fit so they never inherit flex-col's default full-width stretch on mobile,
+              which previously blew the quantity pill out to the full row width. */}
+        <div className="mt-7 flex items-center justify-between gap-3">
+          <div className="flex h-14 w-fit items-center rounded-full border border-border px-1.5">
+            <button
+              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+              aria-label="Decrease quantity"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-charcoal transition-colors hover:bg-beige active:scale-90"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <span className="w-9 text-center text-sm font-medium tabular-nums">{quantity}</span>
+            <button
+              onClick={() => setQuantity((q) => q + 1)}
+              aria-label="Increase quantity"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-charcoal transition-colors hover:bg-beige active:scale-90"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+
+          {wishlistButton}
         </div>
 
-        <button
-          onClick={() => toggle(product.slug, product.name)}
-          aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
-          aria-pressed={wished}
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-border text-charcoal transition hover:border-charcoal active:scale-90"
-        >
-          <Heart className={cn("h-5 w-5 transition-colors", wished && "fill-tangerine-500 text-tangerine-500")} />
-        </button>
-      </div>
-
-      <div ref={ctaRef}>
-        <Magnetic strength={0.15} className="mt-3 w-full">
-          <Button variant="accent" size="lg" className="w-full" onClick={handleAddToCart}>
-            <ShoppingBag className="h-4 w-4" /> Add to Cart
+        <div ref={ctaRef}>
+          <Magnetic strength={0.15} className="mt-3 w-full">
+            <Button variant="accent" size="lg" className="w-full" onClick={handleAddToCart}>
+              <ShoppingBag className="h-4 w-4" /> Add to Cart
+            </Button>
+          </Magnetic>
+          <Button variant="outline" size="lg" className="mt-3 w-full" onClick={handleBuyNow}>
+            Buy Now
           </Button>
-        </Magnetic>
-        <Button variant="outline" size="lg" className="mt-3 w-full" onClick={handleBuyNow}>
-          Buy Now
-        </Button>
-      </div>
+        </div>
+
+        </>
+      )}
 
       <div className="mt-8 flex flex-col gap-3 rounded-2xl bg-beige p-5 text-xs text-charcoal/80">
         <InfoRow icon={Truck} text="Dispatched in 2–4 business days · Free shipping above ₹799" />
@@ -226,14 +263,15 @@ export function ProductInfo({
                 <p className="truncate text-sm font-medium text-charcoal">{product.name}</p>
                 <p className="text-sm font-semibold text-tangerine-600">{formatINR(effectivePrice)}</p>
               </div>
-              <Button
-                variant="accent"
-                size="lg"
-                className="shrink-0"
-                onClick={handleAddToCart}
-              >
-                <ShoppingBag className="h-4 w-4" /> Add to Cart
-              </Button>
+              {soldOut ? (
+                <Button variant="outline" size="lg" className="shrink-0" disabled>
+                  Out of Stock
+                </Button>
+              ) : (
+                <Button variant="accent" size="lg" className="shrink-0" onClick={handleAddToCart}>
+                  <ShoppingBag className="h-4 w-4" /> Add to Cart
+                </Button>
+              )}
             </div>
           </motion.div>
         )}

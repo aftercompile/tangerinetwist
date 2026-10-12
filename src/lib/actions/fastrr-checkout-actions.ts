@@ -1,5 +1,6 @@
 "use server";
 
+import { isLineSoldOut, soldOutCartMessage } from "@/lib/stock";
 import { headers } from "next/headers";
 import { inArray } from "drizzle-orm";
 import { db } from "@/lib/db/index";
@@ -36,7 +37,7 @@ export async function createFastrrCheckoutToken(
   const slugs = items.map((i) => i.slug);
   const rows = await db.query.products.findMany({
     where: inArray(products.slug, slugs),
-    columns: { slug: true, externalId: true, name: true, price: true },
+    columns: { slug: true, externalId: true, name: true, price: true, stock: true },
     with: {
       images: { orderBy: (img, { asc }) => [asc(img.position)], limit: 1 },
       variants: { with: { images: { orderBy: (img, { asc }) => [asc(img.position)], limit: 1 } } },
@@ -48,6 +49,17 @@ export async function createFastrrCheckoutToken(
   if (missing.length > 0) {
     return { error: "Some items in your cart are no longer available." };
   }
+
+  // Same server-side stock gate as resolveOrderItems (order-actions.ts) — this path hands
+  // the cart to Fastrr's hosted checkout, which would otherwise happily take payment.
+  const soldOutMessage = soldOutCartMessage(
+    items.flatMap((item) => {
+      const product = bySlug.get(item.slug)!;
+      const variant = item.variantId ? product.variants.find((v) => v.id === item.variantId) : undefined;
+      return isLineSoldOut(product, variant) ? [product.name] : [];
+    })
+  );
+  if (soldOutMessage) return { error: soldOutMessage };
 
   const cartItems = items.map((item) => {
     const product = bySlug.get(item.slug)!;

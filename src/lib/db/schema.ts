@@ -25,6 +25,7 @@ export const stockStatusEnum = pgEnum("stock_status", [
   "in-stock",
   "made-to-order",
   "low-stock",
+  "out-of-stock",
 ]);
 
 export const imageToneEnum = pgEnum("image_tone", ["warm", "cool", "charcoal", "beige"]);

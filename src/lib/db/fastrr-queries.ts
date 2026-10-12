@@ -2,10 +2,21 @@
 // resolve product/price/image for a cart line at checkout time. Deliberately uncached
 // (unlike src/lib/db/queries.ts) — same reasoning as admin-queries.ts, this must always
 // reflect the live price/stock, not a stale cached snapshot.
+import type { StockStatus } from "@/lib/stock";
 import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { db } from "./index";
 import { categories, products, productImages, productVariants } from "./schema";
 import { toFastrrImageUrl } from "@/lib/fastrr/images";
+
+// Fastrr's `available` flag decides whether its hosted checkout will sell an item. It has
+// always been false for `low-stock` — kept as-is so nothing previously held back from Fastrr
+// quietly becomes purchasable — and is now also false for `out-of-stock`, including when the
+// whole product is marked out of stock but a variant row still says otherwise.
+function isAvailableOnFastrr(productStock: StockStatus, variantStock?: StockStatus): boolean {
+  const unavailable: StockStatus[] = ["low-stock", "out-of-stock"];
+  return !unavailable.includes(productStock) && !(variantStock && unavailable.includes(variantStock));
+}
+
 
 type CatalogVariant = typeof productVariants.$inferSelect;
 
@@ -62,7 +73,7 @@ function toFastrrProduct(
             title: [v.size, v.color].filter(Boolean).join(" / ") || "Default Title",
             price: v.price ?? row.price,
             sku: v.sku || row.slug,
-            available: v.stock !== "low-stock",
+            available: isAvailableOnFastrr(row.stock, v.stock),
           }))
         : [
             {
@@ -71,7 +82,7 @@ function toFastrrProduct(
               title: "Default Title",
               price: row.price,
               sku: row.slug,
-              available: row.stock !== "low-stock",
+              available: isAvailableOnFastrr(row.stock),
             },
           ],
     images: row.imageSrc ? [{ src: toFastrrImageUrl(row.imageSrc) }] : [],

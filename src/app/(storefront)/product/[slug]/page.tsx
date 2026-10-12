@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { isProductSoldOut } from "@/lib/stock";
 import { notFound } from "next/navigation";
 import {
   getAllProductSlugs,
@@ -65,8 +66,9 @@ export default async function ProductPage({ params }: { params: { slug: string }
       "@type": "Offer",
       priceCurrency: "INR",
       price: product.price,
-      availability:
-        product.stock === "in-stock"
+      availability: isProductSoldOut(product)
+        ? "https://schema.org/OutOfStock"
+        : product.stock === "in-stock"
           ? "https://schema.org/InStock"
           : "https://schema.org/PreOrder",
       url: `${siteConfig.url}/product/${product.slug}`,

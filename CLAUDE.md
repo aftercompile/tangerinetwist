@@ -277,6 +277,21 @@ total is structurally impossible to submit. `src/lib/orders.ts` holds the one
 action, and the seed script — don't reintroduce the duplicated inline math that used to live in both
 pages.
 
+### Stock status: four values, enforced on the server
+
+`stock_status` (Postgres enum, `src/lib/db/schema.ts`) is `in-stock | made-to-order | low-stock |
+out-of-stock`, on both `products` and `productVariants`; `src/lib/stock.ts` is the single TS source
+(`STOCK_STATUSES`, `StockStatus` — use it instead of retyping the union). `out-of-stock` on a
+*product* is a master switch that blocks all its variants; a product with variants is also sold out
+once every variant is. `isProductSoldOut()` / `isLineSoldOut()` encode that and are used by the
+storefront (cards show a "Sold out" tag and no add-to-cart; `ProductInfo` swaps the buy buttons for a
+disabled "Out of Stock"; JSON-LD emits `OutOfStock`) **and** by the server: `resolveOrderItems()`
+(`order-actions.ts`, covers COD and Razorpay) and `createFastrrCheckoutToken()` reject a sold-out
+line with `soldOutCartMessage()`, because a cart in `localStorage` can be days old and the client
+can send anything. Adding another status means a new Drizzle migration (`ALTER TYPE ... ADD VALUE`)
+plus `STOCK_STATUSES`. `fastrr-queries.ts` has always reported `low-stock` as unavailable to Fastrr;
+that is preserved, and `out-of-stock` is now unavailable too.
+
 ### Product images: real upload + placeholder fallback, unchanged rendering contract
 
 `src/components/shared/ProductImagePlaceholder.tsx` is unchanged: renders `next/image` when `src` is

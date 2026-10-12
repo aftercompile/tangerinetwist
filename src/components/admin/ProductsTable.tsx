@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Search, Pencil, Trash2 } from "lucide-react";
-import { formatINR } from "@/lib/utils";
+import { cn, formatINR } from "@/lib/utils";
 import { deleteProduct } from "@/lib/actions/product-actions";
 import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 import { Input } from "@/components/ui/input";
@@ -100,6 +100,7 @@ export function ProductsTable({
             <SelectItem value="in-stock">In Stock</SelectItem>
             <SelectItem value="made-to-order">Made to Order</SelectItem>
             <SelectItem value="low-stock">Low Stock</SelectItem>
+            <SelectItem value="out-of-stock">Out of Stock</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -142,7 +143,9 @@ export function ProductsTable({
                 </TableCell>
                 <TableCell>{p.categoryName}</TableCell>
                 <TableCell>{formatINR(p.price)}</TableCell>
-                <TableCell className="capitalize">{p.stock.replace("-", " ")}</TableCell>
+                <TableCell className={cn("capitalize", p.stock === "out-of-stock" && "font-medium text-red-700")}>
+                  {p.stock.replace(/-/g, " ")}
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {p.badges.map((b) => (

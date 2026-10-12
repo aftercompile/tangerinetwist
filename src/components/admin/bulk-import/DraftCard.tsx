@@ -307,6 +307,7 @@ function VariantRow({
               <SelectItem value="in-stock">In Stock</SelectItem>
               <SelectItem value="made-to-order">Made to Order</SelectItem>
               <SelectItem value="low-stock">Low Stock</SelectItem>
+              <SelectItem value="out-of-stock">Out of Stock</SelectItem>
             </SelectContent>
           </Select>
         </div>
