@@ -50,7 +50,10 @@ export function Navbar({ categories, customer }: { categories: CategoryMeta[]; c
           <Logo priority compact />
         </Link>
 
-        <nav className="hidden items-center gap-10 lg:flex">
+        {/* Full link row from 1280px up. Below that the seven links plus the wider logo and icons
+            don't fit on one line (they wrapped and collided with the logo at 1024–1279), so
+            those widths use the same menu button as phones. */}
+        <nav className="hidden items-center gap-6 xl:flex min-[1360px]:gap-10">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -109,7 +112,7 @@ export function Navbar({ categories, customer }: { categories: CategoryMeta[]; c
             <SheetTrigger asChild>
               <button
                 aria-label="Open menu"
-                className="ml-1 flex h-10 w-10 items-center justify-center rounded-full text-charcoal transition hover:bg-beige lg:hidden"
+                className="ml-1 flex h-10 w-10 items-center justify-center rounded-full text-charcoal transition hover:bg-beige xl:hidden"
               >
                 <Menu className="h-5 w-5" />
               </button>
