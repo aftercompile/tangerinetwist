@@ -11,7 +11,7 @@ import { ProductInfo } from "./ProductInfo";
 // photos, and ProductInfo reflects its price/stock and is what the customer actually adds
 // to cart. Renders a Fragment (no wrapping element) so the parent grid's `lg:grid-cols-2`
 // still applies directly to these two children, unchanged from before this component existed.
-export function ProductDetail({ product }: { product: Product }) {
+export function ProductDetail({ product, magicCheckout = false }: { product: Product; magicCheckout?: boolean }) {
   const [selectedVariant, setSelectedVariant] = React.useState<ProductVariant | undefined>(
     // Prefer the first variant that's actually purchasable, so the page doesn't open on a
     // sold-out option when another is available.
@@ -27,7 +27,12 @@ export function ProductDetail({ product }: { product: Product }) {
           zoom, measured aspect ratios) instead of carrying over an index that may no
           longer make sense for the new photo set. */}
       <ProductGallery key={selectedVariant?.id ?? "base"} images={galleryImages} name={product.name} />
-      <ProductInfo product={product} selectedVariant={selectedVariant} onSelectVariant={setSelectedVariant} />
+      <ProductInfo
+        product={product}
+        selectedVariant={selectedVariant}
+        onSelectVariant={setSelectedVariant}
+        magicCheckout={magicCheckout}
+      />
     </>
   );
 }

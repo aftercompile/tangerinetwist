@@ -292,6 +292,16 @@ records the paid order with a visible placeholder and logs which field names wer
 "fix" that into a throw, money has already moved by then. Shipping is the same flat rule as
 everywhere else (`calculateTotals`, no COD fee), serviceable = any well-formed Indian PIN.
 
+**Buy Now opens Magic directly.** With the flag on, the product page's Buy Now button
+(`ProductInfo.tsx`, flag passed down from the server page as `magicCheckout`) calls
+`runMagicCheckout()` (`src/lib/razorpay/magic-client.ts`, shared with `MagicCheckoutPanel`) for just
+that product — the cart is untouched — then lands on `/order-confirmed?order=TT-…` (display-only,
+the order number is regex-checked since it comes from the URL). With the flag off, Buy Now keeps its
+old add-to-cart-and-go-to-/checkout behaviour. **Line-item images must be plain public URLs**
+(`toAbsoluteImageUrl`): the resize URL `toFastrrImageUrl` builds returns 403 here because Supabase
+image transformations aren't enabled on this project's plan ("FeatureNotEnabled"), which is why
+Magic showed no thumbnails — `fastrr-queries.ts` still uses that helper and has the same problem.
+
 ### Server actions and revalidation
 
 `src/lib/actions/{product,category,order}-actions.ts` are the only way data is mutated. Product and

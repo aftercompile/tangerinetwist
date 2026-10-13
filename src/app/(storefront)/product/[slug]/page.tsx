@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { isProductSoldOut } from "@/lib/stock";
+import { isMagicCheckoutEnabled } from "@/lib/razorpay/magic-order";
 import { notFound } from "next/navigation";
 import {
   getAllProductSlugs,
@@ -87,7 +88,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
   };
 
   return (
-    <div className="container-wide py-10 pb-28 lg:pb-10">
+    <div className="container-wide overflow-x-clip py-10 pb-28 lg:pb-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -103,7 +104,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
       />
 
       <div className="mt-6 grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-start lg:gap-16">
-        <ProductDetail product={product} />
+        <ProductDetail product={product} magicCheckout={isMagicCheckoutEnabled()} />
       </div>
 
       <ProductTabs product={product} />

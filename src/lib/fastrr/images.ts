@@ -20,3 +20,12 @@ export function toFastrrImageUrl(src: string, size = 400): string {
   const separator = rendered.includes("?") ? "&" : "?";
   return `${rendered}${separator}width=${size}&height=${size}&resize=cover`;
 }
+
+// For providers that just need a working, public image link (Razorpay Magic Checkout's
+// line items): the original upload, made absolute. Deliberately NOT toFastrrImageUrl —
+// that points at Supabase's image-resize endpoint, and image transformations aren't
+// enabled on this project's Supabase plan ("FeatureNotEnabled", HTTP 403), so every
+// thumbnail built that way came back as an error instead of a picture.
+export function toAbsoluteImageUrl(src: string): string {
+  return src.startsWith("/") ? `${siteConfig.url}${src}` : src;
+}

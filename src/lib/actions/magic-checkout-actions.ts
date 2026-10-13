@@ -2,7 +2,7 @@
 
 import { getCurrentCustomer } from "@/lib/auth/customer-guard";
 import { resolveOrderItems } from "@/lib/checkout/resolve-items";
-import { toFastrrImageUrl } from "@/lib/fastrr/images";
+import { toAbsoluteImageUrl } from "@/lib/fastrr/images";
 import { getRazorpayClient, verifyPaymentSignature } from "@/lib/razorpay/client";
 import { createMagicSession, finalizeMagicOrder } from "@/lib/razorpay/magic-checkout";
 import { buildMagicOrderPayload, isMagicCheckoutEnabled, newSessionToken } from "@/lib/razorpay/magic-order";
@@ -41,7 +41,7 @@ export async function createMagicCheckout(items: PlaceOrderInput["items"]): Prom
       sku: lineMeta[i].sku,
       catalogVariantId: lineMeta[i].catalogVariantId,
       description: lineMeta[i].description,
-      imageUrl: row.imageSrc ? toFastrrImageUrl(row.imageSrc) : null,
+      imageUrl: row.imageSrc ? toAbsoluteImageUrl(row.imageSrc) : null,
     })),
   });
 

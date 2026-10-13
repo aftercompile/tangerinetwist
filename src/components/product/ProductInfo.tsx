@@ -3,10 +3,12 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { toast } from "sonner";
 import {
   Heart,
   Minus,
   Plus,
+  Zap,
   ShoppingBag,
   Truck,
   RotateCcw,
@@ -27,12 +29,14 @@ import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { cn, formatINR } from "@/lib/utils";
 import { isLineSoldOut } from "@/lib/stock";
+import { runMagicCheckout } from "@/lib/razorpay/magic-client";
 import { DURATION, EASE_PREMIUM } from "@/lib/motion";
 
 export function ProductInfo({
   product,
   selectedVariant,
   onSelectVariant,
+  magicCheckout = false,
 }: {
   product: Product;
   // Undefined when the product has no variants at all — ProductDetail defaults this to
@@ -40,10 +44,14 @@ export function ProductInfo({
   // move together; there's no empty "please pick one" state to handle here.
   selectedVariant?: ProductVariant;
   onSelectVariant?: (variant: ProductVariant) => void;
+  // Razorpay Magic Checkout is switched on (MAGIC_CHECKOUT_ENABLED): Buy Now opens it
+  // right here instead of going via the cart and /checkout.
+  magicCheckout?: boolean;
 }) {
   const [quantity, setQuantity] = React.useState(1);
   const [personalization, setPersonalization] = React.useState("");
   const [ctaVisible, setCtaVisible] = React.useState(true);
+  const [buying, setBuying] = React.useState(false);
   const ctaRef = React.useRef<HTMLDivElement>(null);
   const { addItem } = useCart();
   const { toggle, has } = useWishlist();
@@ -64,10 +72,25 @@ export function ProductInfo({
     addItem(product, quantity, selectedVariant);
   }
 
-  function handleBuyNow() {
-    if (soldOut) return;
-    addItem(product, quantity, selectedVariant);
-    router.push("/checkout");
+  async function handleBuyNow() {
+    if (soldOut || buying) return;
+    if (!magicCheckout) {
+      // Magic Checkout is off: the original behaviour — add it and go to /checkout.
+      addItem(product, quantity, selectedVariant);
+      router.push("/checkout");
+      return;
+    }
+
+    // Straight into Razorpay with just this product; the cart is left exactly as it was.
+    setBuying(true);
+    const outcome = await runMagicCheckout([
+      { slug: product.slug, quantity, variantId: selectedVariant?.id },
+    ]);
+    setBuying(false);
+    if (outcome.kind === "confirmed") router.push(`/order-confirmed?order=${encodeURIComponent(outcome.orderNumber)}`);
+    else if (outcome.kind === "pending") router.push("/order-confirmed");
+    else if (outcome.kind === "error") toast.error(outcome.message);
+    // "dismissed": they closed the window — stay on the page.
   }
 
   // Mobile sticky bar mirrors the real CTA row's on-screen state via IntersectionObserver
@@ -226,14 +249,37 @@ export function ProductInfo({
           {wishlistButton}
         </div>
 
-        <div ref={ctaRef}>
-          <Magnetic strength={0.15} className="mt-3 w-full">
-            <Button variant="accent" size="lg" className="w-full" onClick={handleAddToCart}>
-              <ShoppingBag className="h-4 w-4" /> Add to Cart
+        {/* Buy Now leads: highlighted, with the reassurances that remove the last doubts, and
+            Add to Cart as the quieter second choice. */}
+        <div ref={ctaRef} className="mt-4 rounded-3xl border border-tangerine-200 bg-tangerine-50/70 p-3 sm:p-4">
+          <Magnetic strength={0.15} className="w-full">
+            <Button
+              variant="accent"
+              size="lg"
+              className="w-full shadow-[0_6px_0_#C4521C] transition-transform active:translate-y-1 active:shadow-[0_2px_0_#C4521C]"
+              disabled={buying}
+              onClick={handleBuyNow}
+            >
+              <Zap className="h-4 w-4 fill-current" />
+              {buying ? "Opening secure checkout…" : `Buy Now — ${formatINR(effectivePrice * quantity)}`}
             </Button>
           </Magnetic>
-          <Button variant="outline" size="lg" className="mt-3 w-full" onClick={handleBuyNow}>
-            Buy Now
+          <ul className="mt-3.5 grid grid-cols-3 gap-2 text-center text-[11px] leading-snug text-charcoal/80">
+            <li className="flex flex-col items-center gap-1">
+              <RotateCcw className="h-4 w-4 text-tangerine-600" />
+              7-day easy returns
+            </li>
+            <li className="flex flex-col items-center gap-1">
+              <Truck className="h-4 w-4 text-tangerine-600" />
+              Free shipping over ₹799
+            </li>
+            <li className="flex flex-col items-center gap-1">
+              <ShieldCheck className="h-4 w-4 text-tangerine-600" />
+              Secure · UPI, cards &amp; COD
+            </li>
+          </ul>
+          <Button variant="outline" size="lg" className="mt-3.5 w-full bg-warm-white" onClick={handleAddToCart}>
+            <ShoppingBag className="h-4 w-4" /> Add to Cart
           </Button>
         </div>
 
@@ -268,9 +314,14 @@ export function ProductInfo({
                   Out of Stock
                 </Button>
               ) : (
-                <Button variant="accent" size="lg" className="shrink-0" onClick={handleAddToCart}>
-                  <ShoppingBag className="h-4 w-4" /> Add to Cart
-                </Button>
+                <>
+                  <Button variant="outline" size="lg" className="shrink-0 px-4" onClick={handleAddToCart} aria-label="Add to Cart">
+                    <ShoppingBag className="h-4 w-4" />
+                  </Button>
+                  <Button variant="accent" size="lg" className="shrink-0" disabled={buying} onClick={handleBuyNow}>
+                    <Zap className="h-4 w-4 fill-current" /> {buying ? "Opening…" : "Buy Now"}
+                  </Button>
+                </>
               )}
             </div>
           </motion.div>

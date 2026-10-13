@@ -8,31 +8,7 @@ import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
 import { formatINR } from "@/lib/utils";
-import { createMagicCheckout, confirmMagicCheckout } from "@/lib/actions/magic-checkout-actions";
-
-interface RazorpaySuccess {
-  razorpay_payment_id: string;
-  razorpay_order_id: string;
-  razorpay_signature: string;
-}
-type RazorpayCtor = new (options: Record<string, unknown>) => { open: () => void };
-
-// Magic Checkout ships as its own script (not checkout.js) — a hosted file, not an npm
-// package, so it's loaded once on demand and reused.
-function loadMagicScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (typeof window === "undefined") return resolve(false);
-    if (document.querySelector("script[data-magic-checkout]")) {
-      return resolve(Boolean((window as unknown as { Razorpay?: unknown }).Razorpay));
-    }
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/magic-checkout.js";
-    script.dataset.magicCheckout = "true";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-}
+import { runMagicCheckout } from "@/lib/razorpay/magic-client";
 
 /**
  * Checkout page when Razorpay Magic Checkout is switched on (MAGIC_CHECKOUT_ENABLED). Our
@@ -48,51 +24,21 @@ export function MagicCheckoutPanel({ prefill }: { prefill?: { name?: string; ema
 
   async function handleCheckout() {
     setStarting(true);
-    const created = await createMagicCheckout(
-      lines.map((l) => ({ slug: l.slug, quantity: l.quantity, variantId: l.variantId }))
+    const outcome = await runMagicCheckout(
+      lines.map((l) => ({ slug: l.slug, quantity: l.quantity, variantId: l.variantId })),
+      prefill
     );
-    if (created.error || !created.razorpayOrderId || !created.keyId) {
-      toast.error(created.error ?? "Could not start checkout.");
-      setStarting(false);
-      return;
+    setStarting(false);
+    if (outcome.kind === "error") {
+      toast.error(outcome.message);
+    } else if (outcome.kind === "confirmed") {
+      clear();
+      setPlacedOrderNumber(outcome.orderNumber);
+    } else if (outcome.kind === "pending") {
+      clear();
+      setAwaitingConfirmation(true);
     }
-
-    const loaded = await loadMagicScript();
-    const Razorpay = (window as unknown as { Razorpay?: RazorpayCtor }).Razorpay;
-    if (!loaded || !Razorpay) {
-      toast.error("Could not load the checkout window. Check your connection, or use standard checkout below.");
-      setStarting(false);
-      return;
-    }
-
-    const rzp = new Razorpay({
-      key: created.keyId,
-      one_click_checkout: true,
-      name: "TangerineTwist",
-      order_id: created.razorpayOrderId,
-      show_coupons: true,
-      prefill: created.prefill ?? prefill,
-      theme: { color: "#E86A2C" },
-      handler: async (response: RazorpaySuccess) => {
-        const confirmed = await confirmMagicCheckout({
-          razorpayOrderId: response.razorpay_order_id,
-          razorpayPaymentId: response.razorpay_payment_id,
-          razorpaySignature: response.razorpay_signature,
-        });
-        if (confirmed.error) {
-          toast.error(confirmed.error + " If you were charged, contact us with your payment details.");
-          setStarting(false);
-          return;
-        }
-        clear();
-        if (confirmed.orderNumber) setPlacedOrderNumber(confirmed.orderNumber);
-        else setAwaitingConfirmation(true);
-      },
-      // Closing the window without paying leaves nothing behind but an unused session;
-      // clicking again starts a fresh one.
-      modal: { ondismiss: () => setStarting(false) },
-    });
-    rzp.open();
+    // "dismissed": they closed the window; the cart is untouched and they can retry.
   }
 
   if (placedOrderNumber || awaitingConfirmation) {
