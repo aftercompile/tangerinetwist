@@ -31,15 +31,14 @@ export function AnimatedReveal({
   const reduced = useReducedMotion();
   const Comp = motion[as];
 
-  // Motion-sensitive users get the same content and hierarchy, just as a plain
-  // fade with no travel or defocus.
-  const initial = reduced
-    ? { opacity: 0 }
-    : { opacity: 0, ...OFFSET[direction], ...(blur ? { filter: "blur(6px)" } : {}) };
-
-  const animate = reduced
-    ? { opacity: 1 }
-    : { opacity: 1, x: 0, y: 0, ...(blur ? { filter: "blur(0px)" } : {}) };
+  // The starting state is identical for everyone — it's rendered into the server HTML,
+  // and useReducedMotion() can be false on the server but true on the client's first
+  // render, so branching it here caused a hydration mismatch. Motion-sensitive users
+  // still get only a plain fade: their travel and defocus complete instantly (duration 0)
+  // while opacity fades in.
+  const initial = { opacity: 0, ...OFFSET[direction], ...(blur ? { filter: "blur(6px)" } : {}) };
+  const animate = { opacity: 1, x: 0, y: 0, ...(blur ? { filter: "blur(0px)" } : {}) };
+  const instant = { duration: 0 };
 
   return (
     <Comp
@@ -50,6 +49,7 @@ export function AnimatedReveal({
         duration: reduced ? DURATION.base : DURATION.slow,
         delay: reduced ? 0 : delay,
         ease: reduced ? EASE_OUT : EASE_PREMIUM,
+        ...(reduced ? { x: instant, y: instant, filter: instant } : {}),
       }}
       className={cn(className)}
     >

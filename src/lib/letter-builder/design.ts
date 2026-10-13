@@ -13,33 +13,48 @@ export function sanitizeText(raw: string, maxPieces: number): string {
   return chars.slice(0, maxPieces).join("");
 }
 
+type PieceLook = Pick<DesignPiece, "style" | "body" | "ink">;
+
 // Builder state is "a base look plus per-piece exceptions", not a list of pieces, so that
-// retyping the word keeps the look: new letters follow the base/preset, and only pieces the
-// customer explicitly edited keep their own style or colour.
+// retyping the word keeps the look: new pieces follow the base/preset, and only pieces the
+// customer explicitly edited keep their own style or colours.
 export interface BuilderState {
   text: string;
   format: Design["format"];
+  trim: string;
   style: string; // base style for every piece
-  color: string; // base colour (used when no preset is active)
-  preset: string | null; // colour pattern cycled across pieces
-  overrides: Record<number, Partial<Pick<DesignPiece, "style" | "color">>>;
+  body: string; // base body colour (used when no preset is active)
+  ink: string; // letter colour for every piece
+  preset: string | null; // body-colour pattern cycled across pieces
+  overrides: Record<number, Partial<PieceLook>>;
 }
 
-export function initialState(config: BuilderConfig, text = ""): BuilderState {
+export function initialState(config: BuilderConfig, text = "", presetId?: string): BuilderState {
+  const preset = config.presets.find((p) => p.id === presetId) ?? config.presets[0];
+  const firstAvailable = config.colors.find((c) => c.available)?.id ?? config.colors[0].id;
   return {
     text,
     format: config.formats[0].id,
+    trim: preset?.trim ?? firstAvailable,
     style: config.styles[0].id,
-    color: config.colors.find((c) => c.available)?.id ?? config.colors[0].id,
-    preset: config.presets[0]?.id ?? null,
+    body: preset?.bodies[0] ?? firstAvailable,
+    ink: preset?.ink ?? firstAvailable,
+    preset: preset?.id ?? null,
     overrides: {},
   };
 }
 
-export function presetColor(config: BuilderConfig, presetId: string | null, index: number): string | null {
+/** Applies a preset's colours (bodies, letters, trim) and drops per-piece colour edits. */
+export function withPreset(config: BuilderConfig, state: BuilderState, presetId: string): BuilderState {
   const preset = config.presets.find((p) => p.id === presetId);
-  if (!preset || preset.colors.length === 0) return null;
-  return preset.colors[index % preset.colors.length];
+  if (!preset) return state;
+  return { ...state, preset: preset.id, ink: preset.ink, trim: preset.trim, overrides: strip(state.overrides, ["body", "ink"]) };
+}
+
+function presetBody(config: BuilderConfig, presetId: string | null, index: number): string | null {
+  const preset = config.presets.find((p) => p.id === presetId);
+  if (!preset || preset.bodies.length === 0) return null;
+  return preset.bodies[index % preset.bodies.length];
 }
 
 /** The actual pieces, derived from state. */
@@ -47,7 +62,8 @@ export function derivePieces(config: BuilderConfig, state: BuilderState): Design
   return Array.from(state.text).map((char, i) => ({
     char,
     style: state.overrides[i]?.style ?? state.style,
-    color: state.overrides[i]?.color ?? presetColor(config, state.preset, i) ?? state.color,
+    body: state.overrides[i]?.body ?? presetBody(config, state.preset, i) ?? state.body,
+    ink: state.overrides[i]?.ink ?? state.ink,
   }));
 }
 
@@ -56,6 +72,19 @@ export function withText(state: BuilderState, text: string): BuilderState {
   const length = Array.from(text).length;
   const overrides = Object.fromEntries(Object.entries(state.overrides).filter(([i]) => Number(i) < length));
   return { ...state, text, overrides };
+}
+
+/** Removes the given keys from every per-piece exception (dropping now-empty ones). */
+export function strip(overrides: BuilderState["overrides"], keys: (keyof PieceLook)[]): BuilderState["overrides"] {
+  return Object.fromEntries(
+    Object.entries(overrides)
+      .map(([i, o]) => {
+        const rest = { ...o };
+        for (const k of keys) delete rest[k];
+        return [i, rest] as const;
+      })
+      .filter(([, o]) => Object.keys(o).length > 0)
+  );
 }
 
 export function priceDesign(config: BuilderConfig, design: Pick<Design, "format" | "pieces">): number {
@@ -68,9 +97,20 @@ export function startingPrice(config: BuilderConfig): number {
   return Math.min(...config.formats.map((f) => f.basePrice)) + config.perPiecePrice;
 }
 
-/** Pieces whose colour or style has been switched off since the design was made. */
+/** Pieces (by index) using a colour or style that's been switched off since. */
 export function unavailablePieces(config: BuilderConfig, pieces: DesignPiece[]): number[] {
   const colors = new Map(config.colors.map((c) => [c.id, c]));
   const styles = new Set(config.styles.map((s) => s.id));
-  return pieces.flatMap((p, i) => (!colors.get(p.color)?.available || !styles.has(p.style) ? [i] : []));
+  const ok = (id: string) => colors.get(id)?.available === true;
+  return pieces.flatMap((p, i) => (!ok(p.body) || !ok(p.ink) || !styles.has(p.style) ? [i] : []));
+}
+
+export function colorHex(config: BuilderConfig, id: string): string {
+  return config.colors.find((c) => c.id === id)?.hex ?? "#CCCCCC";
+}
+
+/** A ready-made design for showcases (hero, story sections). */
+export function showcaseDesign(config: BuilderConfig, text: string, presetId: string, style?: string, format?: Design["format"]): Design {
+  const state = { ...initialState(config, text, presetId), ...(style ? { style } : {}), ...(format ? { format } : {}) };
+  return { format: state.format, trim: state.trim, pieces: derivePieces(config, state) };
 }

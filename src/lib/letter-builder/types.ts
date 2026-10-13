@@ -1,6 +1,8 @@
 // The letter builder: a customer spells a word from individually printed pieces (A–Z, 0–9,
-// ♥) and picks a style and colour per piece. These types are shared by the builder UI and,
-// later, the server (pricing/validation) and the order snapshot, so they stay plain data.
+// ♥). Every piece has two colours — the bead/keycap body and the raised letter on it — plus
+// a style (the font it's modelled from). The design also picks a format (beads on a cord,
+// or keycaps in a frame) and a trim colour (the cord or the frame). These types are shared
+// by the builder UI and, later, the server (pricing/validation) and the order snapshot.
 
 export interface BuilderStyle {
   id: string;
@@ -24,14 +26,19 @@ export interface BuilderFormat {
   id: BuilderFormatId;
   label: string;
   blurb: string;
-  basePrice: number; // rupees: ring/clicker body
+  // What the trim colour is called for this format: the cord, or the keycap frame.
+  trimLabel: string;
+  basePrice: number; // rupees: cord, clip and accents — or the clicker frame
 }
 
 export interface BuilderPreset {
   id: string;
   label: string;
-  // Colour ids cycled across the word, e.g. rainbow. One entry = every piece that colour.
-  colors: string[];
+  // Body colours cycled across the word (one entry = every piece that colour), and the
+  // letter colour used on all of them.
+  bodies: string[];
+  ink: string;
+  trim: string;
 }
 
 export interface BuilderConfig {
@@ -47,10 +54,12 @@ export interface BuilderConfig {
 export interface DesignPiece {
   char: string;
   style: string;
-  color: string;
+  body: string; // colour id of the bead/keycap
+  ink: string; // colour id of the raised letter
 }
 
 export interface Design {
   format: BuilderFormatId;
+  trim: string; // colour id of the cord (keychain) or frame (clicker)
   pieces: DesignPiece[];
 }

@@ -1,7 +1,7 @@
 import type { BuilderConfig } from "./types";
 
 // Prototype config. Moves to the product's admin-editable settings once orders are wired
-// up — prices here are placeholders until real ones are set.
+// up — prices and colours here are placeholders until real ones are set.
 export const DEMO_BUILDER_CONFIG: BuilderConfig = {
   styles: [
     { id: "rounded", label: "Rounded", font: "lilita" },
@@ -9,25 +9,28 @@ export const DEMO_BUILDER_CONFIG: BuilderConfig = {
     { id: "playful", label: "Playful", font: "chewy" },
   ],
   colors: [
-    { id: "pink", label: "Sakura Pink", hex: "#F4A6B7", available: true },
-    { id: "tangerine", label: "Tangerine", hex: "#E86A2C", available: true },
-    { id: "sunflower", label: "Sunflower", hex: "#F2C14E", available: true },
-    { id: "mint", label: "Mint", hex: "#8FD694", available: true },
-    { id: "teal", label: "Teal", hex: "#45B7B0", available: true },
-    { id: "sky", label: "Sky Blue", hex: "#5AA9F2", available: true },
-    { id: "lavender", label: "Lavender", hex: "#9B8CF7", available: true },
-    { id: "charcoal", label: "Charcoal", hex: "#2B2622", available: true },
+    { id: "white", label: "Cloud White", hex: "#FFFDF8", available: true },
+    { id: "pink", label: "Bubblegum", hex: "#F7B2C6", available: true },
+    { id: "peach", label: "Peach", hex: "#FBC6A4", available: true },
+    { id: "butter", label: "Butter", hex: "#F7DE8C", available: true },
+    { id: "mint", label: "Mint", hex: "#A6E3C2", available: true },
+    { id: "aqua", label: "Aqua", hex: "#76CFD6", available: true },
+    { id: "sky", label: "Sky", hex: "#9CC6F2", available: true },
+    { id: "lilac", label: "Lilac", hex: "#C3B0F0", available: true },
+    { id: "tangerine", label: "Tangerine", hex: "#F28A4B", available: true },
+    { id: "charcoal", label: "Charcoal", hex: "#2E2925", available: true },
   ],
   formats: [
-    { id: "keychain", label: "Keychain", blurb: "Letters on a metal ring", basePrice: 149 },
-    { id: "clicker", label: "Clicker", blurb: "Clicky keys you can press", basePrice: 249 },
+    { id: "keychain", label: "Bead keychain", blurb: "Letter beads on a soft cord", trimLabel: "Cord", basePrice: 149 },
+    { id: "clicker", label: "Keycap clicker", blurb: "Keys you can press, in a frame", trimLabel: "Frame", basePrice: 249 },
   ],
   presets: [
-    { id: "rainbow", label: "Rainbow", colors: ["pink", "tangerine", "sunflower", "mint", "teal", "sky", "lavender"] },
-    { id: "pastel", label: "Pastel", colors: ["pink", "lavender", "mint", "sky", "sunflower"] },
-    { id: "sunset", label: "Sunset", colors: ["tangerine", "pink", "sunflower"] },
-    { id: "ocean", label: "Ocean", colors: ["teal", "sky", "mint"] },
-    { id: "mono", label: "Mono", colors: ["charcoal"] },
+    { id: "pastel", label: "Pastel", bodies: ["pink", "lilac", "mint", "sky", "butter", "peach"], ink: "white", trim: "pink" },
+    { id: "candy", label: "Candy", bodies: ["aqua"], ink: "pink", trim: "sky" },
+    { id: "sorbet", label: "Sorbet", bodies: ["peach", "pink", "butter"], ink: "white", trim: "peach" },
+    { id: "ocean", label: "Ocean", bodies: ["aqua", "sky", "mint"], ink: "white", trim: "aqua" },
+    { id: "cloud", label: "Cloud", bodies: ["white"], ink: "lilac", trim: "lilac" },
+    { id: "midnight", label: "Midnight", bodies: ["charcoal"], ink: "butter", trim: "charcoal" },
   ],
   perPiecePrice: 40,
   maxPieces: 10,

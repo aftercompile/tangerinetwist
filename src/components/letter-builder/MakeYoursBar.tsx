@@ -5,7 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { DURATION, EASE_PREMIUM } from "@/lib/motion";
 import { formatINR } from "@/lib/utils";
-import { scrollToBuilder } from "./NameKeychainHero";
+import { scrollToBuilder } from "./StringingHero";
 
 /**
  * Phones only: ordering is never more than one tap away, wherever the story has scrolled
