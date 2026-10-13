@@ -302,6 +302,34 @@ old add-to-cart-and-go-to-/checkout behaviour. **Line-item images must be plain 
 image transformations aren't enabled on this project's plan ("FeatureNotEnabled"), which is why
 Magic showed no thumbnails — `fastrr-queries.ts` still uses that helper and has the same problem.
 
+### Letter builder: personalised name keychains/clickers (`/name-keychain`)
+
+A product with `products.builderConfig` set (styles, colours, formats, presets, `perPiecePrice`,
+`maxPieces` — see `src/lib/letter-builder/types.ts`) is a **builder product**: the customer composes a
+`Design` (format, trim colour, and per piece a char + style + body colour + letter colour) instead of
+picking a variant. Its page is its own route (`app/(storefront)/name-keychain`), seeded by
+`scripts/seed-name-keychain.ts` (idempotent upsert; re-run it after editing `DEMO_BUILDER_CONFIG`).
+Without the product row the page runs as a prototype on the demo config with ordering off.
+
+**The server owns the price.** `resolveOrderItems()` (`src/lib/checkout/resolve-items.ts`) re-validates
+each line's design against *that product's* config via `resolveDesign()` (`letter-builder/validate.ts`:
+allowed chars, max length, colours/styles/format that exist, colours not sold out) and prices it with
+`priceDesign()`; the order line stores the result in `order_items.customization` (a snapshot, like
+name/price) and `variantLabel` ("ANYA — Bead keychain"). Items accepted by `placeOrderInputSchema`
+carry an optional `design`; for ordinary products it is ignored, for builder products it is required.
+Cart lines are identified by slug + variant + `designKey()` (`CartContext`), so two designs of one
+product are separate lines; `removeItem`/`updateQuantity` take the key as a third argument.
+
+**Builder products stay out of regular listings** (`notBuilder` in `db/queries.ts`: categories,
+bestsellers, search, price ranges, sitemap) because a plain "Add to Cart" would sell a keychain with no
+design; `/product/<slug>` redirects to `/<slug>`. Magic Checkout gets one line item per design (word in
+the name, per-design `variant_id`, thumbnail from `/api/design-image`). That route renders a PNG with
+`next/og` from `letter-builder/design-thumbnail.tsx`, using TTFs in `src/assets/fonts` (bundled via
+`outputFileTracingIncludes`). **`next/og` cannot run on Windows** (its default-font path is built with
+`path.join` on a `file://` URL), so the route 500s in local dev here but works on Linux/Vercel — test
+changes to the thumbnail in a Linux container (render the component with `@vercel/og` directly).
+`createFastrrCheckoutToken` refuses builder products (no way to carry a design).
+
 ### Server actions and revalidation
 
 `src/lib/actions/{product,category,order}-actions.ts` are the only way data is mutated. Product and

@@ -1,5 +1,7 @@
 "use client";
 
+import type { BuilderConfig, Design } from "@/lib/letter-builder/types";
+import { designKey, designLabel, priceDesign } from "@/lib/letter-builder/design";
 import { isLineSoldOut } from "@/lib/stock";
 import * as React from "react";
 import { toast } from "sonner";
@@ -16,22 +18,29 @@ export interface CartLine {
   // deliberately separate lines (see lineKey) rather than merging quantities together.
   variantId?: string;
   variantLabel?: string;
+  // Letter-builder lines (src/lib/letter-builder): the customer's design, a fingerprint of it
+  // (what makes two designs of the same product separate lines), and the product's builder
+  // config as it was — needed to draw the thumbnail. The price here is only the browser's
+  // estimate; checkout re-prices the design on the server.
+  design?: Design;
+  designKey?: string;
+  builderConfig?: BuilderConfig;
 }
 
 // Two variants of the same product must never collapse into one line the way two calls for
 // the same plain product do — this is the identity a line is matched/deduped by everywhere
 // below, not slug alone.
-function lineKey(slug: string, variantId?: string): string {
-  return `${slug}::${variantId ?? ""}`;
+function lineKey(slug: string, variantId?: string, designKey?: string): string {
+  return `${slug}::${variantId ?? ""}::${designKey ?? ""}`;
 }
 
 interface CartContextValue {
   lines: CartLine[];
   isOpen: boolean;
   setOpen: (open: boolean) => void;
-  addItem: (product: Product, quantity?: number, variant?: ProductVariant) => void;
-  removeItem: (slug: string, variantId?: string) => void;
-  updateQuantity: (slug: string, quantity: number, variantId?: string) => void;
+  addItem: (product: Product, quantity?: number, variant?: ProductVariant, design?: Design) => void;
+  removeItem: (slug: string, variantId?: string, designKey?: string) => void;
+  updateQuantity: (slug: string, quantity: number, variantId?: string, designKey?: string) => void;
   clear: () => void;
   subtotal: number;
   itemCount: number;
@@ -59,16 +68,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
   }, [lines, hydrated]);
 
-  const addItem = React.useCallback((product: Product, quantity = 1, variant?: ProductVariant) => {
+  const addItem = React.useCallback((product: Product, quantity = 1, variant?: ProductVariant, design?: Design) => {
     // The buttons are already hidden/disabled for sold-out pieces; this just guarantees no
     // other call path can put one in the cart. Checkout re-checks on the server regardless.
     if (isLineSoldOut(product, variant)) return;
+    // A design only means something on a letter-builder product.
+    const config = product.builderConfig;
+    const custom = design && config ? design : undefined;
+    const dKey = custom ? designKey(custom) : undefined;
     setLines((prev) => {
-      const key = lineKey(product.slug, variant?.id);
-      const existing = prev.find((l) => lineKey(l.slug, l.variantId) === key);
+      const key = lineKey(product.slug, variant?.id, dKey);
+      const existing = prev.find((l) => lineKey(l.slug, l.variantId, l.designKey) === key);
       if (existing) {
         return prev.map((l) =>
-          lineKey(l.slug, l.variantId) === key ? { ...l, quantity: l.quantity + quantity } : l
+          lineKey(l.slug, l.variantId, l.designKey) === key ? { ...l, quantity: l.quantity + quantity } : l
         );
       }
       const variantImage = variant?.images[0];
@@ -78,7 +91,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         {
           slug: product.slug,
           name: product.name,
-          price: variant?.price ?? product.price,
+          price: custom && config ? priceDesign(config, custom) : variant?.price ?? product.price,
           image: {
             icon: product.icon,
             tone: (variantImage ?? fallbackImage)?.tone ?? "beige",
@@ -87,7 +100,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           material: product.material,
           quantity,
           variantId: variant?.id,
-          variantLabel: variant ? [variant.size, variant.color].filter(Boolean).join(" / ") : undefined,
+          variantLabel:
+            custom && config
+              ? designLabel(config, custom)
+              : variant
+                ? [variant.size, variant.color].filter(Boolean).join(" / ")
+                : undefined,
+          ...(custom && config ? { design: custom, designKey: dKey, builderConfig: config } : {}),
         },
       ];
     });
@@ -95,17 +114,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setOpen(true);
   }, []);
 
-  const removeItem = React.useCallback((slug: string, variantId?: string) => {
-    const key = lineKey(slug, variantId);
-    setLines((prev) => prev.filter((l) => lineKey(l.slug, l.variantId) !== key));
+  const removeItem = React.useCallback((slug: string, variantId?: string, dKey?: string) => {
+    const key = lineKey(slug, variantId, dKey);
+    setLines((prev) => prev.filter((l) => lineKey(l.slug, l.variantId, l.designKey) !== key));
   }, []);
 
-  const updateQuantity = React.useCallback((slug: string, quantity: number, variantId?: string) => {
-    const key = lineKey(slug, variantId);
+  const updateQuantity = React.useCallback((slug: string, quantity: number, variantId?: string, dKey?: string) => {
+    const key = lineKey(slug, variantId, dKey);
     setLines((prev) =>
       quantity <= 0
-        ? prev.filter((l) => lineKey(l.slug, l.variantId) !== key)
-        : prev.map((l) => (lineKey(l.slug, l.variantId) === key ? { ...l, quantity } : l))
+        ? prev.filter((l) => lineKey(l.slug, l.variantId, l.designKey) !== key)
+        : prev.map((l) => (lineKey(l.slug, l.variantId, l.designKey) === key ? { ...l, quantity } : l))
     );
   }, []);
 

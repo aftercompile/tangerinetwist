@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { designSchema } from "@/lib/letter-builder/validate";
 
 export const shippingDetailsSchema = z.object({
   fullName: z.string().trim().min(1, "Full name is required"),
@@ -29,6 +30,9 @@ export const placeOrderInputSchema = z.object({
         // Absent for products with no variants — resolveOrderItems (order-actions.ts)
         // falls back to the product's own price when this isn't set.
         variantId: z.string().optional(),
+        // Only meaningful for letter-builder products (src/lib/letter-builder): the shape is
+        // checked here, the contents against the product's own config in resolveOrderItems.
+        design: designSchema.optional(),
       })
     )
     .min(1, "Your cart is empty"),

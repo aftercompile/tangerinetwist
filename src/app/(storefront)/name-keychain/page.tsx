@@ -11,6 +11,10 @@ import { BUILDER_FONTS } from "@/components/letter-builder/fonts";
 import { DEMO_BUILDER_CONFIG } from "@/lib/letter-builder/demo-config";
 import { startingPrice } from "@/lib/letter-builder/design";
 import { buildMetadata } from "@/lib/seo";
+import { getProductBySlug } from "@/lib/db/queries";
+import { isMagicCheckoutEnabled } from "@/lib/razorpay/magic-order";
+
+const PRODUCT_SLUG = "name-keychain";
 
 // Prototype: kept out of search results until ordering is wired up and real prices are set.
 export const metadata: Metadata = {
@@ -29,8 +33,12 @@ const REASSURANCE = [
   { icon: ShieldCheck, title: "Arrives perfect", body: "Personalised pieces can't be returned — but anything damaged gets replaced.", tint: "#EEE8FC" },
 ];
 
-export default function NameKeychainPage() {
-  const config = DEMO_BUILDER_CONFIG;
+export default async function NameKeychainPage() {
+  // The real product (created by scripts/seed-name-keychain.ts) supplies the live settings
+  // and makes ordering possible; until it exists the page runs as a prototype on the demo
+  // config, with ordering switched off.
+  const product = await getProductBySlug(PRODUCT_SLUG);
+  const config = product?.builderConfig ?? DEMO_BUILDER_CONFIG;
 
   return (
     <div className="relative bg-[#FBF8F3]">
@@ -48,7 +56,11 @@ export default function NameKeychainPage() {
             </h2>
           </AnimatedReveal>
           <div className="mt-10">
-            <LetterBuilder config={config} />
+            <LetterBuilder
+              config={config}
+              product={product?.builderConfig ? product : undefined}
+              magicCheckout={isMagicCheckoutEnabled()}
+            />
           </div>
         </div>
       </section>

@@ -30,6 +30,8 @@ export interface MagicLineInput {
   catalogVariantId: number;
   description: string;
   imageUrl: string | null;
+  // Letter-builder lines: tells two designs of the same product apart within one order.
+  designKey?: string;
 }
 
 /**
@@ -51,7 +53,7 @@ export function buildMagicOrderPayload({
     const unit = rupeesToPaise(l.price);
     return {
       sku: l.sku,
-      variant_id: String(l.catalogVariantId),
+      variant_id: l.designKey ? `${l.catalogVariantId}d${l.designKey}` : String(l.catalogVariantId),
       price: unit,
       offer_price: unit,
       quantity: l.quantity,

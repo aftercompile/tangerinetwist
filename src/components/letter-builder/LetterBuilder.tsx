@@ -2,9 +2,13 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { Heart, RotateCcw, ShoppingBag, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Heart, RotateCcw, RotateCw, ShieldCheck, ShoppingBag, Truck, X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, formatINR } from "@/lib/utils";
+import { useCart } from "@/context/CartContext";
+import { runMagicCheckout } from "@/lib/razorpay/magic-client";
+import type { Product } from "@/lib/types";
 import type { BuilderConfig, BuilderFormatId, Design, DesignPiece } from "@/lib/letter-builder/types";
 import {
   HEART,
@@ -30,7 +34,20 @@ type Look = Pick<DesignPiece, "style" | "body" | "ink">;
  * colour, letter colour or style. Everything shown is derived from `state` — a base look
  * plus per-piece exceptions — so retyping the word never wipes their choices.
  */
-export function LetterBuilder({ config }: { config: BuilderConfig }) {
+export function LetterBuilder({
+  config,
+  product,
+  magicCheckout = false,
+}: {
+  config: BuilderConfig;
+  // The real product this builds an order line for. Without one (not created yet) the page
+  // still works as a prototype, but ordering is switched off.
+  product?: Product;
+  magicCheckout?: boolean;
+}) {
+  const { addItem } = useCart();
+  const router = useRouter();
+  const [buying, setBuying] = React.useState(false);
   const [state, setState] = React.useState<BuilderState>(() => initialState(config));
   const [selected, setSelected] = React.useState<number | null>(null);
 
@@ -70,9 +87,30 @@ export function LetterBuilder({ config }: { config: BuilderConfig }) {
     });
   }
 
+  // The design as it will be ordered. Only ids and characters — the server re-validates it
+  // against the product's settings and prices it, so nothing here is trusted.
+  const orderDesign: Design = { format: state.format, trim: state.trim, pieces };
+  const canOrder = Boolean(product) && !isEmpty && blocked.length === 0;
+
   function handleAddToCart() {
-    // Prototype: the design is complete and priced; saving it to cart/orders is next.
-    toast.success(`Looks great! Ordering opens soon — ${pieces.length} pieces, ${formatINR(price)}.`);
+    if (!product || !canOrder) return;
+    addItem(product, 1, undefined, orderDesign);
+  }
+
+  async function handleBuyNow() {
+    if (!product || !canOrder || buying) return;
+    if (!magicCheckout) {
+      // Magic Checkout is off: add it and carry on to the ordinary checkout.
+      addItem(product, 1, undefined, orderDesign);
+      router.push("/checkout");
+      return;
+    }
+    setBuying(true);
+    const outcome = await runMagicCheckout([{ slug: product.slug, quantity: 1, design: orderDesign }]);
+    setBuying(false);
+    if (outcome.kind === "confirmed") router.push(`/order-confirmed?order=${encodeURIComponent(outcome.orderNumber)}`);
+    else if (outcome.kind === "pending") router.push("/order-confirmed");
+    else if (outcome.kind === "error") toast.error(outcome.message);
   }
 
   const selectedPiece = selected !== null ? pieces[selected] : null;
@@ -225,15 +263,41 @@ export function LetterBuilder({ config }: { config: BuilderConfig }) {
           {blocked.length > 0 && (
             <p className="mt-3 text-xs text-tangerine-700">Some pieces use a colour that just sold out — pick another.</p>
           )}
-          <Button
-            variant="accent"
-            size="lg"
-            className="mt-4 w-full shadow-[0_6px_0_#C4521C] active:translate-y-1 active:shadow-[0_2px_0_#C4521C] disabled:shadow-none"
-            disabled={isEmpty || blocked.length > 0}
-            onClick={handleAddToCart}
-          >
-            <ShoppingBag className="h-4 w-4" /> {isEmpty ? "Type a name to start" : "Add to Cart"}
-          </Button>
+          {product ? (
+            <div className="mt-4 rounded-2xl border border-tangerine-200 bg-tangerine-50/70 p-3">
+              <Button
+                variant="accent"
+                size="lg"
+                className="w-full shadow-[0_6px_0_#C4521C] transition-transform active:translate-y-1 active:shadow-[0_2px_0_#C4521C] disabled:shadow-none"
+                disabled={!canOrder || buying}
+                onClick={handleBuyNow}
+              >
+                <Zap className="h-4 w-4 fill-current" />
+                {isEmpty ? "Type a name to start" : buying ? "Opening secure checkout…" : `Buy Now — ${formatINR(price)}`}
+              </Button>
+              <ul className="mt-3 grid grid-cols-3 gap-2 text-center text-[11px] leading-snug text-charcoal/80">
+                <li className="flex flex-col items-center gap-1">
+                  <RotateCw className="h-4 w-4 text-tangerine-600" />
+                  Damaged? We replace it
+                </li>
+                <li className="flex flex-col items-center gap-1">
+                  <Truck className="h-4 w-4 text-tangerine-600" />
+                  Free shipping over ₹799
+                </li>
+                <li className="flex flex-col items-center gap-1">
+                  <ShieldCheck className="h-4 w-4 text-tangerine-600" />
+                  Secure · UPI, cards &amp; COD
+                </li>
+              </ul>
+              <Button variant="outline" size="lg" className="mt-3 w-full bg-warm-white" disabled={!canOrder} onClick={handleAddToCart}>
+                <ShoppingBag className="h-4 w-4" /> Add to Cart
+              </Button>
+            </div>
+          ) : (
+            <Button variant="accent" size="lg" className="mt-4 w-full" disabled>
+              <ShoppingBag className="h-4 w-4" /> Ordering opens soon
+            </Button>
+          )}
           <p className="mt-3 text-center text-[11px] text-charcoal/60">
             Personalised pieces can&apos;t be returned — but anything that arrives damaged gets replaced.
           </p>

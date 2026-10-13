@@ -1,3 +1,4 @@
+import type { BuilderConfig } from "@/lib/letter-builder/types";
 import type { StockStatus } from "@/lib/stock";
 // Widened from a closed union now that categories are DB rows an admin can add to.
 export type CategorySlug = string;
@@ -122,4 +123,6 @@ export interface Product {
   createdAt: string;
   // Optional: absent on the static seed fixture in src/data/products.ts, always set by the DB query layer.
   isPersonalized?: boolean;
+  // Set for letter-builder products (see src/lib/letter-builder); absent otherwise.
+  builderConfig?: BuilderConfig;
 }

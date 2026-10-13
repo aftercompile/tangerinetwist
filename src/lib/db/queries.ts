@@ -88,6 +88,7 @@ function mapProductRow(row: ProductRow, relatedSlugs: string[] = []): Product {
     stock: row.stock,
     createdAt: row.createdAt.toISOString(),
     isPersonalized: row.isPersonalized,
+    builderConfig: row.builderConfig ?? undefined,
   };
 }
 
@@ -100,6 +101,12 @@ async function fetchRelatedSlugs(productId: string): Promise<string[]> {
     .orderBy(asc(productRelationsTable.position));
   return rows.map((r) => r.slug);
 }
+
+// Letter-builder products (builderConfig set) have their own page where the customer designs
+// the piece — a plain card with "Add to Cart" would sell a keychain with no design. So every
+// regular *listing* (categories, bestsellers, search, price ranges, sitemap) leaves them out;
+// direct lookups by slug (the product page, cart, wishlist) still find them.
+const notBuilder = isNull(productsTable.builderConfig);
 
 export const getProductBySlug = unstable_cache(
   async (slug: string): Promise<Product | undefined> => {
@@ -130,12 +137,15 @@ export const getProductBySlug = unstable_cache(
 export const getProductsByCategory = unstable_cache(
   async (categorySlug: string): Promise<Product[]> => {
     const rows = await db.query.products.findMany({
-      where: (p, { exists }) =>
-        exists(
-          db
-            .select()
-            .from(categoriesTable)
-            .where(and(eq(categoriesTable.id, p.categoryId), eq(categoriesTable.slug, categorySlug)))
+      where: (p, { exists, and: all, isNull: none }) =>
+        all(
+          none(p.builderConfig),
+          exists(
+            db
+              .select()
+              .from(categoriesTable)
+              .where(and(eq(categoriesTable.id, p.categoryId), eq(categoriesTable.slug, categorySlug)))
+          )
         ),
       with: {
         category: true,
@@ -152,7 +162,7 @@ export const getProductsByCategory = unstable_cache(
 export const getBestSellers = unstable_cache(
   async (limit = 8): Promise<Product[]> => {
     const rows = await db.query.products.findMany({
-      where: sql`${productsTable.badges} @> ARRAY['bestseller']::text[]`,
+      where: and(notBuilder, sql`${productsTable.badges} @> ARRAY['bestseller']::text[]`),
       with: {
         category: true,
         images: { orderBy: (img, { asc }) => [asc(img.position)] },
@@ -169,7 +179,7 @@ export const getBestSellers = unstable_cache(
 export const getNewArrivals = unstable_cache(
   async (limit = 8): Promise<Product[]> => {
     const rows = await db.query.products.findMany({
-      where: sql`${productsTable.badges} @> ARRAY['new']::text[]`,
+      where: and(notBuilder, sql`${productsTable.badges} @> ARRAY['new']::text[]`),
       with: {
         category: true,
         images: { orderBy: (img, { asc }) => [asc(img.position)] },
@@ -186,6 +196,7 @@ export const getNewArrivals = unstable_cache(
 export const getTopRated = unstable_cache(
   async (limit = 8): Promise<Product[]> => {
     const rows = await db.query.products.findMany({
+      where: notBuilder,
       with: {
         category: true,
         images: { orderBy: (img, { asc }) => [asc(img.position)] },
@@ -205,6 +216,7 @@ export const getTopRated = unstable_cache(
 export const getAllProducts = unstable_cache(
   async (): Promise<Product[]> => {
     const rows = await db.query.products.findMany({
+      where: notBuilder,
       with: {
         category: true,
         images: { orderBy: (img, { asc }) => [asc(img.position)] },
@@ -244,7 +256,7 @@ export async function getRelatedProducts(product: Product): Promise<Product[]> {
 
 export const getAllProductSlugs = unstable_cache(
   async (): Promise<string[]> => {
-    const rows = await db.select({ slug: productsTable.slug }).from(productsTable);
+    const rows = await db.select({ slug: productsTable.slug }).from(productsTable).where(notBuilder);
     return rows.map((r) => r.slug);
   },
   ["all-product-slugs"],
@@ -255,7 +267,8 @@ export const getAllProductsForSitemap = unstable_cache(
   async (): Promise<{ slug: string; updatedAt: Date }[]> => {
     return db
       .select({ slug: productsTable.slug, updatedAt: productsTable.updatedAt })
-      .from(productsTable);
+      .from(productsTable)
+      .where(notBuilder);
   },
   ["all-products-sitemap"],
   { tags: ["products"] }
@@ -272,6 +285,7 @@ export const getAllCategories = unstable_cache(
           max: sql<number>`max(${productsTable.price})`,
         })
         .from(productsTable)
+        .where(notBuilder)
         .groupBy(productsTable.categoryId),
     ]);
 
@@ -325,7 +339,7 @@ export const searchProducts = unstable_cache(
         lower(${productsTable.name}) like ${q}
         or lower(${productsTable.tagline}) like ${q}
         or lower(${productsTable.material}) like ${q}
-      )`,
+      ) and ${productsTable.builderConfig} is null`,
       with: {
         category: true,
         images: { orderBy: (img, { asc }) => [asc(img.position)] },

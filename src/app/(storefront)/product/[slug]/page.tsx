@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { isProductSoldOut } from "@/lib/stock";
 import { isMagicCheckoutEnabled } from "@/lib/razorpay/magic-order";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   getAllProductSlugs,
   getCategory,
@@ -37,6 +37,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function ProductPage({ params }: { params: { slug: string } }) {
   const product = await getProductBySlug(params.slug);
   if (!product) notFound();
+  // A letter-builder product is bought on its own designed page, never through this generic
+  // layout (which would add it to the cart with no design). Cart/wishlist links to
+  // /product/<slug> land on the right page via this redirect.
+  if (product.builderConfig) redirect(`/${product.slug}`);
 
   const [category, related] = await Promise.all([
     getCategory(product.category),

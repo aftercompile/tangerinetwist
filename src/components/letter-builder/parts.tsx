@@ -5,21 +5,14 @@
 import * as React from "react";
 import type { BuilderConfig, DesignPiece } from "@/lib/letter-builder/types";
 import { HEART, colorHex } from "@/lib/letter-builder/design";
+import { shade } from "@/lib/letter-builder/color";
 import { BUILDER_FONTS } from "./fonts";
 
 export const BEAD = { w: 100, h: 116, rx: 30, gap: 4 } as const;
 export const KEY = { size: 100, gap: 10, pad: 16 } as const;
 export const ACCENT_R = 30;
 
-/** Darken (amount < 0) or lighten (amount > 0) a hex colour. */
-export function shade(hex: string, amount: number): string {
-  const n = parseInt(hex.replace("#", ""), 16);
-  const mix = (c: number) => Math.round(amount < 0 ? c * (1 + amount) : c + (255 - c) * amount);
-  const r = mix((n >> 16) & 255);
-  const g = mix((n >> 8) & 255);
-  const b = mix(n & 255);
-  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
-}
+export { shade } from "@/lib/letter-builder/color";
 
 const HEART_PATH = "M0 26 C -18 12, -30 2, -30 -10 A 15 15 0 0 1 0 -18 A 15 15 0 0 1 30 -10 C 30 2, 18 12, 0 26 Z";
 

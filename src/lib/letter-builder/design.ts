@@ -114,3 +114,25 @@ export function showcaseDesign(config: BuilderConfig, text: string, presetId: st
   const state = { ...initialState(config, text, presetId), ...(style ? { style } : {}), ...(format ? { format } : {}) };
   return { format: state.format, trim: state.trim, pieces: derivePieces(config, state) };
 }
+
+/**
+ * A short, stable fingerprint of a design: two cart lines are the same line only if their
+ * designs match piece for piece. Plain FNV-1a over a canonical string — no crypto needed,
+ * it only has to tell designs apart, and it must run in the browser too.
+ */
+export function designKey(design: Design): string {
+  const canonical = [design.format, design.trim, ...design.pieces.map((p) => `${p.char}.${p.style}.${p.body}.${p.ink}`)].join("|");
+  let h = 0x811c9dc5;
+  for (let i = 0; i < canonical.length; i++) {
+    h ^= canonical.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
+}
+
+/** "ANYA — Bead keychain": what an order line shows in places that only have text. */
+export function designLabel(config: BuilderConfig, design: Pick<Design, "format" | "pieces">): string {
+  const word = design.pieces.map((p) => p.char).join("");
+  const format = config.formats.find((f) => f.id === design.format)?.label ?? design.format;
+  return `${word} — ${format}`;
+}

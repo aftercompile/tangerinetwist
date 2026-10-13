@@ -3,6 +3,7 @@
 import { getCurrentCustomer } from "@/lib/auth/customer-guard";
 import { resolveOrderItems } from "@/lib/checkout/resolve-items";
 import { toAbsoluteImageUrl } from "@/lib/fastrr/images";
+import { designImageUrl } from "@/lib/letter-builder/image-url";
 import { getRazorpayClient, verifyPaymentSignature } from "@/lib/razorpay/client";
 import { createMagicSession, finalizeMagicOrder } from "@/lib/razorpay/magic-checkout";
 import { buildMagicOrderPayload, isMagicCheckoutEnabled, newSessionToken } from "@/lib/razorpay/magic-order";
@@ -34,14 +35,21 @@ export async function createMagicCheckout(items: PlaceOrderInput["items"]): Prom
     token,
     siteUrl: siteConfig.url,
     lines: orderItemRows.map((row, i) => ({
-      name: row.name,
+      // A designed piece reads "Name Keychain — ANYA — Bead keychain" in Razorpay's summary.
+      name: row.customization ? `${row.name} — ${row.variantLabel}` : row.name,
       slug: row.slug,
       price: row.price,
       quantity: row.quantity,
       sku: lineMeta[i].sku,
       catalogVariantId: lineMeta[i].catalogVariantId,
       description: lineMeta[i].description,
-      imageUrl: row.imageSrc ? toAbsoluteImageUrl(row.imageSrc) : null,
+      designKey: lineMeta[i].designKey,
+      // A design has no photo; its thumbnail is rendered by /api/design-image.
+      imageUrl: row.customization
+        ? designImageUrl(row.slug, row.customization)
+        : row.imageSrc
+          ? toAbsoluteImageUrl(row.imageSrc)
+          : null,
     })),
   });
 

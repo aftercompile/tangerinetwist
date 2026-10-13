@@ -1,4 +1,5 @@
 import { relations } from "drizzle-orm";
+import type { BuilderConfig, Design } from "../letter-builder/types";
 import {
   bigserial,
   boolean,
@@ -131,6 +132,12 @@ export const products = pgTable("products", {
   faqs: jsonb("faqs").$type<{ question: string; answer: string }[]>().notNull().default([]),
   stock: stockStatusEnum("stock").notNull().default("in-stock"),
   isPersonalized: boolean("is_personalized").notNull().default(false),
+  // Non-null makes this a "letter builder" product (see src/lib/letter-builder): the customer
+  // composes a design from these styles/colours/formats instead of picking a variant, and the
+  // price comes from the config (priceDesign), not products.price (which is just the "from"
+  // price). Builder products are kept out of the regular listings — a plain add-to-cart
+  // would produce a keychain with no design.
+  builderConfig: jsonb("builder_config").$type<BuilderConfig>(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -330,6 +337,10 @@ export const orderItems = pgTable("order_items", {
   imageIcon: text("image_icon").notNull(),
   imageTone: imageToneEnum("image_tone").notNull().default("beige"),
   quantity: integer("quantity").notNull(),
+  // The customer's design for a letter-builder line (letters, styles, colours, format) — a
+  // snapshot like everything else on this table, so editing the product's colours later
+  // never changes what a past order says to print. Null for ordinary lines.
+  customization: jsonb("customization").$type<Design>(),
 });
 
 // discountValue is 1-100 for "percentage" or a flat rupee amount for "flat" (enforced in
@@ -393,6 +404,7 @@ export interface MagicSessionItem {
   imageIcon: string;
   imageTone: "warm" | "cool" | "charcoal" | "beige";
   quantity: number;
+  customization?: Design | null;
 }
 
 export const magicCheckoutSessions = pgTable("magic_checkout_sessions", {

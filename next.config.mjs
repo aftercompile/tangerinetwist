@@ -13,6 +13,11 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"],
+    // The design-thumbnail route reads these font files from disk at request time, which
+    // Next's file tracing can't see, so Vercel would otherwise leave them out of the bundle.
+    outputFileTracingIncludes: {
+      "/api/design-image": ["./src/assets/fonts/**/*"],
+    },
   },
 };
 

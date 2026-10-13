@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { CheckCircle2, ShieldCheck, Truck, Wallet } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
-import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
+import { CartLineThumb } from "@/components/shared/CartLineThumb";
 import { formatINR } from "@/lib/utils";
 import { runMagicCheckout } from "@/lib/razorpay/magic-client";
 
@@ -25,7 +25,7 @@ export function MagicCheckoutPanel({ prefill }: { prefill?: { name?: string; ema
   async function handleCheckout() {
     setStarting(true);
     const outcome = await runMagicCheckout(
-      lines.map((l) => ({ slug: l.slug, quantity: l.quantity, variantId: l.variantId })),
+      lines.map((l) => ({ slug: l.slug, quantity: l.quantity, variantId: l.variantId, design: l.design })),
       prefill
     );
     setStarting(false);
@@ -117,13 +117,8 @@ export function MagicCheckoutPanel({ prefill }: { prefill?: { name?: string; ema
           <h2 className="font-display text-lg">Order Summary</h2>
           <ul className="mt-5 flex flex-col gap-4">
             {lines.map((line) => (
-              <li key={`${line.slug}-${line.variantId ?? ""}`} className="flex gap-3">
-                <ProductImagePlaceholder
-                  icon={line.image.icon}
-                  tone={line.image.tone as "warm" | "cool" | "charcoal" | "beige"}
-                  src={line.image.src}
-                  className="h-14 w-14 shrink-0 rounded-lg"
-                />
+              <li key={`${line.slug}-${line.variantId ?? ""}-${line.designKey ?? ""}`} className="flex gap-3">
+                <CartLineThumb line={line} className="h-14 w-14 shrink-0 rounded-lg" />
                 <div className="flex flex-1 justify-between text-sm">
                   <div>
                     <p className="font-medium text-charcoal">{line.name}</p>

@@ -2,11 +2,13 @@
 // cart) and the product page's Buy Now button (one product, cart untouched). Starts a
 // server-side session, opens Razorpay's modal, and resolves once the customer is done.
 import { createMagicCheckout, confirmMagicCheckout } from "@/lib/actions/magic-checkout-actions";
+import type { Design } from "@/lib/letter-builder/types";
 
 export interface MagicItem {
   slug: string;
   quantity: number;
   variantId?: string;
+  design?: Design;
 }
 
 export type MagicOutcome =

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Minus, Plus, X, ShoppingBag } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
+import { CartLineThumb } from "@/components/shared/CartLineThumb";
 import { useCart } from "@/context/CartContext";
 import { formatINR } from "@/lib/utils";
 
@@ -33,14 +33,9 @@ export function CartDrawer() {
             <div className="flex-1 overflow-y-auto px-6">
               <ul className="divide-y divide-border">
                 {lines.map((line) => (
-                  <li key={`${line.slug}-${line.variantId ?? ""}`} className="flex gap-4 py-5">
+                  <li key={`${line.slug}-${line.variantId ?? ""}-${line.designKey ?? ""}`} className="flex gap-4 py-5">
                     <Link href={`/product/${line.slug}`} onClick={() => setOpen(false)} className="shrink-0">
-                      <ProductImagePlaceholder
-                        icon={line.image.icon}
-                        tone={line.image.tone as "warm" | "cool" | "charcoal" | "beige"}
-                        src={line.image.src}
-                        className="h-20 w-20 rounded-xl"
-                      />
+                      <CartLineThumb line={line} className="h-20 w-20 rounded-xl" />
                     </Link>
                     <div className="flex flex-1 flex-col justify-between">
                       <div className="flex items-start justify-between gap-2">
@@ -55,7 +50,7 @@ export function CartDrawer() {
                           <p className="text-xs text-muted">{line.variantLabel ?? line.material}</p>
                         </div>
                         <button
-                          onClick={() => removeItem(line.slug, line.variantId)}
+                          onClick={() => removeItem(line.slug, line.variantId, line.designKey)}
                           aria-label={`Remove ${line.name}`}
                           className="text-muted transition hover:text-charcoal"
                         >
@@ -66,7 +61,7 @@ export function CartDrawer() {
                         <div className="flex items-center gap-3 rounded-full border border-border px-1">
                           <button
                             aria-label="Decrease quantity"
-                            onClick={() => updateQuantity(line.slug, line.quantity - 1, line.variantId)}
+                            onClick={() => updateQuantity(line.slug, line.quantity - 1, line.variantId, line.designKey)}
                             className="flex h-7 w-7 items-center justify-center text-charcoal"
                           >
                             <Minus className="h-3 w-3" />
@@ -74,7 +69,7 @@ export function CartDrawer() {
                           <span className="w-4 text-center text-xs">{line.quantity}</span>
                           <button
                             aria-label="Increase quantity"
-                            onClick={() => updateQuantity(line.slug, line.quantity + 1, line.variantId)}
+                            onClick={() => updateQuantity(line.slug, line.quantity + 1, line.variantId, line.designKey)}
                             className="flex h-7 w-7 items-center justify-center text-charcoal"
                           >
                             <Plus className="h-3 w-3" />

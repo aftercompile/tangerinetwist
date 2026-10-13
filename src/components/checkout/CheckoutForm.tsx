@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ProductImagePlaceholder } from "@/components/shared/ProductImagePlaceholder";
+import { CartLineThumb } from "@/components/shared/CartLineThumb";
 import { AddressAutocomplete } from "@/components/shared/AddressAutocomplete";
 import { formatINR } from "@/lib/utils";
 import { calculateTotals } from "@/lib/orders";
@@ -148,7 +148,7 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
   async function handlePlaceOrder(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    const items = lines.map((l) => ({ slug: l.slug, quantity: l.quantity, variantId: l.variantId }));
+    const items = lines.map((l) => ({ slug: l.slug, quantity: l.quantity, variantId: l.variantId, design: l.design }));
     const couponCode = appliedCoupon?.code;
 
     if (payment === "cod") {
@@ -388,13 +388,8 @@ export function CheckoutForm({ initialShipping }: { initialShipping?: Partial<Sh
           <h2 className="text-base font-medium text-charcoal">Order Summary</h2>
           <ul className="mt-5 flex flex-col gap-4">
             {lines.map((line) => (
-              <li key={`${line.slug}-${line.variantId ?? ""}`} className="flex gap-3">
-                <ProductImagePlaceholder
-                  icon={line.image.icon}
-                  tone={line.image.tone as "warm" | "cool" | "charcoal" | "beige"}
-                  src={line.image.src}
-                  className="h-14 w-14 shrink-0 rounded-lg"
-                />
+              <li key={`${line.slug}-${line.variantId ?? ""}-${line.designKey ?? ""}`} className="flex gap-3">
+                <CartLineThumb line={line} className="h-14 w-14 shrink-0 rounded-lg" />
                 <div className="flex flex-1 justify-between text-sm">
                   <div>
                     <p className="font-medium text-charcoal">{line.name}</p>

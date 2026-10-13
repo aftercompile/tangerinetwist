@@ -37,7 +37,7 @@ export async function createFastrrCheckoutToken(
   const slugs = items.map((i) => i.slug);
   const rows = await db.query.products.findMany({
     where: inArray(products.slug, slugs),
-    columns: { slug: true, externalId: true, name: true, price: true, stock: true },
+    columns: { slug: true, externalId: true, name: true, price: true, stock: true, builderConfig: true },
     with: {
       images: { orderBy: (img, { asc }) => [asc(img.position)], limit: 1 },
       variants: { with: { images: { orderBy: (img, { asc }) => [asc(img.position)], limit: 1 } } },
@@ -48,6 +48,11 @@ export async function createFastrrCheckoutToken(
   const missing = slugs.filter((s) => !bySlug.has(s));
   if (missing.length > 0) {
     return { error: "Some items in your cart are no longer available." };
+  }
+
+  // Letter-builder products carry a customer design this path has no way to carry or price.
+  if (rows.some((r) => r.builderConfig)) {
+    return { error: "Personalised pieces can't be ordered through this checkout." };
   }
 
   // Same server-side stock gate as resolveOrderItems (order-actions.ts) — this path hands
